@@ -22,6 +22,143 @@ const dbConfig = {
 
 const pool = mysql.createPool(dbConfig);
 
+// Auto-Migración Inteligente del Esquema de MySQL al Iniciar
+async function autoMigrateSchema() {
+  try {
+    const conn = await pool.getConnection();
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS productos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        codigo VARCHAR(100) UNIQUE,
+        nombre VARCHAR(255) NOT NULL,
+        precio_usd DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        iva_porcentaje DECIMAL(5,2) DEFAULT 16.00,
+        subtexto VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    const [prodCols] = await conn.query('SHOW COLUMNS FROM productos');
+    const prodColNames = prodCols.map(c => c.Field);
+    if (!prodColNames.includes('precio_usd')) await conn.query('ALTER TABLE productos ADD COLUMN precio_usd DECIMAL(10,2) NOT NULL DEFAULT 0.00');
+    if (!prodColNames.includes('iva_porcentaje')) await conn.query('ALTER TABLE productos ADD COLUMN iva_porcentaje DECIMAL(5,2) DEFAULT 16.00');
+    if (!prodColNames.includes('subtexto')) await conn.query('ALTER TABLE productos ADD COLUMN subtexto VARCHAR(255)');
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS clientes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        identificacion VARCHAR(100) UNIQUE NOT NULL,
+        nombre VARCHAR(255) NOT NULL,
+        telefono VARCHAR(100),
+        direccion TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS empresa (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(255) NOT NULL,
+        identificacion VARCHAR(100),
+        direccion TEXT,
+        telefono VARCHAR(100),
+        doc_titulo VARCHAR(255) DEFAULT 'FACTURA ELECTRÓNICA DE VENTA',
+        moneda VARCHAR(20) DEFAULT '$',
+        tasa_cambio DECIMAL(10,4) DEFAULT 798.3300,
+        mostrar_doble_moneda TINYINT(1) DEFAULT 1,
+        logo_base64 LONGTEXT,
+        logo_size INT DEFAULT 220,
+        show_qr TINYINT(1) DEFAULT 1,
+        show_barcode TINYINT(1) DEFAULT 1,
+        show_signature TINYINT(1) DEFAULT 1,
+        show_tax_table TINYINT(1) DEFAULT 1,
+        theme VARCHAR(50) DEFAULT 'theme-thermal',
+        notas_pie TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    const [empCols] = await conn.query('SHOW COLUMNS FROM empresa');
+    const empColNames = empCols.map(c => c.Field);
+    if (!empColNames.includes('logo_size')) await conn.query('ALTER TABLE empresa ADD COLUMN logo_size INT DEFAULT 220');
+    if (!empColNames.includes('show_qr')) await conn.query('ALTER TABLE empresa ADD COLUMN show_qr TINYINT(1) DEFAULT 1');
+    if (!empColNames.includes('show_barcode')) await conn.query('ALTER TABLE empresa ADD COLUMN show_barcode TINYINT(1) DEFAULT 1');
+    if (!empColNames.includes('show_signature')) await conn.query('ALTER TABLE empresa ADD COLUMN show_signature TINYINT(1) DEFAULT 1');
+    if (!empColNames.includes('show_tax_table')) await conn.query('ALTER TABLE empresa ADD COLUMN show_tax_table TINYINT(1) DEFAULT 1');
+    if (!empColNames.includes('theme')) await conn.query("ALTER TABLE empresa ADD COLUMN theme VARCHAR(50) DEFAULT 'theme-thermal'");
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS comprobantes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        uuid VARCHAR(100) UNIQUE NOT NULL,
+        doc_type VARCHAR(50) NOT NULL DEFAULT 'venta',
+        doc_title VARCHAR(255) NOT NULL,
+        doc_number VARCHAR(100) NOT NULL,
+        doc_date DATE NOT NULL,
+        doc_time VARCHAR(50),
+        cliente_nombre VARCHAR(255) NOT NULL,
+        cliente_identificacion VARCHAR(100),
+        cliente_telefono VARCHAR(100),
+        cliente_direccion TEXT,
+        forma_pago VARCHAR(100) NOT NULL DEFAULT 'Pago Móvil',
+        vendedor VARCHAR(100),
+        concepto TEXT,
+        referencia VARCHAR(100),
+        saldo_anterior DECIMAL(12,2) DEFAULT 0.00,
+        nuevo_saldo DECIMAL(12,2) DEFAULT 0.00,
+        subtotal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        impuesto_porcentaje DECIMAL(5,2) DEFAULT 0.00,
+        impuesto_monto DECIMAL(12,2) DEFAULT 0.00,
+        descuento DECIMAL(12,2) DEFAULT 0.00,
+        total_principal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        total_bs_bcv DECIMAL(12,2) DEFAULT 0.00,
+        moneda VARCHAR(20) DEFAULT '$',
+        tasa_ref DECIMAL(10,4) DEFAULT 1.0000,
+        target_currency VARCHAR(10) DEFAULT 'USD',
+        suiche_bank VARCHAR(20),
+        suiche_doc VARCHAR(50),
+        suiche_phone VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    const [compCols] = await conn.query('SHOW COLUMNS FROM comprobantes');
+    const compColNames = compCols.map(c => c.Field);
+    if (!compColNames.includes('total_bs_bcv')) await conn.query('ALTER TABLE comprobantes ADD COLUMN total_bs_bcv DECIMAL(12,2) DEFAULT 0.00');
+    if (!compColNames.includes('target_currency')) await conn.query("ALTER TABLE comprobantes ADD COLUMN target_currency VARCHAR(10) DEFAULT 'USD'");
+    if (!compColNames.includes('suiche_bank')) await conn.query('ALTER TABLE comprobantes ADD COLUMN suiche_bank VARCHAR(20)');
+    if (!compColNames.includes('suiche_doc')) await conn.query('ALTER TABLE comprobantes ADD COLUMN suiche_doc VARCHAR(50)');
+    if (!compColNames.includes('suiche_phone')) await conn.query('ALTER TABLE comprobantes ADD COLUMN suiche_phone VARCHAR(50)');
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS comprobante_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        comprobante_id INT NOT NULL,
+        cantidad INT NOT NULL DEFAULT 1,
+        descripcion VARCHAR(255) NOT NULL,
+        subtexto VARCHAR(255),
+        tarifa_iva DECIMAL(5,2) DEFAULT 0.00,
+        precio_unitario DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        subtotal_linea DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        FOREIGN KEY (comprobante_id) REFERENCES comprobantes(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    const [itemCols] = await conn.query('SHOW COLUMNS FROM comprobante_items');
+    const itemColNames = itemCols.map(c => c.Field);
+    if (!itemColNames.includes('tarifa_iva')) await conn.query('ALTER TABLE comprobante_items ADD COLUMN tarifa_iva DECIMAL(5,2) DEFAULT 0.00');
+    if (!itemColNames.includes('subtotal_linea')) await conn.query('ALTER TABLE comprobante_items ADD COLUMN subtotal_linea DECIMAL(12,2) DEFAULT 0.00');
+
+    conn.release();
+    console.log('✅ Esquema MySQL markt_db auto-migrado y sincronizado.');
+  } catch (err) {
+    console.error('⚠️ Error durante auto-migración MySQL:', err.message);
+  }
+}
+
+autoMigrateSchema();
+
 // Health Check
 app.get('/api/health', async (req, res) => {
   try {
@@ -201,48 +338,65 @@ app.get('/api/consultar-cedula/:doc', async (req, res) => {
       });
     }
 
-    const [localDb] = await pool.query(
-      `SELECT cliente_nombre, cliente_telefono, cliente_direccion FROM comprobantes 
-       WHERE UPPER(REPLACE(REPLACE(cliente_identificacion, '-', ''), '.', '')) LIKE ? 
-         AND cliente_nombre IS NOT NULL 
-         AND UPPER(cliente_nombre) NOT LIKE '%RIF%'
-         AND UPPER(cliente_nombre) NOT LIKE '%CEDULA%'
-         AND UPPER(cliente_nombre) NOT LIKE '%PASAPORTE%'
-         AND UPPER(cliente_nombre) NOT LIKE '%NBSP%'
-       ORDER BY id DESC LIMIT 1`,
-      [`%${numStr}%`]
-    );
-
-    if (localDb.length > 0 && localDb[0].cliente_nombre) {
-      let nameStr = localDb[0].cliente_nombre.replace(/&nbsp;/gi, '').trim();
-      if (nameStr.length > 2) {
-        return res.json({
-          success: true,
-          nombre: nameStr,
-          telefono: localDb[0].cliente_telefono || '',
-          direccion: localDb[0].cliente_direccion || '',
-          doc: formattedCedulaDisplay,
-          fuente: 'Historial MySQL'
-        });
-      }
-    }
-
     return res.json({
       success: false,
-      message: 'Cliente nuevo. Ingresa el nombre para guardarlo en tu directorio MySQL.',
-      doc: formattedCedulaDisplay
+      message: 'Cédula / RIF no registrado en directorio MySQL.'
     });
-
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// GET /api/comprobantes - Listar historial de comprobantes desde MySQL
+// GET /api/comprobantes - Listar historial de comprobantes de MySQL
 app.get('/api/comprobantes', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM comprobantes ORDER BY id DESC');
-    res.json(rows);
+    const [comprobantes] = await pool.query('SELECT * FROM comprobantes ORDER BY id DESC');
+    const [items] = await pool.query('SELECT * FROM comprobante_items');
+
+    const result = comprobantes.map(c => {
+      const cItems = items.filter(i => i.comprobante_id === c.id).map(i => ({
+        id: i.id.toString(),
+        cant: i.cantidad,
+        desc: i.descripcion,
+        subtext: i.subtexto,
+        taxRate: i.tarifa_iva,
+        unitPrice: i.precio_unitario
+      }));
+
+      return {
+        uuid: c.uuid,
+        doc_type: c.doc_type,
+        doc_title: c.doc_title,
+        doc_number: c.doc_number,
+        doc_date: c.doc_date,
+        doc_time: c.doc_time,
+        cliente_nombre: c.cliente_nombre,
+        cliente_identificacion: c.cliente_identificacion,
+        cliente_telefono: c.cliente_telefono,
+        cliente_direccion: c.cliente_direccion,
+        forma_pago: c.forma_pago,
+        vendedor: c.vendedor,
+        concepto: c.concepto,
+        referencia: c.referencia,
+        saldo_anterior: c.saldo_anterior,
+        nuevo_saldo: c.nuevo_saldo,
+        subtotal: c.subtotal,
+        impuesto_porcentaje: c.impuesto_porcentaje,
+        impuesto_monto: c.impuesto_monto,
+        descuento: c.descuento,
+        total_principal: c.total_principal,
+        total_bs_bcv: c.total_bs_bcv,
+        moneda: c.moneda,
+        tasa_ref: c.tasa_ref,
+        target_currency: c.target_currency,
+        suiche_bank: c.suiche_bank,
+        suiche_doc: c.suiche_doc,
+        suiche_phone: c.suiche_phone,
+        items: cItems
+      };
+    });
+
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -270,7 +424,7 @@ app.post('/api/comprobantes', async (req, res) => {
         forma_pago, vendedor, concepto, referencia, saldo_anterior, nuevo_saldo,
         subtotal, impuesto_porcentaje, impuesto_monto, descuento, total_principal,
         moneda, tasa_ref, target_currency, suiche_bank, suiche_doc, suiche_phone,
-        total_equivalente_usd
+        total_bs_bcv
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         uuid, doc_type, doc_title, doc_number, doc_date, doc_time,
@@ -293,7 +447,6 @@ app.post('/api/comprobantes', async (req, res) => {
       }
     }
 
-    // Guardar cliente automáticamente en la tabla clientes de MySQL
     if (cliente_identificacion && cliente_nombre && cliente_nombre.trim() !== '') {
       await connection.query(
         `INSERT INTO clientes (identificacion, nombre, telefono, direccion) 
@@ -356,7 +509,7 @@ app.post('/api/admin/import-db', async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    const { empresa, productos, clientes, comprobantes, comprobante_items } = req.body;
+    const { empresa, productos, clientes } = req.body;
 
     if (Array.isArray(productos)) {
       for (const p of productos) {
