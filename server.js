@@ -22,6 +22,58 @@ const dbConfig = {
 
 const pool = mysql.createPool(dbConfig);
 
+// --- SECURITY & INPUT SANITIZATION HELPERS ---
+
+/**
+ * Sanitiza y limpia cualquier cadena de texto evitando inyecciones o caracteres de control no deseados.
+ */
+function sanitizeString(str, maxLen = 255) {
+  if (str === null || str === undefined) return '';
+  let clean = String(str).trim();
+  // Eliminar caracteres de control ASCII invisibles excepto saltos de línea y tabuladores
+  clean = clean.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  // Normalizar espacios múltiples
+  clean = clean.replace(/[ \t]+/g, ' ');
+  return clean.slice(0, maxLen);
+}
+
+/**
+ * Formatea y limpia identificaciones, Cédulas y RIF (Ej: ' v-12.345.678 ' -> 'V-12345678')
+ */
+function formatIdentificacion(idStr) {
+  if (!idStr) return '';
+  let clean = String(idStr).trim().toUpperCase();
+  clean = clean.replace(/[^A-Z0-9-]/g, '');
+  return clean.replace(/-+/g, '-').slice(0, 50);
+}
+
+/**
+ * Formatea y limpia números telefónicos (Ej: '+58 (414) 123-4567' -> '584141234567')
+ */
+function formatPhone(phoneStr) {
+  if (!phoneStr) return '';
+  let clean = String(phoneStr).replace(/[^0-9]/g, '');
+  return clean.slice(0, 20);
+}
+
+/**
+ * Valida y desinfecta números flotantes (previene NaN, Infinity e Inyecciones de tipo)
+ */
+function sanitizeFloat(val, defaultVal = 0, min = 0, max = 999999999) {
+  const parsed = parseFloat(val);
+  if (isNaN(parsed) || !isFinite(parsed)) return defaultVal;
+  return Math.min(Math.max(parsed, min), max);
+}
+
+/**
+ * Valida y desinfecta números enteros
+ */
+function sanitizeInt(val, defaultVal = 0, min = 0, max = 2147483647) {
+  const parsed = parseInt(val, 10);
+  if (isNaN(parsed) || !isFinite(parsed)) return defaultVal;
+  return Math.min(Math.max(parsed, min), max);
+}
+
 // Auto-Migración Inteligente del Esquema de MySQL al Iniciar
 async function autoMigrateSchema() {
   try {
@@ -33,7 +85,7 @@ async function autoMigrateSchema() {
         codigo VARCHAR(100) UNIQUE,
         nombre VARCHAR(255) NOT NULL,
         precio_usd DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-        iva_porcentaje DECIMAL(5,2) DEFAULT 16.00,
+        iva_porcentaje DECIMAL(5,2) DEFAULT 0.00,
         subtexto VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -42,7 +94,7 @@ async function autoMigrateSchema() {
     const [prodCols] = await conn.query('SHOW COLUMNS FROM productos');
     const prodColNames = prodCols.map(c => c.Field);
     if (!prodColNames.includes('precio_usd')) await conn.query('ALTER TABLE productos ADD COLUMN precio_usd DECIMAL(10,2) NOT NULL DEFAULT 0.00');
-    if (!prodColNames.includes('iva_porcentaje')) await conn.query('ALTER TABLE productos ADD COLUMN iva_porcentaje DECIMAL(5,2) DEFAULT 16.00');
+    if (!prodColNames.includes('iva_porcentaje')) await conn.query('ALTER TABLE productos ADD COLUMN iva_porcentaje DECIMAL(5,2) DEFAULT 0.00');
     if (!prodColNames.includes('subtexto')) await conn.query('ALTER TABLE productos ADD COLUMN subtexto VARCHAR(255)');
 
     await conn.query(`
@@ -72,7 +124,7 @@ async function autoMigrateSchema() {
         show_qr TINYINT(1) DEFAULT 1,
         show_barcode TINYINT(1) DEFAULT 1,
         show_signature TINYINT(1) DEFAULT 1,
-        show_tax_table TINYINT(1) DEFAULT 1,
+        show_tax_table TINYINT(1) DEFAULT 0,
         theme VARCHAR(50) DEFAULT 'theme-thermal',
         notas_pie TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -85,7 +137,7 @@ async function autoMigrateSchema() {
     if (!empColNames.includes('show_qr')) await conn.query('ALTER TABLE empresa ADD COLUMN show_qr TINYINT(1) DEFAULT 1');
     if (!empColNames.includes('show_barcode')) await conn.query('ALTER TABLE empresa ADD COLUMN show_barcode TINYINT(1) DEFAULT 1');
     if (!empColNames.includes('show_signature')) await conn.query('ALTER TABLE empresa ADD COLUMN show_signature TINYINT(1) DEFAULT 1');
-    if (!empColNames.includes('show_tax_table')) await conn.query('ALTER TABLE empresa ADD COLUMN show_tax_table TINYINT(1) DEFAULT 1');
+    if (!empColNames.includes('show_tax_table')) await conn.query('ALTER TABLE empresa ADD COLUMN show_tax_table TINYINT(1) DEFAULT 0');
     if (!empColNames.includes('theme')) await conn.query("ALTER TABLE empresa ADD COLUMN theme VARCHAR(50) DEFAULT 'theme-thermal'");
 
     await conn.query(`
@@ -145,13 +197,8 @@ async function autoMigrateSchema() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    const [itemCols] = await conn.query('SHOW COLUMNS FROM comprobante_items');
-    const itemColNames = itemCols.map(c => c.Field);
-    if (!itemColNames.includes('tarifa_iva')) await conn.query('ALTER TABLE comprobante_items ADD COLUMN tarifa_iva DECIMAL(5,2) DEFAULT 0.00');
-    if (!itemColNames.includes('subtotal_linea')) await conn.query('ALTER TABLE comprobante_items ADD COLUMN subtotal_linea DECIMAL(12,2) DEFAULT 0.00');
-
     conn.release();
-    console.log('✅ Esquema MySQL markt_db auto-migrado y sincronizado.');
+    console.log('✅ Esquema MySQL markt_db auto-migrado, blindado y sincronizado.');
   } catch (err) {
     console.error('⚠️ Error durante auto-migración MySQL:', err.message);
   }
@@ -159,36 +206,47 @@ async function autoMigrateSchema() {
 
 autoMigrateSchema();
 
-// Health Check
+// Health Check Endpoint
 app.get('/api/health', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT 1 + 1 AS result');
-    res.json({ status: 'OK', message: 'Servidor MARTK en línea y conectado a MySQL', db: rows[0].result === 2 });
+    res.json({ status: 'OK', message: 'Servidor MARTK en línea, seguro y conectado a MySQL', db: rows[0].result === 2 });
   } catch (error) {
-    res.status(500).json({ status: 'ERROR', message: error.message });
+    res.status(500).json({ status: 'ERROR', message: 'Error en la conexión a la base de datos' });
   }
 });
 
-// GET /api/empresa - Obtener perfil de la empresa y preferencias desde MySQL
+// GET /api/empresa - Obtener perfil de la empresa desde MySQL
 app.get('/api/empresa', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM empresa ORDER BY id DESC LIMIT 1');
     if (rows.length === 0) return res.json(null);
     res.json(rows[0]);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al consultar datos de empresa' });
   }
 });
 
-// POST /api/empresa - Guardar / Actualizar perfil de empresa y preferencias en MySQL
+// POST /api/empresa - Guardar / Actualizar perfil y preferencias en MySQL
 app.post('/api/empresa', async (req, res) => {
   try {
-    const { 
-      nombre, identificacion, direccion, telefono, doc_titulo, moneda, tasa_cambio, 
-      mostrar_doble_moneda, logo_base64, logo_size, show_qr, show_barcode, 
-      show_signature, show_tax_table, theme, notas_pie 
-    } = req.body;
-    
+    const nombre = sanitizeString(req.body.nombre, 255);
+    const identificacion = formatIdentificacion(req.body.identificacion);
+    const direccion = sanitizeString(req.body.direccion, 1000);
+    const telefono = formatPhone(req.body.telefono);
+    const doc_titulo = sanitizeString(req.body.doc_titulo, 255);
+    const moneda = sanitizeString(req.body.moneda, 20);
+    const tasa_cambio = sanitizeFloat(req.body.tasa_cambio, 798.33);
+    const mostrar_doble_moneda = req.body.mostrar_doble_moneda ? 1 : 0;
+    const logo_base64 = req.body.logo_base64 || null;
+    const logo_size = sanitizeInt(req.body.logo_size, 220, 50, 600);
+    const show_qr = req.body.show_qr ? 1 : 0;
+    const show_barcode = req.body.show_barcode ? 1 : 0;
+    const show_signature = req.body.show_signature ? 1 : 0;
+    const show_tax_table = req.body.show_tax_table ? 1 : 0;
+    const theme = sanitizeString(req.body.theme, 50) || 'theme-thermal';
+    const notas_pie = sanitizeString(req.body.notas_pie, 2000);
+
     const [rows] = await pool.query('SELECT id FROM empresa LIMIT 1');
     if (rows.length > 0) {
       const id = rows[0].id;
@@ -200,12 +258,11 @@ app.post('/api/empresa', async (req, res) => {
          WHERE id=?`,
         [
           nombre, identificacion, direccion, telefono, doc_titulo, moneda, tasa_cambio, 
-          mostrar_doble_moneda ? 1 : 0, logo_base64, logo_size || 220, show_qr ? 1 : 0, 
-          show_barcode ? 1 : 0, show_signature ? 1 : 0, show_tax_table ? 1 : 0, 
-          theme || 'theme-thermal', notas_pie, id
+          mostrar_doble_moneda, logo_base64, logo_size, show_qr, show_barcode, 
+          show_signature, show_tax_table, theme, notas_pie, id
         ]
       );
-      res.json({ message: 'Perfil y preferencias de empresa actualizados en MySQL' });
+      res.json({ message: 'Perfil y preferencias actualizados de forma segura' });
     } else {
       await pool.query(
         `INSERT INTO empresa (
@@ -215,108 +272,128 @@ app.post('/api/empresa', async (req, res) => {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           nombre, identificacion, direccion, telefono, doc_titulo, moneda, tasa_cambio, 
-          mostrar_doble_moneda ? 1 : 0, logo_base64, logo_size || 220, show_qr ? 1 : 0, 
-          show_barcode ? 1 : 0, show_signature ? 1 : 0, show_tax_table ? 1 : 0, 
-          theme || 'theme-thermal', notas_pie
+          mostrar_doble_moneda, logo_base64, logo_size, show_qr, show_barcode, 
+          show_signature, show_tax_table, theme, notas_pie
         ]
       );
-      res.json({ message: 'Perfil y preferencias de empresa creados en MySQL' });
+      res.json({ message: 'Perfil y preferencias registrados de forma segura' });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al procesar perfil de empresa' });
   }
 });
 
-// GET /api/productos - Listar catálogo de productos desde MySQL
+// GET /api/productos - Listar catálogo de productos
 app.get('/api/productos', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM productos ORDER BY nombre ASC');
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al consultar productos' });
   }
 });
 
-// POST /api/productos - Agregar / Actualizar producto en MySQL
+// POST /api/productos - Agregar / Actualizar producto desinfectado en MySQL
 app.post('/api/productos', async (req, res) => {
   try {
-    const { id, codigo, nombre, precio_usd, iva_porcentaje, subtexto } = req.body;
-    if (id && !isNaN(id)) {
+    const id = req.body.id ? sanitizeInt(req.body.id) : null;
+    const codigo = sanitizeString(req.body.codigo, 100).toUpperCase() || `PRD-${Date.now().toString().slice(-4)}`;
+    const nombre = sanitizeString(req.body.nombre, 255);
+    const precio_usd = sanitizeFloat(req.body.precio_usd, 0);
+    const iva_porcentaje = sanitizeFloat(req.body.iva_porcentaje, 0, 0, 100);
+    const subtexto = sanitizeString(req.body.subtexto, 255);
+
+    if (!nombre) {
+      return res.status(400).json({ error: 'El nombre del producto es obligatorio.' });
+    }
+
+    if (id && id > 0) {
       await pool.query(
         `UPDATE productos SET codigo=?, nombre=?, precio_usd=?, iva_porcentaje=?, subtexto=? WHERE id=?`,
         [codigo, nombre, precio_usd, iva_porcentaje, subtexto, id]
       );
-      res.json({ message: 'Producto actualizado en MySQL' });
+      res.json({ message: 'Producto actualizado exitosamente' });
     } else {
       const [result] = await pool.query(
         `INSERT INTO productos (codigo, nombre, precio_usd, iva_porcentaje, subtexto) VALUES (?, ?, ?, ?, ?)`,
-        [codigo || `PRD-${Date.now()}`, nombre, precio_usd || 0, iva_porcentaje || 16, subtexto || '']
+        [codigo, nombre, precio_usd, iva_porcentaje, subtexto]
       );
-      res.status(201).json({ message: 'Producto creado en MySQL', id: result.insertId });
+      res.status(201).json({ message: 'Producto creado exitosamente', id: result.insertId });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al guardar el producto' });
   }
 });
 
-// DELETE /api/productos/:id - Eliminar producto en MySQL
+// DELETE /api/productos/:id - Eliminar producto por ID parametrizado
 app.delete('/api/productos/:id', async (req, res) => {
   try {
-    await pool.query('DELETE FROM productos WHERE id = ?', [req.params.id]);
-    res.json({ message: 'Producto eliminado en MySQL' });
+    const id = sanitizeInt(req.params.id);
+    if (!id || id <= 0) return res.status(400).json({ error: 'ID de producto inválido' });
+
+    await pool.query('DELETE FROM productos WHERE id = ?', [id]);
+    res.json({ message: 'Producto eliminado exitosamente' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al eliminar el producto' });
   }
 });
 
-// GET /api/clientes - Listar clientes desde MySQL
+// GET /api/clientes - Listar directorio de clientes
 app.get('/api/clientes', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM clientes ORDER BY nombre ASC');
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al consultar clientes' });
   }
 });
 
-// POST /api/clientes - Registrar / Actualizar cliente en MySQL
+// POST /api/clientes - Registrar / Actualizar cliente formateado en MySQL
 app.post('/api/clientes', async (req, res) => {
   try {
-    const { identificacion, nombre, telefono, direccion } = req.body;
+    const identificacion = formatIdentificacion(req.body.identificacion);
+    const nombre = sanitizeString(req.body.nombre, 255);
+    const telefono = formatPhone(req.body.telefono);
+    const direccion = sanitizeString(req.body.direccion, 500);
+
+    if (!identificacion || !nombre) {
+      return res.status(400).json({ error: 'La identificación y el nombre son obligatorios.' });
+    }
+
     const [existing] = await pool.query('SELECT id FROM clientes WHERE identificacion = ?', [identificacion]);
     if (existing.length > 0) {
       await pool.query(
         `UPDATE clientes SET nombre=?, telefono=?, direccion=? WHERE id=?`,
         [nombre, telefono, direccion, existing[0].id]
       );
-      res.json({ message: 'Cliente actualizado en MySQL' });
+      res.json({ message: 'Cliente actualizado exitosamente' });
     } else {
       const [result] = await pool.query(
         `INSERT INTO clientes (identificacion, nombre, telefono, direccion) VALUES (?, ?, ?, ?)`,
-        [identificacion, nombre, telefono || '', direccion || '']
+        [identificacion, nombre, telefono, direccion]
       );
-      res.status(201).json({ message: 'Cliente registrado en MySQL', id: result.insertId });
+      res.status(201).json({ message: 'Cliente registrado exitosamente', id: result.insertId });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al guardar cliente' });
   }
 });
 
-// GET /api/consultar-cedula/:doc - Consulta Cédula / RIF en BD Local MySQL
+// GET /api/consultar-cedula/:doc - Consulta segura de Cédula / RIF con consulta preparada
 app.get('/api/consultar-cedula/:doc', async (req, res) => {
-  const rawDoc = req.params.doc || '';
-  const cleanDoc = rawDoc.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const cleanDoc = formatIdentificacion(req.params.doc);
 
-  if (!cleanDoc || cleanDoc.length < 4) {
+  if (!cleanDoc || cleanDoc.length < 3) {
     return res.status(400).json({ success: false, message: 'Número de cédula o RIF inválido.' });
   }
 
   let letter = cleanDoc.charAt(0);
   let numStr = cleanDoc;
   if (['V', 'E', 'J', 'G', 'P'].includes(letter)) {
-    numStr = cleanDoc.substring(1);
+    numStr = cleanDoc.substring(1).replace(/[^0-9]/g, '');
   } else {
     letter = 'V';
+    numStr = cleanDoc.replace(/[^0-9]/g, '');
   }
 
   const formattedCedulaDisplay = `${letter}-${numStr.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
@@ -340,14 +417,14 @@ app.get('/api/consultar-cedula/:doc', async (req, res) => {
 
     return res.json({
       success: false,
-      message: 'Cédula / RIF no registrado en directorio MySQL.'
+      message: 'Cédula / RIF no registrado en directorio.'
     });
   } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(500).json({ success: false, error: 'Error en la consulta' });
   }
 });
 
-// GET /api/comprobantes - Listar historial de comprobantes de MySQL
+// GET /api/comprobantes - Listar historial de comprobantes
 app.get('/api/comprobantes', async (req, res) => {
   try {
     const [comprobantes] = await pool.query('SELECT * FROM comprobantes ORDER BY id DESC');
@@ -398,24 +475,48 @@ app.get('/api/comprobantes', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al consultar historial de comprobantes' });
   }
 });
 
-// POST /api/comprobantes - Guardar nuevo comprobante con ítems en MySQL
+// POST /api/comprobantes - Registrar nuevo comprobante con desinfección total en MySQL
 app.post('/api/comprobantes', async (req, res) => {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
 
-    const {
-      uuid, doc_type, doc_title, doc_number, doc_date, doc_time,
-      cliente_nombre, cliente_identificacion, cliente_telefono, cliente_direccion,
-      forma_pago, vendedor, concepto, referencia, saldo_anterior, nuevo_saldo,
-      subtotal, impuesto_porcentaje, impuesto_monto, descuento, total_principal,
-      total_bs_bcv, moneda, tasa_ref, target_currency, suiche_bank, suiche_doc, suiche_phone,
-      items
-    } = req.body;
+    const uuid = sanitizeString(req.body.uuid, 100) || Date.now().toString();
+    const doc_type = ['venta', 'ingreso', 'egreso'].includes(req.body.doc_type) ? req.body.doc_type : 'venta';
+    const doc_title = sanitizeString(req.body.doc_title, 255);
+    const doc_number = sanitizeString(req.body.doc_number, 100);
+    const doc_date = sanitizeString(req.body.doc_date, 20);
+    const doc_time = sanitizeString(req.body.doc_time, 20);
+
+    const cliente_nombre = sanitizeString(req.body.cliente_nombre, 255) || 'Cliente Mostrador';
+    const cliente_identificacion = formatIdentificacion(req.body.cliente_identificacion);
+    const cliente_telefono = formatPhone(req.body.cliente_telefono);
+    const cliente_direccion = sanitizeString(req.body.cliente_direccion, 500);
+
+    const forma_pago = sanitizeString(req.body.forma_pago, 100);
+    const vendedor = sanitizeString(req.body.vendedor, 100);
+    const concepto = sanitizeString(req.body.concepto, 1000);
+    const referencia = sanitizeString(req.body.referencia, 100);
+
+    const saldo_anterior = sanitizeFloat(req.body.saldo_anterior);
+    const nuevo_saldo = sanitizeFloat(req.body.nuevo_saldo);
+    const subtotal = sanitizeFloat(req.body.subtotal);
+    const impuesto_porcentaje = sanitizeFloat(req.body.impuesto_porcentaje);
+    const impuesto_monto = sanitizeFloat(req.body.impuesto_monto);
+    const descuento = sanitizeFloat(req.body.descuento);
+    const total_principal = sanitizeFloat(req.body.total_principal);
+    const total_bs_bcv = sanitizeFloat(req.body.total_bs_bcv);
+
+    const moneda = sanitizeString(req.body.moneda, 20) || '$';
+    const tasa_ref = sanitizeFloat(req.body.tasa_ref, 1);
+    const target_currency = sanitizeString(req.body.target_currency, 10) || 'USD';
+    const suiche_bank = sanitizeString(req.body.suiche_bank, 20);
+    const suiche_doc = formatIdentificacion(req.body.suiche_doc);
+    const suiche_phone = formatPhone(req.body.suiche_phone);
 
     const [result] = await connection.query(
       `INSERT INTO comprobantes (
@@ -429,20 +530,27 @@ app.post('/api/comprobantes', async (req, res) => {
       [
         uuid, doc_type, doc_title, doc_number, doc_date, doc_time,
         cliente_nombre, cliente_identificacion, cliente_telefono, cliente_direccion,
-        forma_pago, vendedor, concepto, referencia, saldo_anterior || 0, nuevo_saldo || 0,
-        subtotal || 0, impuesto_porcentaje || 0, impuesto_monto || 0, descuento || 0, total_principal,
+        forma_pago, vendedor, concepto, referencia, saldo_anterior, nuevo_saldo,
+        subtotal, impuesto_porcentaje, impuesto_monto, descuento, total_principal,
         moneda, tasa_ref, target_currency, suiche_bank, suiche_doc, suiche_phone,
-        total_bs_bcv || 0
+        total_bs_bcv
       ]
     );
 
     const comprobanteId = result.insertId;
 
-    if (Array.isArray(items) && items.length > 0) {
-      for (const item of items) {
+    if (Array.isArray(req.body.items) && req.body.items.length > 0) {
+      for (const item of req.body.items) {
+        const cantidad = sanitizeInt(item.cant, 1);
+        const descripcion = sanitizeString(item.desc, 255);
+        const subtexto = sanitizeString(item.subtext, 255);
+        const tarifa_iva = sanitizeFloat(item.taxRate, 0);
+        const precio_unitario = sanitizeFloat(item.unitPrice, 0);
+        const subtotal_linea = cantidad * precio_unitario;
+
         await connection.query(
           `INSERT INTO comprobante_items (comprobante_id, cantidad, descripcion, subtexto, tarifa_iva, precio_unitario, subtotal_linea) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [comprobanteId, item.cant || 1, item.desc || '', item.subtext || '', item.taxRate || 0, item.unitPrice || 0, (item.cant || 1) * (item.unitPrice || 0)]
+          [comprobanteId, cantidad, descripcion, subtexto, tarifa_iva, precio_unitario, subtotal_linea]
         );
       }
     }
@@ -451,97 +559,35 @@ app.post('/api/comprobantes', async (req, res) => {
       await connection.query(
         `INSERT INTO clientes (identificacion, nombre, telefono, direccion) 
          VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE nombre=?, telefono=?, direccion=?`,
-        [cliente_identificacion, cliente_nombre, cliente_telefono || '', cliente_direccion || '', cliente_nombre, cliente_telefono || '', cliente_direccion || '']
+        [cliente_identificacion, cliente_nombre, cliente_telefono, cliente_direccion, cliente_nombre, cliente_telefono, cliente_direccion]
       ).catch(() => {});
     }
 
     await connection.commit();
-    res.status(201).json({ message: 'Comprobante guardado con éxito en MySQL', id: comprobanteId, uuid });
+    res.status(201).json({ message: 'Comprobante registrado con éxito y seguridad', id: comprobanteId, uuid });
 
   } catch (error) {
     await connection.rollback();
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al registrar comprobante' });
   } finally {
     connection.release();
   }
 });
 
-// DELETE /api/comprobantes/:uuid - Eliminar un comprobante de MySQL
+// DELETE /api/comprobantes/:uuid - Eliminar comprobante por UUID
 app.delete('/api/comprobantes/:uuid', async (req, res) => {
   try {
-    const { uuid } = req.params;
+    const uuid = sanitizeString(req.params.uuid, 100);
+    if (!uuid) return res.status(400).json({ error: 'UUID de comprobante inválido' });
+
     await pool.query('DELETE FROM comprobantes WHERE uuid = ?', [uuid]);
-    res.json({ message: 'Comprobante eliminado de MySQL' });
+    res.json({ message: 'Comprobante eliminado exitosamente' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al eliminar comprobante' });
   }
 });
 
-// GET /api/admin/export-db - Exportar volcado de todas las tablas de MySQL
-app.get('/api/admin/export-db', async (req, res) => {
-  try {
-    const [empresa] = await pool.query('SELECT * FROM empresa');
-    const [productos] = await pool.query('SELECT * FROM productos');
-    const [clientes] = await pool.query('SELECT * FROM clientes');
-    const [comprobantes] = await pool.query('SELECT * FROM comprobantes');
-    const [items] = await pool.query('SELECT * FROM comprobante_items');
-
-    const dumpData = {
-      app: 'MARTK POS',
-      database: 'markt_db',
-      exportedAt: new Date().toISOString(),
-      empresa: empresa[0] || null,
-      productos,
-      clientes,
-      comprobantes,
-      comprobante_items: items
-    };
-
-    res.json(dumpData);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// POST /api/admin/import-db - Restaurar volcado en MySQL markt_db
-app.post('/api/admin/import-db', async (req, res) => {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    const { empresa, productos, clientes } = req.body;
-
-    if (Array.isArray(productos)) {
-      for (const p of productos) {
-        await connection.query(
-          `INSERT INTO productos (codigo, nombre, precio_usd, iva_porcentaje, subtexto) 
-           VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE nombre=?, precio_usd=?, iva_porcentaje=?, subtexto=?`,
-          [p.codigo, p.nombre, p.precio_usd, p.iva_porcentaje, p.subtexto || '', p.nombre, p.precio_usd, p.iva_porcentaje, p.subtexto || '']
-        );
-      }
-    }
-
-    if (Array.isArray(clientes)) {
-      for (const c of clientes) {
-        await connection.query(
-          `INSERT INTO clientes (identificacion, nombre, telefono, direccion) 
-           VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE nombre=?, telefono=?, direccion=?`,
-          [c.identificacion, c.nombre, c.telefono || '', c.direccion || '', c.nombre, c.telefono || '', c.direccion || '']
-        );
-      }
-    }
-
-    await connection.commit();
-    res.json({ message: 'Respaldo importado y restaurado en MySQL markt_db con éxito.' });
-  } catch (error) {
-    await connection.rollback();
-    res.status(500).json({ error: error.message });
-  } finally {
-    connection.release();
-  }
-});
-
-// DELETE /api/admin/clear-db - Vaciar / Limpiar toda la base de datos MySQL
+// DELETE /api/admin/clear-db - Vaciar base de datos de forma segura
 app.delete('/api/admin/clear-db', async (req, res) => {
   const connection = await pool.getConnection();
   try {
@@ -553,14 +599,14 @@ app.delete('/api/admin/clear-db', async (req, res) => {
     await connection.query('TRUNCATE TABLE empresa;');
     await connection.query('SET FOREIGN_KEY_CHECKS = 1;');
 
-    res.json({ message: 'Base de datos MARTK (markt_db) en MySQL vaciada y limpiada exitosamente.' });
+    res.json({ message: 'Base de datos MARTK vaciada de forma segura.' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al limpiar la base de datos' });
   } finally {
     connection.release();
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor MARTK corriendo en http://localhost:${PORT}`);
+  console.log(`🚀 Servidor MARTK seguro corriendo en http://localhost:${PORT}`);
 });

@@ -85,7 +85,22 @@ document.addEventListener('DOMContentLoaded', () => {
     history: []
   };
 
-  // Helper function to format Folio: 1 -> "No. FES-001"
+  // --- FRONTEND SANITIZATION & AUTO-FORMATTING HELPERS ---
+  function cleanInputText(val) {
+    if (!val) return '';
+    return String(val).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').replace(/[ \t]+/g, ' ').trim();
+  }
+
+  function cleanIdentificacionInput(val) {
+    if (!val) return '';
+    return String(val).toUpperCase().replace(/[^A-Z0-9-.]/g, '').replace(/-+/g, '-').trim();
+  }
+
+  function cleanPhoneInput(val) {
+    if (!val) return '';
+    return String(val).replace(/[^0-9]/g, '');
+  }
+
   function formatFolioNumber(num) {
     const padded = String(num).padStart(3, '0');
     if (state.docType === 'ingreso') return `No. RC-${padded}`;
@@ -472,7 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- CÉDULA / RIF LOOKUP & DIRECTORY ---
   async function performCedulaLookup() {
-    const rawVal = (inputClientId.value || '').trim();
+    const rawVal = cleanIdentificacionInput(inputClientId.value);
     if (!rawVal) {
       showToast('Ingresa el número de Cédula o RIF para consultar.', 'info');
       return;
@@ -504,20 +519,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
 
       if (data.success && data.nombre && data.nombre.length > 2 && !data.nombre.includes('&')) {
-        state.client.name = data.nombre;
-        inputClientName.value = data.nombre;
+        state.client.name = cleanInputText(data.nombre);
+        inputClientName.value = state.client.name;
 
         if (data.doc) {
-          state.client.id = data.doc;
-          inputClientId.value = data.doc;
+          state.client.id = cleanIdentificacionInput(data.doc);
+          inputClientId.value = state.client.id;
         }
         if (data.telefono) {
-          state.client.phone = data.telefono;
-          inputClientPhone.value = data.telefono;
+          state.client.phone = cleanPhoneInput(data.telefono);
+          inputClientPhone.value = state.client.phone;
         }
         if (data.direccion) {
-          state.client.city = data.direccion;
-          inputClientCity.value = data.direccion;
+          state.client.city = cleanInputText(data.direccion);
+          inputClientCity.value = state.client.city;
         }
 
         updateCalculationsAndPreview();
@@ -703,20 +718,33 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCalculationsAndPreview();
   }
 
-  // --- EVENT LISTENERS ---
+  // --- EVENT LISTENERS WITH AUTOMATIC SANITIZATION ---
   function setupEventListeners() {
-    inputClientName.addEventListener('input', e => { state.client.name = e.target.value; updateCalculationsAndPreview(); });
-    inputClientId.addEventListener('input', e => { state.client.id = e.target.value; updateCalculationsAndPreview(); });
+    inputClientName.addEventListener('input', e => { state.client.name = cleanInputText(e.target.value); updateCalculationsAndPreview(); });
+    inputClientName.addEventListener('blur', e => { e.target.value = cleanInputText(e.target.value); });
+
+    inputClientId.addEventListener('input', e => { 
+      const cleanVal = cleanIdentificacionInput(e.target.value);
+      state.client.id = cleanVal; 
+      e.target.value = cleanVal;
+      updateCalculationsAndPreview(); 
+    });
     inputClientId.addEventListener('keyup', e => { if (e.key === 'Enter') performCedulaLookup(); });
     if (btnSearchCedula) btnSearchCedula.addEventListener('click', performCedulaLookup);
 
-    inputClientPhone.addEventListener('input', e => { state.client.phone = e.target.value; });
-    inputClientCity.addEventListener('input', e => { state.client.city = e.target.value; updateCalculationsAndPreview(); });
+    inputClientPhone.addEventListener('input', e => { 
+      const cleanVal = cleanPhoneInput(e.target.value);
+      state.client.phone = cleanVal; 
+      e.target.value = cleanVal;
+    });
+
+    inputClientCity.addEventListener('input', e => { state.client.city = cleanInputText(e.target.value); updateCalculationsAndPreview(); });
+    inputClientCity.addEventListener('blur', e => { e.target.value = cleanInputText(e.target.value); });
 
     selectPaymentForm.addEventListener('change', e => {
       if (e.target.value === 'custom') {
         customPaymentWrapper.classList.remove('hidden');
-        state.client.paymentForm = inputCustomPaymentName.value || 'Otro';
+        state.client.paymentForm = cleanInputText(inputCustomPaymentName.value) || 'Otro';
       } else {
         customPaymentWrapper.classList.add('hidden');
         state.client.paymentForm = e.target.value;
@@ -726,7 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     inputCustomPaymentName.addEventListener('input', e => {
       if (selectPaymentForm.value === 'custom') {
-        state.client.paymentForm = e.target.value || 'Otro';
+        state.client.paymentForm = cleanInputText(e.target.value) || 'Otro';
         updateCalculationsAndPreview();
       }
     });
@@ -748,30 +776,42 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    inputSalesperson.addEventListener('input', e => { state.client.salesperson = e.target.value; updateCalculationsAndPreview(); });
+    inputSalesperson.addEventListener('input', e => { state.client.salesperson = cleanInputText(e.target.value); updateCalculationsAndPreview(); });
     inputDocDate.addEventListener('change', e => { state.client.date = e.target.value; updateCalculationsAndPreview(); });
     inputDocTime.addEventListener('input', e => { state.client.time = e.target.value; updateCalculationsAndPreview(); });
 
     inputTaxRate.addEventListener('input', e => { state.totals.taxRate = parseFloat(e.target.value) || 0; updateCalculationsAndPreview(); });
     inputDiscountAmount.addEventListener('input', e => { state.totals.discount = parseFloat(e.target.value) || 0; updateCalculationsAndPreview(); });
 
-    inputPaymentConcept.addEventListener('input', e => { state.paymentDetails.concept = e.target.value; updateCalculationsAndPreview(); });
+    inputPaymentConcept.addEventListener('input', e => { state.paymentDetails.concept = cleanInputText(e.target.value); updateCalculationsAndPreview(); });
     inputPaymentAmount.addEventListener('input', e => { state.paymentDetails.amount = parseFloat(e.target.value) || 0; updateCalculationsAndPreview(); });
-    inputPaymentRef.addEventListener('input', e => { state.paymentDetails.ref = e.target.value; updateCalculationsAndPreview(); });
+    inputPaymentRef.addEventListener('input', e => { state.paymentDetails.ref = cleanInputText(e.target.value); updateCalculationsAndPreview(); });
     inputPrevBalance.addEventListener('input', e => { state.paymentDetails.prevBalance = parseFloat(e.target.value) || 0; updateCalculationsAndPreview(); });
     inputNewBalance.addEventListener('input', e => { state.paymentDetails.newBalance = parseFloat(e.target.value) || 0; updateCalculationsAndPreview(); });
 
     selectSuicheBank.addEventListener('change', e => { state.suiche.bank = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
     selectSuicheDocType.addEventListener('change', e => { state.suiche.docType = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
-    inputSuicheDocNumber.addEventListener('input', e => { state.suiche.docNumber = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
-    inputSuichePhone.addEventListener('input', e => { state.suiche.phone = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
+    inputSuicheDocNumber.addEventListener('input', e => { 
+      const cleanVal = cleanPhoneInput(e.target.value);
+      state.suiche.docNumber = cleanVal; 
+      e.target.value = cleanVal;
+      autoSaveSettings(); 
+      updateCalculationsAndPreview(); 
+    });
+    inputSuichePhone.addEventListener('input', e => { 
+      const cleanVal = cleanPhoneInput(e.target.value);
+      state.suiche.phone = cleanVal; 
+      e.target.value = cleanVal;
+      autoSaveSettings(); 
+      updateCalculationsAndPreview(); 
+    });
     selectSuicheAmountMode.addEventListener('change', e => { state.suiche.amountMode = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
 
-    inputBizName.addEventListener('input', e => { state.business.name = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
-    inputBizId.addEventListener('input', e => { state.business.id = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
-    inputBizPhone.addEventListener('input', e => { state.business.phone = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
-    inputBizAddress.addEventListener('input', e => { state.business.address = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
-    inputFooterNotes.addEventListener('input', e => { state.options.notes = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
+    inputBizName.addEventListener('input', e => { state.business.name = cleanInputText(e.target.value); autoSaveSettings(); updateCalculationsAndPreview(); });
+    inputBizId.addEventListener('input', e => { state.business.id = cleanIdentificacionInput(e.target.value); autoSaveSettings(); updateCalculationsAndPreview(); });
+    inputBizPhone.addEventListener('input', e => { state.business.phone = cleanInputText(e.target.value); autoSaveSettings(); updateCalculationsAndPreview(); });
+    inputBizAddress.addEventListener('input', e => { state.business.address = cleanInputText(e.target.value); autoSaveSettings(); updateCalculationsAndPreview(); });
+    inputFooterNotes.addEventListener('input', e => { state.options.notes = cleanInputText(e.target.value); autoSaveSettings(); updateCalculationsAndPreview(); });
 
     logoSizeRange.addEventListener('input', e => {
       const val = parseInt(e.target.value) || 220;
@@ -801,7 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    inputDocNumber.addEventListener('input', e => { state.business.docNumber = e.target.value; updateCalculationsAndPreview(); });
+    inputDocNumber.addEventListener('input', e => { state.business.docNumber = cleanInputText(e.target.value); updateCalculationsAndPreview(); });
     inputFolioCounter.addEventListener('input', e => {
       const val = parseInt(e.target.value) || 1;
       state.folioCounter = val;
@@ -867,11 +907,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- AUTO-SAVE SETTINGS HELPER ---
   function autoSaveSettings(showNotification = false) {
-    state.business.name = inputBizName.value;
-    state.business.id = inputBizId.value;
-    state.business.phone = inputBizPhone.value;
-    state.business.address = inputBizAddress.value;
-    state.options.notes = inputFooterNotes.value;
+    state.business.name = cleanInputText(inputBizName.value);
+    state.business.id = cleanIdentificacionInput(inputBizId.value);
+    state.business.phone = cleanInputText(inputBizPhone.value);
+    state.business.address = cleanInputText(inputBizAddress.value);
+    state.options.notes = cleanInputText(inputFooterNotes.value);
 
     state.options.logoSize = parseInt(logoSizeRange.value) || 220;
     state.options.showQR = prefShowQr.checked;
@@ -961,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (field === 'cant' || field === 'unitPrice') {
             item[field] = parseFloat(e.target.value) || 0;
           } else {
-            item[field] = e.target.value;
+            item[field] = cleanInputText(e.target.value);
           }
           updateCalculationsAndPreview();
         }
@@ -1097,7 +1137,6 @@ document.addEventListener('DOMContentLoaded', () => {
         viewDiscountRow.classList.add('hidden');
       }
 
-      // Ocultar IVA si es 0
       if (taxAmount > 0) {
         viewTaxRow.classList.remove('hidden');
         viewTax.textContent = fmtInputCurr(taxAmount);
@@ -1400,11 +1439,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleSaveProduct(e) {
     e.preventDefault();
     const idVal = document.getElementById('prod-id').value;
-    const codigo = document.getElementById('prod-code').value || `PRD-${Date.now().toString().slice(-4)}`;
-    const nombre = document.getElementById('prod-name').value;
+    const codigo = cleanInputText(document.getElementById('prod-code').value).toUpperCase() || `PRD-${Date.now().toString().slice(-4)}`;
+    const nombre = cleanInputText(document.getElementById('prod-name').value);
     const precio_usd = parseFloat(document.getElementById('prod-price').value) || 0;
     const iva_porcentaje = parseFloat(document.getElementById('prod-tax').value) || 0;
-    const subtexto = document.getElementById('prod-subtext').value || '';
+    const subtexto = cleanInputText(document.getElementById('prod-subtext').value);
 
     const prodObj = {
       id: idVal ? parseInt(idVal) : undefined,
@@ -1553,10 +1592,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function handleSaveClient(e) {
     e.preventDefault();
-    const identificacion = document.getElementById('c-doc').value;
-    const nombre = document.getElementById('c-name').value;
-    const telefono = document.getElementById('c-phone').value || '';
-    const direccion = document.getElementById('c-address').value || '';
+    const identificacion = cleanIdentificacionInput(document.getElementById('c-doc').value);
+    const nombre = cleanInputText(document.getElementById('c-name').value);
+    const telefono = cleanPhoneInput(document.getElementById('c-phone').value);
+    const direccion = cleanInputText(document.getElementById('c-address').value);
 
     const clientObj = { identificacion, nombre, telefono, direccion };
 
@@ -2047,7 +2086,7 @@ document.addEventListener('DOMContentLoaded', () => {
       msg += `*Monto a Transferir:* ${fmtBs(state.totals.grandTotal * rate)}\n`;
     }
 
-    msg += `\nDocumento generado con MARTK POS`;
+    msg += `\nDocumento generado con MARTK POS • Desarrollado por EIZY SYSTEM`;
 
     const encodedText = encodeURIComponent(msg);
     let targetPhone = state.client.phone.replace(/[^0-9]/g, '');
