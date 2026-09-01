@@ -316,9 +316,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- SUBTABS & STEP WIZARD NAVIGATION ---
   let maxReachedStep = 1;
+  let switchSubtabByStepRef = null;
 
   function setupSubtabsSystem() {
-    const switchSubtabByStep = (targetStepNum) => {
+    switchSubtabByStepRef = (targetStepNum) => {
+      // Si la opción QR está deshabilitada y se intenta ir al paso 3, redirigir o bloquear
+      if (!state.options.showQR && targetStepNum === 3) {
+        targetStepNum = 2;
+      }
+
       if (targetStepNum > maxReachedStep) {
         maxReachedStep = targetStepNum;
       }
@@ -365,18 +371,27 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => {
         const stepNum = idx + 1;
         if (stepNum <= maxReachedStep) {
-          switchSubtabByStep(stepNum);
+          switchSubtabByStepRef(stepNum);
         }
       });
     });
 
-    if (btnNextStep1) btnNextStep1.addEventListener('click', () => switchSubtabByStep(2));
-    if (btnNextStep2) btnNextStep2.addEventListener('click', () => switchSubtabByStep(3));
-    if (btnPrevStep2) btnPrevStep2.addEventListener('click', () => switchSubtabByStep(1));
-    if (btnPrevStep3) btnPrevStep3.addEventListener('click', () => switchSubtabByStep(2));
+    if (btnNextStep1) btnNextStep1.addEventListener('click', () => switchSubtabByStepRef(2));
+    if (btnNextStep2) {
+      btnNextStep2.addEventListener('click', () => {
+        if (state.options.showQR) {
+          switchSubtabByStepRef(3);
+        } else {
+          // Si el QR está deshabilitado, al presionar Siguiente en Paso 2 se guarda/finaliza
+          saveCurrentReceiptToHistory();
+        }
+      });
+    }
+    if (btnPrevStep2) btnPrevStep2.addEventListener('click', () => switchSubtabByStepRef(1));
+    if (btnPrevStep3) btnPrevStep3.addEventListener('click', () => switchSubtabByStepRef(2));
 
     // Inicializar en Paso 1
-    switchSubtabByStep(1);
+    switchSubtabByStepRef(1);
   }
 
   // --- NAVIGATION SYSTEM (SIDEBAR & VIEWS) ---
@@ -661,29 +676,34 @@ document.addEventListener('DOMContentLoaded', () => {
     inputPrevBalance.addEventListener('input', e => { state.paymentDetails.prevBalance = parseFloat(e.target.value) || 0; updateCalculationsAndPreview(); });
     inputNewBalance.addEventListener('input', e => { state.paymentDetails.newBalance = parseFloat(e.target.value) || 0; updateCalculationsAndPreview(); });
 
-    selectSuicheBank.addEventListener('change', e => { state.suiche.bank = e.target.value; updateCalculationsAndPreview(); });
-    selectSuicheDocType.addEventListener('change', e => { state.suiche.docType = e.target.value; updateCalculationsAndPreview(); });
-    inputSuicheDocNumber.addEventListener('input', e => { state.suiche.docNumber = e.target.value; updateCalculationsAndPreview(); });
-    inputSuichePhone.addEventListener('input', e => { state.suiche.phone = e.target.value; updateCalculationsAndPreview(); });
-    selectSuicheAmountMode.addEventListener('change', e => { state.suiche.amountMode = e.target.value; updateCalculationsAndPreview(); });
+    selectSuicheBank.addEventListener('change', e => { state.suiche.bank = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
+    selectSuicheDocType.addEventListener('change', e => { state.suiche.docType = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
+    inputSuicheDocNumber.addEventListener('input', e => { state.suiche.docNumber = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
+    inputSuichePhone.addEventListener('input', e => { state.suiche.phone = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
+    selectSuicheAmountMode.addEventListener('change', e => { state.suiche.amountMode = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
 
-    inputBizName.addEventListener('input', e => { state.business.name = e.target.value; updateCalculationsAndPreview(); });
-    inputBizId.addEventListener('input', e => { state.business.id = e.target.value; updateCalculationsAndPreview(); });
-    inputBizPhone.addEventListener('input', e => { state.business.phone = e.target.value; updateCalculationsAndPreview(); });
-    inputBizAddress.addEventListener('input', e => { state.business.address = e.target.value; updateCalculationsAndPreview(); });
-    inputFooterNotes.addEventListener('input', e => { state.options.notes = e.target.value; updateCalculationsAndPreview(); });
+    inputBizName.addEventListener('input', e => { state.business.name = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
+    inputBizId.addEventListener('input', e => { state.business.id = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
+    inputBizPhone.addEventListener('input', e => { state.business.phone = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
+    inputBizAddress.addEventListener('input', e => { state.business.address = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
+    inputFooterNotes.addEventListener('input', e => { state.options.notes = e.target.value; autoSaveSettings(); updateCalculationsAndPreview(); });
 
     logoSizeRange.addEventListener('input', e => {
       const val = parseInt(e.target.value) || 220;
       state.options.logoSize = val;
       logoSizeVal.textContent = `${val} px`;
+      autoSaveSettings();
       updateCalculationsAndPreview();
     });
 
-    prefShowQr.addEventListener('change', e => { state.options.showQR = e.target.checked; updateCalculationsAndPreview(); });
-    prefShowBarcode.addEventListener('change', e => { state.options.showBarcode = e.target.checked; updateCalculationsAndPreview(); });
-    prefShowSignature.addEventListener('change', e => { state.options.showSignature = e.target.checked; updateCalculationsAndPreview(); });
-    prefShowTaxTable.addEventListener('change', e => { state.options.showTaxTable = e.target.checked; updateCalculationsAndPreview(); });
+    prefShowQr.addEventListener('change', e => { 
+      state.options.showQR = e.target.checked; 
+      autoSaveSettings(true); 
+      updateCalculationsAndPreview(); 
+    });
+    prefShowBarcode.addEventListener('change', e => { state.options.showBarcode = e.target.checked; autoSaveSettings(true); updateCalculationsAndPreview(); });
+    prefShowSignature.addEventListener('change', e => { state.options.showSignature = e.target.checked; autoSaveSettings(true); updateCalculationsAndPreview(); });
+    prefShowTaxTable.addEventListener('change', e => { state.options.showTaxTable = e.target.checked; autoSaveSettings(true); updateCalculationsAndPreview(); });
 
     themeCards.forEach(card => {
       card.addEventListener('click', () => {
@@ -692,6 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const theme = card.getAttribute('data-theme');
         state.options.theme = theme;
         ticketCard.className = `ticket-card ${state.options.theme}`;
+        autoSaveSettings(true);
       });
     });
 
@@ -707,7 +728,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     inputLogo.addEventListener('change', handleLogoUpload);
     btnRemoveLogo.addEventListener('click', handleLogoRemove);
-    btnSaveAllSettings.addEventListener('click', saveAllSettingsPermanently);
+    btnSaveAllSettings.addEventListener('click', () => autoSaveSettings(true));
 
     btnAddItem.addEventListener('click', () => {
       state.items.push({
@@ -757,6 +778,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnQuickSample.addEventListener('click', loadSampleData);
     btnQuickReset.addEventListener('click', resetForm);
+  }
+
+  // --- AUTO-SAVE SETTINGS HELPER ---
+  function autoSaveSettings(showNotification = false) {
+    state.business.name = inputBizName.value;
+    state.business.id = inputBizId.value;
+    state.business.phone = inputBizPhone.value;
+    state.business.address = inputBizAddress.value;
+    state.options.notes = inputFooterNotes.value;
+
+    state.options.logoSize = parseInt(logoSizeRange.value) || 220;
+    state.options.showQR = prefShowQr.checked;
+    state.options.showBarcode = prefShowBarcode.checked;
+    state.options.showSignature = prefShowSignature.checked;
+    state.options.showTaxTable = prefShowTaxTable.checked;
+
+    const activeThemeBtn = document.querySelector('.theme-card.active');
+    if (activeThemeBtn) {
+      state.options.theme = activeThemeBtn.getAttribute('data-theme');
+      ticketCard.className = `ticket-card ${state.options.theme}`;
+    }
+
+    const settingsObj = {
+      business: state.business,
+      suiche: state.suiche,
+      options: state.options
+    };
+
+    localStorage.setItem('martk_settings_permanent', JSON.stringify(settingsObj));
+    if (showNotification) showToast('Ajustes guardados correctamente', 'success');
+
+    fetch(`${API_BASE_URL}/empresa`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre: state.business.name,
+        identificacion: state.business.id,
+        direccion: state.business.address,
+        telefono: state.business.phone,
+        doc_titulo: state.business.docTitle,
+        moneda: state.business.currency,
+        tasa_cambio: state.exchange.rate,
+        mostrar_doble_moneda: state.exchange.showDual,
+        logo_base64: state.business.logo,
+        logo_size: state.options.logoSize,
+        show_qr: state.options.showQR,
+        show_barcode: state.options.showBarcode,
+        show_signature: state.options.showSignature,
+        show_tax_table: state.options.showTaxTable,
+        theme: state.options.theme,
+        notas_pie: state.options.notes
+      })
+    }).catch(e => {});
   }
 
   // --- ITEMS LIST RENDERER IN POS ---
@@ -829,6 +903,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const fmtBs = num => `Bs. ${num.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const fmtInputCurr = num => `${c} ${num.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    // Control dinámico de pestaña QR & Botón de Siguiente
+    const tabBtnOpciones = document.getElementById('tab-btn-opciones');
+    const btnNextStep2 = document.getElementById('btn-next-step-2');
+
+    if (!state.options.showQR) {
+      if (tabBtnOpciones) tabBtnOpciones.classList.add('hidden');
+      if (btnNextStep2) {
+        btnNextStep2.innerHTML = `<span>Guardar Comprobante</span> <i class="fa-solid fa-floppy-disk"></i>`;
+      }
+      const activeTabOpciones = document.getElementById('tab-opciones');
+      if (activeTabOpciones && !activeTabOpciones.classList.contains('hidden') && switchSubtabByStepRef) {
+        switchSubtabByStepRef(2);
+      }
+    } else {
+      if (tabBtnOpciones) tabBtnOpciones.classList.remove('hidden');
+      if (btnNextStep2) {
+        btnNextStep2.innerHTML = `<span>Siguiente: QR & Extras</span> <i class="fa-solid fa-arrow-right"></i>`;
+      }
+    }
 
     viewBizName.textContent = state.business.name || 'NOMBRE DE TU NEGOCIO';
     viewBizId.textContent = state.business.id || '';
@@ -1114,6 +1208,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ticketLogoImg.classList.remove('hidden');
       btnRemoveLogo.classList.remove('hidden');
 
+      autoSaveSettings();
       showToast('Logo cargado.', 'success');
     };
     reader.readAsDataURL(file);
@@ -1126,6 +1221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ticketLogoImg.src = '';
     ticketLogoImg.classList.add('hidden');
     btnRemoveLogo.classList.add('hidden');
+    autoSaveSettings();
   }
 
   // --- PRODUCT CATALOG MANAGEMENT ---
@@ -1230,7 +1326,6 @@ document.addEventListener('DOMContentLoaded', () => {
     formProduct.reset();
     showToast('Producto guardado correctamente', 'success');
 
-    // Envío asíncrono a base de datos
     fetch(`${API_BASE_URL}/productos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1447,61 +1542,6 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast(`Cliente seleccionado: ${client.nombre}`, 'success');
   }
 
-  // --- SAVE ALL SETTINGS PERMANENTLY ---
-  function saveAllSettingsPermanently() {
-    state.business.name = inputBizName.value;
-    state.business.id = inputBizId.value;
-    state.business.phone = inputBizPhone.value;
-    state.business.address = inputBizAddress.value;
-    state.options.notes = inputFooterNotes.value;
-
-    state.options.logoSize = parseInt(logoSizeRange.value) || 220;
-    state.options.showQR = prefShowQr.checked;
-    state.options.showBarcode = prefShowBarcode.checked;
-    state.options.showSignature = prefShowSignature.checked;
-    state.options.showTaxTable = prefShowTaxTable.checked;
-
-    const activeThemeBtn = document.querySelector('.theme-card.active');
-    if (activeThemeBtn) {
-      state.options.theme = activeThemeBtn.getAttribute('data-theme');
-      ticketCard.className = `ticket-card ${state.options.theme}`;
-    }
-
-    const settingsObj = {
-      business: state.business,
-      suiche: state.suiche,
-      options: state.options
-    };
-
-    localStorage.setItem('martk_settings_permanent', JSON.stringify(settingsObj));
-    showToast('Ajustes guardados correctamente', 'success');
-
-    fetch(`${API_BASE_URL}/empresa`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nombre: state.business.name,
-        identificacion: state.business.id,
-        direccion: state.business.address,
-        telefono: state.business.phone,
-        doc_titulo: state.business.docTitle,
-        moneda: state.business.currency,
-        tasa_cambio: state.exchange.rate,
-        mostrar_doble_moneda: state.exchange.showDual,
-        logo_base64: state.business.logo,
-        logo_size: state.options.logoSize,
-        show_qr: state.options.showQR,
-        show_barcode: state.options.showBarcode,
-        show_signature: state.options.showSignature,
-        show_tax_table: state.options.showTaxTable,
-        theme: state.options.theme,
-        notas_pie: state.options.notes
-      })
-    }).catch(e => {});
-
-    updateCalculationsAndPreview();
-  }
-
   function loadSavedSettingsAndBusiness() {
     fetch(`${API_BASE_URL}/empresa`)
       .then(res => res.json())
@@ -1559,7 +1599,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (parsed.business) state.business = parsed.business;
             if (parsed.suiche) state.suiche = parsed.suiche;
             if (parsed.options) state.options = parsed.options;
+
+            inputBizName.value = state.business.name || '';
+            inputBizId.value = state.business.id || '';
+            inputBizPhone.value = state.business.phone || '';
+            inputBizAddress.value = state.business.address || '';
+            inputFooterNotes.value = state.options.notes || '';
+            
+            logoSizeRange.value = state.options.logoSize || 220;
+            logoSizeVal.textContent = `${state.options.logoSize || 220} px`;
+
+            prefShowQr.checked = state.options.showQR;
+            prefShowBarcode.checked = state.options.showBarcode;
+            prefShowSignature.checked = state.options.showSignature;
+            prefShowTaxTable.checked = state.options.showTaxTable;
           }
+          updateCalculationsAndPreview();
         } catch(err) {}
       });
   }
@@ -1849,7 +1904,7 @@ document.addEventListener('DOMContentLoaded', () => {
       msg += `*EQUIVALENTE BS (BCV):* ${fmtBs(state.paymentDetails.amount * rate)}\n`;
     }
 
-    if (state.suiche.phone && state.suiche.docNumber) {
+    if (state.options.showQR && state.suiche.phone && state.suiche.docNumber) {
       msg += `-----------------------------------\n`;
       msg += `*PAGO MÓVIL SUICHE 7B:*\n`;
       msg += `*Banco:* ${state.suiche.bank} | RIF: ${state.suiche.docType}${state.suiche.docNumber} | Tel: ${state.suiche.phone}\n`;
