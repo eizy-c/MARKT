@@ -146,7 +146,7 @@
               </div>
             </div>
 
-            <!-- Subtabs -->
+            <!-- Subtabs / Pestañas de Pasos Secuenciales -->
             <div class="editor-tabs">
               <button type="button" class="tab-btn active" data-tab="tab-persona" id="tab-btn-persona">
                 <i class="fa-solid fa-user" id="tab-person-icon"></i>
@@ -162,7 +162,7 @@
               </button>
             </div>
 
-            <!-- TAB CONTENT: Cliente -->
+            <!-- TAB CONTENT 1: Cliente / Beneficiario -->
             <div class="tab-content active" id="tab-persona">
               <div class="form-section">
                 <div class="section-title-wrapper">
@@ -256,17 +256,18 @@
                 <!-- Botón de avance secuencial paso 1 -> paso 2 -->
                 <div class="step-nav-wrapper mt-2">
                   <button type="button" id="btn-next-step-1" class="btn btn-primary btn-block">
-                    <span id="btn-next-step-text">Continuar a Productos</span> <i class="fa-solid fa-arrow-right"></i>
+                    <span id="btn-next-step-text">Siguiente: Productos</span> <i class="fa-solid fa-arrow-right"></i>
                   </button>
                 </div>
 
               </div>
             </div>
 
-            <!-- TAB CONTENT: Detalle de Ítems / Concepto de Pago -->
+            <!-- TAB CONTENT 2: Productos / Detalle del Comprobante -->
             <div class="tab-content hidden" id="tab-items">
               <div class="form-section">
                 
+                <!-- Para Factura de Venta -->
                 <div id="section-venta-items">
                   <div class="section-title-wrapper">
                     <h3 class="section-title"><i class="fa-solid fa-list-check"></i> Productos o Servicios</h3>
@@ -297,9 +298,9 @@
                   </div>
                 </div>
 
-                <!-- Recibo de Ingreso / Egreso -->
+                <!-- Para Recibo de Ingreso / Egreso -->
                 <div id="section-payment-details" class="hidden">
-                  <h3 class="section-title"><i class="fa-solid fa-money-check-dollar"></i> Detalle del Pago / Abono</h3>
+                  <h3 class="section-title"><i class="fa-solid fa-money-check-dollar"></i> Detalle del Pago / Abono / Concepto</h3>
 
                   <div class="form-group">
                     <label for="payment-concept">Por Concepto De *</label>
@@ -329,17 +330,20 @@
                   </div>
                 </div>
 
-                <!-- Botón de avance secuencial paso 2 -> paso 3 -->
-                <div class="step-nav-wrapper mt-2">
-                  <button type="button" id="btn-next-step-2" class="btn btn-primary btn-block">
-                    <span>Continuar a QR & Extras</span> <i class="fa-solid fa-arrow-right"></i>
+                <!-- Navegación Paso 2: Anterior & Siguiente -->
+                <div class="step-nav-wrapper mt-2 flex-gap-sm">
+                  <button type="button" id="btn-prev-step-2" class="btn btn-outline col-6">
+                    <i class="fa-solid fa-arrow-left"></i> <span id="btn-prev-step-2-text">Anterior: Cliente</span>
+                  </button>
+                  <button type="button" id="btn-next-step-2" class="btn btn-primary col-6">
+                    <span>Siguiente: QR & Extras</span> <i class="fa-solid fa-arrow-right"></i>
                   </button>
                 </div>
 
               </div>
             </div>
 
-            <!-- TAB CONTENT: Opciones & QR Suiche 7B -->
+            <!-- TAB CONTENT 3: Opciones & QR Suiche 7B -->
             <div class="tab-content hidden" id="tab-opciones">
               <div class="form-section">
                 <h3 class="section-title"><i class="fa-solid fa-qrcode"></i> Datos Pago Móvil QR Suiche 7B</h3>
@@ -408,6 +412,13 @@
                 </div>
 
                 <p class="help-text mt-2">Puedes guardar esta configuración por defecto en la sección Ajustes & Negocio para que no tengas que escribirla cada vez.</p>
+
+                <!-- Navegación Paso 3: Anterior -->
+                <div class="step-nav-wrapper mt-3">
+                  <button type="button" id="btn-prev-step-3" class="btn btn-outline btn-block">
+                    <i class="fa-solid fa-arrow-left"></i> <span id="btn-prev-step-3-text">Anterior: Productos</span>
+                  </button>
+                </div>
 
               </div>
             </div>

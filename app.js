@@ -118,7 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const sectionPersonTitle = document.getElementById('section-person-title');
   const btnNextStep1 = document.getElementById('btn-next-step-1');
   const btnNextStep2 = document.getElementById('btn-next-step-2');
+  const btnPrevStep2 = document.getElementById('btn-prev-step-2');
+  const btnPrevStep3 = document.getElementById('btn-prev-step-3');
   const btnNextStepText = document.getElementById('btn-next-step-text');
+  const btnPrevStep2Text = document.getElementById('btn-prev-step-2-text');
+  const btnPrevStep3Text = document.getElementById('btn-prev-step-3-text');
   const lblClientId = document.getElementById('lbl-client-id');
   const lblClientName = document.getElementById('lbl-client-name');
 
@@ -310,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!inputDocTime.value) inputDocTime.value = state.client.time;
   }
 
-  // --- SUBTABS & STEP NAVIGATION ---
+  // --- SUBTABS & STEP WIZARD NAVIGATION ---
   function setupSubtabsSystem() {
     const switchSubtab = (targetTabId) => {
       tabSubBtns.forEach(btn => {
@@ -322,6 +326,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (content.id === targetTabId) content.classList.remove('hidden');
         else content.classList.add('hidden');
       });
+
+      // Garantizar visibilidad del sub-contenido correcto según tipo de documento
+      if (targetTabId === 'tab-items') {
+        if (state.docType === 'venta') {
+          sectionVentaItems.classList.remove('hidden');
+          sectionPaymentDetails.classList.add('hidden');
+        } else {
+          sectionVentaItems.classList.add('hidden');
+          sectionPaymentDetails.classList.remove('hidden');
+        }
+      }
     };
 
     tabSubBtns.forEach(btn => {
@@ -331,12 +346,10 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    if (btnNextStep1) {
-      btnNextStep1.addEventListener('click', () => switchSubtab('tab-items'));
-    }
-    if (btnNextStep2) {
-      btnNextStep2.addEventListener('click', () => switchSubtab('tab-opciones'));
-    }
+    if (btnNextStep1) btnNextStep1.addEventListener('click', () => switchSubtab('tab-items'));
+    if (btnNextStep2) btnNextStep2.addEventListener('click', () => switchSubtab('tab-opciones'));
+    if (btnPrevStep2) btnPrevStep2.addEventListener('click', () => switchSubtab('tab-persona'));
+    if (btnPrevStep3) btnPrevStep3.addEventListener('click', () => switchSubtab('tab-items'));
   }
 
   // --- NAVIGATION SYSTEM (SIDEBAR & VIEWS) ---
@@ -536,7 +549,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (sectionPersonTitle) sectionPersonTitle.textContent = 'Datos del Cliente & Pago';
       if (lblClientId) lblClientId.textContent = 'Documento / C.I. / RIF';
       if (lblClientName) lblClientName.textContent = 'Nombre del Cliente *';
-      if (btnNextStepText) btnNextStepText.textContent = 'Continuar a Productos';
+      if (btnNextStepText) btnNextStepText.textContent = 'Siguiente: Productos';
+      if (btnPrevStep2Text) btnPrevStep2Text.textContent = 'Anterior: Cliente';
+      if (btnPrevStep3Text) btnPrevStep3Text.textContent = 'Anterior: Productos';
 
     } else if (type === 'ingreso') {
       docTypeTitleText.textContent = 'Recibo de Caja (Cobro)';
@@ -550,7 +565,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (sectionPersonTitle) sectionPersonTitle.textContent = 'Datos del Cliente / Pagador';
       if (lblClientId) lblClientId.textContent = 'Documento / C.I. / RIF';
       if (lblClientName) lblClientName.textContent = 'Nombre del Cliente *';
-      if (btnNextStepText) btnNextStepText.textContent = 'Continuar a Detalle del Cobro';
+      if (btnNextStepText) btnNextStepText.textContent = 'Siguiente: Detalle del Cobro';
+      if (btnPrevStep2Text) btnPrevStep2Text.textContent = 'Anterior: Cliente';
+      if (btnPrevStep3Text) btnPrevStep3Text.textContent = 'Anterior: Detalle Cobro';
 
     } else if (type === 'egreso') {
       docTypeTitleText.textContent = 'Comprobante de Egreso';
@@ -564,7 +581,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (sectionPersonTitle) sectionPersonTitle.textContent = 'Datos del Beneficiario';
       if (lblClientId) lblClientId.textContent = 'Documento / RIF / C.I.';
       if (lblClientName) lblClientName.textContent = 'Nombre / Razón Social *';
-      if (btnNextStepText) btnNextStepText.textContent = 'Continuar a Detalle del Egreso';
+      if (btnNextStepText) btnNextStepText.textContent = 'Siguiente: Detalle del Egreso';
+      if (btnPrevStep2Text) btnPrevStep2Text.textContent = 'Anterior: Beneficiario';
+      if (btnPrevStep3Text) btnPrevStep3Text.textContent = 'Anterior: Detalle Egreso';
     }
 
     state.business.docNumber = formatFolioNumber(state.folioCounter);
