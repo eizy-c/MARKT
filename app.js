@@ -32,8 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
       time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
     },
     exchange: {
+      mode: 'bcv-usd', // 'bcv-usd' | 'bcv-eur' | 'custom'
       targetCurrency: 'USD',
       rate: 798.33,
+      customRate: 798.33,
       showDual: true,
       bcvUsd: 798.33,
       bcvEur: 926.55
@@ -138,6 +140,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectPaymentForm = document.getElementById('payment-form');
   const customPaymentWrapper = document.getElementById('custom-payment-wrapper');
   const inputCustomPaymentName = document.getElementById('custom-payment-name');
+
+  const selectRateMode = document.getElementById('select-rate-mode');
+  const inputCustomRate = document.getElementById('input-custom-rate');
+  const customRateWrapper = document.getElementById('custom-rate-wrapper');
 
   const inputSalesperson = document.getElementById('salesperson');
   const inputDocDate = document.getElementById('doc-date');
@@ -388,7 +394,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnPrevStep2) btnPrevStep2.addEventListener('click', () => switchSubtabByStepRef(1));
     if (btnPrevStep3) btnPrevStep3.addEventListener('click', () => switchSubtabByStepRef(2));
 
-    // Inicializar en Paso 1
     switchSubtabByStepRef(1);
   }
 
@@ -528,7 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- BCV INTEGRATION ---
+  // --- BCV INTEGRATION & RATE SELECTOR ---
   async function fetchBcvRatesFromApi() {
     sidebarBcvUsd.textContent = 'Consultando...';
     sidebarBcvEur.textContent = 'Consultando...';
@@ -550,16 +555,75 @@ document.addEventListener('DOMContentLoaded', () => {
         sidebarBcvEur.textContent = `${eurObj.promedio.toFixed(2)} Bs.`;
       }
 
-      state.exchange.rate = state.exchange.bcvUsd;
+      updateRateOptionsDropdown();
+      applyActiveRateMode();
       updateCalculationsAndPreview();
       showToast(`Tasa BCV actualizada: ${state.exchange.bcvUsd.toFixed(2)} Bs.`, 'success');
     } catch (err) {
       sidebarBcvUsd.textContent = `${state.exchange.bcvUsd.toFixed(2)} Bs.`;
       sidebarBcvEur.textContent = `${state.exchange.bcvEur.toFixed(2)} Bs.`;
+      updateRateOptionsDropdown();
+      applyActiveRateMode();
+    }
+  }
+
+  function updateRateOptionsDropdown() {
+    if (!selectRateMode) return;
+    const optUsd = selectRateMode.querySelector('option[value="bcv-usd"]');
+    const optEur = selectRateMode.querySelector('option[value="bcv-eur"]');
+
+    if (optUsd) optUsd.textContent = `Tasa Oficial BCV Dólar ($) - [ ${state.exchange.bcvUsd.toFixed(2)} Bs. ]`;
+    if (optEur) optEur.textContent = `Tasa Oficial BCV Euro (€) - [ ${state.exchange.bcvEur.toFixed(2)} Bs. ]`;
+  }
+
+  function applyActiveRateMode() {
+    const mode = state.exchange.mode || 'bcv-usd';
+    selectRateMode.value = mode;
+
+    if (mode === 'bcv-usd') {
+      state.exchange.rate = state.exchange.bcvUsd;
+      inputCustomRate.value = state.exchange.bcvUsd.toFixed(2);
+      inputCustomRate.disabled = true;
+    } else if (mode === 'bcv-eur') {
+      state.exchange.rate = state.exchange.bcvEur;
+      inputCustomRate.value = state.exchange.bcvEur.toFixed(2);
+      inputCustomRate.disabled = true;
+    } else if (mode === 'custom') {
+      inputCustomRate.disabled = false;
+      const customVal = parseFloat(inputCustomRate.value);
+      if (customVal && customVal > 0) {
+        state.exchange.customRate = customVal;
+        state.exchange.rate = customVal;
+      } else {
+        state.exchange.rate = state.exchange.customRate || state.exchange.bcvUsd;
+        inputCustomRate.value = state.exchange.rate.toFixed(2);
+      }
     }
   }
 
   if (btnSidebarFetchBcv) btnSidebarFetchBcv.addEventListener('click', fetchBcvRatesFromApi);
+
+  if (sidebarBcvUsd) {
+    sidebarBcvUsd.style.cursor = 'pointer';
+    sidebarBcvUsd.addEventListener('click', () => {
+      state.exchange.mode = 'bcv-usd';
+      applyActiveRateMode();
+      autoSaveSettings();
+      updateCalculationsAndPreview();
+      showToast('Tasa cambiada a BCV Dólar ($)', 'info');
+    });
+  }
+
+  if (sidebarBcvEur) {
+    sidebarBcvEur.style.cursor = 'pointer';
+    sidebarBcvEur.addEventListener('click', () => {
+      state.exchange.mode = 'bcv-eur';
+      applyActiveRateMode();
+      autoSaveSettings();
+      updateCalculationsAndPreview();
+      showToast('Tasa cambiada a BCV Euro (€)', 'info');
+    });
+  }
 
   // --- DOCUMENT TYPE SELECTOR SWITCHING ---
   function setupDocTypeSelector() {
@@ -657,6 +721,23 @@ document.addEventListener('DOMContentLoaded', () => {
     inputCustomPaymentName.addEventListener('input', e => {
       if (selectPaymentForm.value === 'custom') {
         state.client.paymentForm = e.target.value || 'Otro';
+        updateCalculationsAndPreview();
+      }
+    });
+
+    selectRateMode.addEventListener('change', e => {
+      state.exchange.mode = e.target.value;
+      applyActiveRateMode();
+      autoSaveSettings();
+      updateCalculationsAndPreview();
+    });
+
+    inputCustomRate.addEventListener('input', e => {
+      if (state.exchange.mode === 'custom') {
+        const val = parseFloat(e.target.value) || 1;
+        state.exchange.customRate = val;
+        state.exchange.rate = val;
+        autoSaveSettings();
         updateCalculationsAndPreview();
       }
     });
@@ -800,6 +881,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const settingsObj = {
       business: state.business,
+      exchange: state.exchange,
       suiche: state.suiche,
       options: state.options
     };
@@ -902,7 +984,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const fmtBs = num => `Bs. ${num.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const fmtInputCurr = num => `${c} ${num.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    // Control dinámico de pestaña QR & Botón de Siguiente
     const tabBtnOpciones = document.getElementById('tab-btn-opciones');
     const btnNextStep2 = document.getElementById('btn-next-step-2');
 
@@ -1077,9 +1158,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.exchange.showDual) {
       viewDualCurrencyWrapper.classList.remove('hidden');
       const totalBs = grandTotalMain * rate;
-      viewDualTitle.textContent = `Equivalente en Bolívares (BCV):`;
+      viewDualTitle.textContent = `Equivalente en Bolívares:`;
       viewUsdTotal.textContent = fmtBs(totalBs);
-      viewExchangeRateLbl.textContent = `Tasa Ref BCV (USD): 1 USD = ${rate.toFixed(2)} Bs.`;
+
+      let rateLabelText = `Tasa Ref BCV (USD): 1 USD = ${rate.toFixed(2)} Bs.`;
+      if (state.exchange.mode === 'bcv-eur') {
+        rateLabelText = `Tasa Ref BCV (EUR): 1 EUR = ${rate.toFixed(2)} Bs.`;
+      } else if (state.exchange.mode === 'custom') {
+        rateLabelText = `Tasa Ref Personalizada: 1 USD = ${rate.toFixed(2)} Bs.`;
+      }
+      viewExchangeRateLbl.textContent = rateLabelText;
     } else {
       viewDualCurrencyWrapper.classList.add('hidden');
     }
@@ -1310,7 +1398,6 @@ document.addEventListener('DOMContentLoaded', () => {
       subtexto
     };
 
-    // Actualización inmediata local
     if (idVal) {
       const idx = state.productsCatalog.findIndex(p => String(p.id) === String(idVal));
       if (idx !== -1) state.productsCatalog[idx] = { ...state.productsCatalog[idx], ...prodObj };
@@ -1456,7 +1543,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const clientObj = { identificacion, nombre, telefono, direccion };
 
-    // Actualización inmediata local
     const existingIdx = state.clientsCatalog.findIndex(c => c.identificacion === identificacion);
     if (existingIdx !== -1) {
       state.clientsCatalog[existingIdx] = { ...state.clientsCatalog[existingIdx], ...clientObj };
@@ -1552,6 +1638,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (inputBizAddress) inputBizAddress.value = state.business.address || '';
     }
 
+    if (settingsObj.exchange) {
+      state.exchange = { ...state.exchange, ...settingsObj.exchange };
+      updateRateOptionsDropdown();
+      applyActiveRateMode();
+    }
+
     if (settingsObj.suiche) {
       state.suiche = { ...state.suiche, ...settingsObj.suiche };
       if (selectSuicheBank) selectSuicheBank.value = state.suiche.bank || '0134';
@@ -1596,7 +1688,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function loadSavedSettingsAndBusiness() {
-    // 1. Carga inmediata síncrona desde localStorage para respuesta instantánea en refresco
     try {
       const savedLocal = localStorage.getItem('martk_settings_permanent');
       if (savedLocal) {
@@ -1605,7 +1696,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch(err) {}
 
-    // 2. Sincronización asíncrona desde la base de datos MySQL
     fetch(`${API_BASE_URL}/empresa`)
       .then(res => res.json())
       .then(parsed => {
@@ -1634,6 +1724,7 @@ document.addEventListener('DOMContentLoaded', () => {
           applySettingsObject(dbSettings);
           localStorage.setItem('martk_settings_permanent', JSON.stringify({
             business: state.business,
+            exchange: state.exchange,
             suiche: state.suiche,
             options: state.options
           }));
@@ -1781,6 +1872,11 @@ document.addEventListener('DOMContentLoaded', () => {
     state.client.date = record.doc_date;
     state.client.time = record.doc_time;
 
+    if (record.tasa_ref) {
+      state.exchange.rate = record.tasa_ref;
+      if (inputCustomRate) inputCustomRate.value = record.tasa_ref;
+    }
+
     state.paymentDetails.concept = record.concepto || '';
     state.paymentDetails.amount = record.total_principal || 0;
     state.paymentDetails.ref = record.referencia || '';
@@ -1918,13 +2014,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       msg += `-----------------------------------\n`;
       msg += `*TOTAL A PAGAR: ${fmtInputCurr(state.totals.grandTotal)} USD*\n`;
-      msg += `*EQUIVALENTE BS (BCV):* ${fmtBs(state.totals.grandTotal * rate)}\n`;
-      msg += `*Tasa Ref BCV (USD):* 1 USD = ${rate.toFixed(2)} Bs.\n`;
+      msg += `*EQUIVALENTE BS:* ${fmtBs(state.totals.grandTotal * rate)}\n`;
+      msg += `*Tasa Ref (1 USD):* ${rate.toFixed(2)} Bs.\n`;
     } else {
       msg += `-----------------------------------\n`;
       msg += `*Concepto:* ${state.paymentDetails.concept}\n`;
       msg += `*MONTO: ${fmtInputCurr(state.paymentDetails.amount)} USD*\n`;
-      msg += `*EQUIVALENTE BS (BCV):* ${fmtBs(state.paymentDetails.amount * rate)}\n`;
+      msg += `*EQUIVALENTE BS:* ${fmtBs(state.paymentDetails.amount * rate)}\n`;
     }
 
     if (state.options.showQR && state.suiche.phone && state.suiche.docNumber) {

@@ -237,6 +237,22 @@
                   <input type="text" id="custom-payment-name" placeholder="Ej: PayPal, Banesco Panamá, etc.">
                 </div>
 
+                <!-- Selección de Tasa de Cambio Oficial BCV / Euro / Manual -->
+                <div class="form-row mt-2">
+                  <div class="form-group col-6">
+                    <label for="select-rate-mode"><i class="fa-solid fa-building-columns"></i> Tasa de Cambio a Aplicar *</label>
+                    <select id="select-rate-mode" class="select-highlight">
+                      <option value="bcv-usd" selected>Tasa Oficial BCV Dólar ($)</option>
+                      <option value="bcv-eur">Tasa Oficial BCV Euro (€)</option>
+                      <option value="custom">Tasa Personalizada / Manual</option>
+                    </select>
+                  </div>
+                  <div class="form-group col-6" id="custom-rate-wrapper">
+                    <label for="input-custom-rate"><i class="fa-solid fa-coins"></i> Valor Tasa (Bs.)</label>
+                    <input type="number" id="input-custom-rate" step="0.01" min="0" placeholder="Ej: 798.33" value="798.33">
+                  </div>
+                </div>
+
                 <div class="form-row">
                   <div class="form-group col-6">
                     <label for="doc-date">Fecha</label>
