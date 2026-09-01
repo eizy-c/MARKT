@@ -315,19 +315,41 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- SUBTABS & STEP WIZARD NAVIGATION ---
+  let maxReachedStep = 1;
+
   function setupSubtabsSystem() {
-    const switchSubtab = (targetTabId) => {
-      tabSubBtns.forEach(btn => {
-        if (btn.getAttribute('data-tab') === targetTabId) btn.classList.add('active');
-        else btn.classList.remove('active');
+    const switchSubtabByStep = (targetStepNum) => {
+      if (targetStepNum > maxReachedStep) {
+        maxReachedStep = targetStepNum;
+      }
+
+      const stepTabIds = ['tab-persona', 'tab-items', 'tab-opciones'];
+      const targetTabId = stepTabIds[targetStepNum - 1];
+
+      tabSubBtns.forEach((btn, idx) => {
+        const stepNum = idx + 1;
+        if (stepNum === targetStepNum) {
+          btn.classList.add('active');
+          btn.classList.remove('disabled');
+        } else if (stepNum <= maxReachedStep) {
+          btn.classList.remove('active');
+          btn.classList.remove('disabled');
+        } else {
+          btn.classList.remove('active');
+          btn.classList.add('disabled');
+        }
       });
 
       tabContents.forEach(content => {
-        if (content.id === targetTabId) content.classList.remove('hidden');
-        else content.classList.add('hidden');
+        if (content.id === targetTabId) {
+          content.classList.add('active');
+          content.classList.remove('hidden');
+        } else {
+          content.classList.remove('active');
+          content.classList.add('hidden');
+        }
       });
 
-      // Garantizar visibilidad del sub-contenido correcto según tipo de documento
       if (targetTabId === 'tab-items') {
         if (state.docType === 'venta') {
           sectionVentaItems.classList.remove('hidden');
@@ -339,18 +361,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    tabSubBtns.forEach(btn => {
+    tabSubBtns.forEach((btn, idx) => {
       btn.addEventListener('click', () => {
-        const targetTab = btn.getAttribute('data-tab');
-        switchSubtab(targetTab);
+        const stepNum = idx + 1;
+        if (stepNum <= maxReachedStep) {
+          switchSubtabByStep(stepNum);
+        }
       });
     });
 
-    if (btnNextStep1) btnNextStep1.addEventListener('click', () => switchSubtab('tab-items'));
-    if (btnNextStep2) btnNextStep2.addEventListener('click', () => switchSubtab('tab-opciones'));
-    if (btnPrevStep2) btnPrevStep2.addEventListener('click', () => switchSubtab('tab-persona'));
-    if (btnPrevStep3) btnPrevStep3.addEventListener('click', () => switchSubtab('tab-items'));
+    if (btnNextStep1) btnNextStep1.addEventListener('click', () => switchSubtabByStep(2));
+    if (btnNextStep2) btnNextStep2.addEventListener('click', () => switchSubtabByStep(3));
+    if (btnPrevStep2) btnPrevStep2.addEventListener('click', () => switchSubtabByStep(1));
+    if (btnPrevStep3) btnPrevStep3.addEventListener('click', () => switchSubtabByStep(2));
+
+    // Inicializar en Paso 1
+    switchSubtabByStep(1);
   }
+
 
   // --- NAVIGATION SYSTEM (SIDEBAR & VIEWS) ---
   function setupNavigation() {

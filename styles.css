@@ -537,14 +537,22 @@ body.admin-body {
   border-bottom: 2px solid var(--primary);
 }
 
+.tab-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+
 .tab-content {
   display: none;
   padding: 1.25rem;
 }
 
 .tab-content.active {
-  display: block;
+  display: block !important;
 }
+
 
 .form-section {
   display: flex;
