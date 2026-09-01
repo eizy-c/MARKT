@@ -253,6 +253,20 @@ body.admin-body {
   color: #10B981;
 }
 
+.sidebar-system-brand {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+  font-size: 0.7rem;
+  color: #94A3B8;
+}
+
+.sidebar-system-brand strong {
+  color: #818CF8;
+  font-weight: 600;
+}
+
 /* ==========================================================================
    ADMIN MAIN & HEADER
    ========================================================================== */

@@ -76,6 +76,7 @@ python -m http.server 3000
 
 Accede a `http://localhost:3000` en tu navegador.
 
-## Licencia
+## Desarrollado Por
 
-Desarrollado para el sistema **MARTK Admin POS**.
+Desarrollado por **EIZY SYSTEM** (@eizy-c) para el sistema **MARTK Admin POS**.
+Repositorio oficial: [https://github.com/eizy-c/MARKT](https://github.com/eizy-c/MARKT)
