@@ -379,7 +379,6 @@ document.addEventListener('DOMContentLoaded', () => {
     switchSubtabByStep(1);
   }
 
-
   // --- NAVIGATION SYSTEM (SIDEBAR & VIEWS) ---
   function setupNavigation() {
     const switchView = (targetView) => {
@@ -404,19 +403,19 @@ document.addEventListener('DOMContentLoaded', () => {
         pageSubtitleText.textContent = 'Emisión y vista previa interactiva de facturas, recibos y egresos';
       } else if (targetView === 'view-productos') {
         pageTitleText.textContent = 'Catálogo de Productos';
-        pageSubtitleText.textContent = 'Gestiona tus productos o servicios con precios en $ USD guardados en MySQL';
+        pageSubtitleText.textContent = 'Gestiona tus productos o servicios con precios en $ USD';
         renderProductsTable();
       } else if (targetView === 'view-clientes') {
         pageTitleText.textContent = 'Directorio de Clientes';
-        pageSubtitleText.textContent = 'Consulta y administra la base de datos de tus clientes en MySQL';
+        pageSubtitleText.textContent = 'Consulta y administra el directorio de tus clientes';
         renderClientsTable();
       } else if (targetView === 'view-historial') {
         pageTitleText.textContent = 'Historial de Comprobantes';
-        pageSubtitleText.textContent = 'Registro completo de comprobantes emitidos en MySQL';
+        pageSubtitleText.textContent = 'Registro completo de comprobantes emitidos';
         renderHistoryTable();
       } else if (targetView === 'view-ajustes') {
         pageTitleText.textContent = 'Ajustes & Preferencias Permanentes';
-        pageSubtitleText.textContent = 'Configura el logo, datos y opciones de impresión guardadas en MySQL';
+        pageSubtitleText.textContent = 'Configura el logo, datos y opciones de impresión';
       }
 
       adminSidebar.classList.remove('mobile-open');
@@ -507,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(`Cliente encontrado en directorio: ${data.nombre}`, 'success');
 
       } else {
-        showToast('Cliente nuevo. Ingresa el nombre para guardarlo en tu directorio MySQL.', 'info');
+        showToast('Cliente nuevo. Ingresa el nombre para guardarlo.', 'info');
         inputClientName.focus();
       }
     } catch (err) {
@@ -1129,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnRemoveLogo.classList.add('hidden');
   }
 
-  // --- PRODUCT CATALOG MANAGEMENT (MYSQL) ---
+  // --- PRODUCT CATALOG MANAGEMENT ---
   function loadProductsFromStorage() {
     fetch(`${API_BASE_URL}/productos`)
       .then(res => res.json())
@@ -1143,6 +1142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const saved = localStorage.getItem('martk_products');
           if (saved) state.productsCatalog = JSON.parse(saved);
+          renderProductsTable();
         } catch(err) {}
       });
   }
@@ -1158,7 +1158,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (filtered.length === 0) {
-      productsTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#94A3B8;">No se encontraron productos en la base de datos MySQL.</td></tr>`;
+      productsTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#94A3B8;">No se encontraron productos registrados.</td></tr>`;
       return;
     }
 
@@ -1193,22 +1193,44 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('martk_products', JSON.stringify(state.productsCatalog));
         fetch(`${API_BASE_URL}/productos/${id}`, { method: 'DELETE' }).catch(e => {});
         renderProductsTable();
-        showToast('Producto eliminado de MySQL.', 'info');
+        showToast('Producto eliminado.', 'info');
       });
     });
   }
 
   function handleSaveProduct(e) {
     e.preventDefault();
-    const id = document.getElementById('prod-id').value;
+    const idVal = document.getElementById('prod-id').value;
     const codigo = document.getElementById('prod-code').value || `PRD-${Date.now().toString().slice(-4)}`;
     const nombre = document.getElementById('prod-name').value;
     const precio_usd = parseFloat(document.getElementById('prod-price').value) || 0;
     const iva_porcentaje = parseFloat(document.getElementById('prod-tax').value) || 16;
     const subtexto = document.getElementById('prod-subtext').value || '';
 
-    const prodObj = { id: id || undefined, codigo, nombre, precio_usd, iva_porcentaje, subtexto };
+    const prodObj = {
+      id: idVal ? parseInt(idVal) : undefined,
+      codigo,
+      nombre,
+      precio_usd,
+      iva_porcentaje,
+      subtexto
+    };
 
+    // Actualización inmediata local
+    if (idVal) {
+      const idx = state.productsCatalog.findIndex(p => String(p.id) === String(idVal));
+      if (idx !== -1) state.productsCatalog[idx] = { ...state.productsCatalog[idx], ...prodObj };
+    } else {
+      state.productsCatalog.unshift({ id: Date.now(), ...prodObj });
+    }
+
+    localStorage.setItem('martk_products', JSON.stringify(state.productsCatalog));
+    renderProductsTable();
+    productFormBox.classList.add('hidden');
+    formProduct.reset();
+    showToast('Producto guardado correctamente', 'success');
+
+    // Envío asíncrono a base de datos
     fetch(`${API_BASE_URL}/productos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1217,11 +1239,8 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(res => res.json())
     .then(() => {
       loadProductsFromStorage();
-      productFormBox.classList.add('hidden');
-      showToast('Producto guardado en MySQL markt_db', 'success');
-    }).catch(e => {
-      showToast('Guardado localmente.', 'info');
-    });
+    })
+    .catch(e => {});
   }
 
   function openProductPickerModal() {
@@ -1239,7 +1258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (filtered.length === 0) {
-      pickerProductList.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:1.5rem; color:#94A3B8;">No hay productos en MySQL. Crea uno en la sección Productos.</div>`;
+      pickerProductList.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:1.5rem; color:#94A3B8;">No hay productos registrados. Crea uno en la sección Productos.</div>`;
       return;
     }
 
@@ -1278,7 +1297,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast(`Agregado a la factura: ${product.nombre}`, 'success');
   }
 
-  // --- CLIENT CATALOG MANAGEMENT (MYSQL) ---
+  // --- CLIENT CATALOG MANAGEMENT ---
   function loadClientsFromStorage() {
     fetch(`${API_BASE_URL}/clientes`)
       .then(res => res.json())
@@ -1292,6 +1311,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const saved = localStorage.getItem('martk_clients');
           if (saved) state.clientsCatalog = JSON.parse(saved);
+          renderClientsTable();
         } catch(err) {}
       });
   }
@@ -1307,7 +1327,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (filtered.length === 0) {
-      clientsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:#94A3B8;">No hay clientes en el directorio MySQL.</td></tr>`;
+      clientsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:#94A3B8;">No hay clientes en el directorio.</td></tr>`;
       return;
     }
 
@@ -1343,6 +1363,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const clientObj = { identificacion, nombre, telefono, direccion };
 
+    // Actualización inmediata local
+    const existingIdx = state.clientsCatalog.findIndex(c => c.identificacion === identificacion);
+    if (existingIdx !== -1) {
+      state.clientsCatalog[existingIdx] = { ...state.clientsCatalog[existingIdx], ...clientObj };
+    } else {
+      state.clientsCatalog.unshift({ id: Date.now(), ...clientObj });
+    }
+
+    localStorage.setItem('martk_clients', JSON.stringify(state.clientsCatalog));
+    renderClientsTable();
+    clientFormBox.classList.add('hidden');
+    formClient.reset();
+    showToast('Cliente guardado correctamente', 'success');
+
     fetch(`${API_BASE_URL}/clientes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1351,11 +1385,8 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(res => res.json())
     .then(() => {
       loadClientsFromStorage();
-      clientFormBox.classList.add('hidden');
-      showToast('Cliente registrado en la base de datos MySQL', 'success');
-    }).catch(e => {
-      showToast('Registrado localmente.', 'info');
-    });
+    })
+    .catch(e => {});
   }
 
   function openClientPickerModal() {
@@ -1373,7 +1404,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (filtered.length === 0) {
-      pickerClientList.innerHTML = `<div style="text-align:center; padding:1.5rem; color:#94A3B8;">No hay clientes en MySQL. Regístralo en la sección Clientes.</div>`;
+      pickerClientList.innerHTML = `<div style="text-align:center; padding:1.5rem; color:#94A3B8;">No hay clientes registrados. Regístralo en la sección Clientes.</div>`;
       return;
     }
 
@@ -1416,7 +1447,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast(`Cliente seleccionado: ${client.nombre}`, 'success');
   }
 
-  // --- SAVE ALL SETTINGS PERMANENTLY IN MYSQL ---
+  // --- SAVE ALL SETTINGS PERMANENTLY ---
   function saveAllSettingsPermanently() {
     state.business.name = inputBizName.value;
     state.business.id = inputBizId.value;
@@ -1443,6 +1474,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     localStorage.setItem('martk_settings_permanent', JSON.stringify(settingsObj));
+    showToast('Ajustes guardados correctamente', 'success');
 
     fetch(`${API_BASE_URL}/empresa`, {
       method: 'POST',
@@ -1465,11 +1497,7 @@ document.addEventListener('DOMContentLoaded', () => {
         theme: state.options.theme,
         notas_pie: state.options.notes
       })
-    }).then(() => {
-      showToast('Ajustes guardados permanentemente en MySQL (markt_db)', 'success');
-    }).catch(e => {
-      showToast('Preferencias guardadas localmente.', 'info');
-    });
+    }).catch(e => {});
 
     updateCalculationsAndPreview();
   }
@@ -1536,7 +1564,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
-  // --- SAVE RECEIPT TO HISTORY & MYSQL ---
+  // --- SAVE RECEIPT TO HISTORY ---
   async function saveCurrentReceiptToHistory() {
     const rate = state.exchange.rate || 1;
     const totalBs = state.totals.grandTotal * rate;
@@ -1588,7 +1616,7 @@ document.addEventListener('DOMContentLoaded', () => {
     incrementFolioCounter();
     updateCalculationsAndPreview();
 
-    showToast(`Factura guardada en MySQL. Próximo folio: ${state.business.docNumber}`, 'success');
+    showToast(`Comprobante guardado. Próximo folio: ${state.business.docNumber}`, 'success');
   }
 
   function incrementFolioCounter() {
@@ -1613,7 +1641,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (filtered.length === 0) {
-      historyTableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:#94A3B8;">No hay comprobantes en MySQL.</td></tr>`;
+      historyTableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:#94A3B8;">No hay comprobantes guardados.</td></tr>`;
       return;
     }
 
@@ -1737,7 +1765,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function clearAllHistory() {
-    if (confirm('¿Estás seguro de vaciar todo el historial guardado en MySQL y local?')) {
+    if (confirm('¿Estás seguro de vaciar todo el historial guardado?')) {
       state.history = [];
       state.folioCounter = 1;
       localStorage.setItem('martk_folio_counter', '1');
@@ -1751,7 +1779,7 @@ document.addEventListener('DOMContentLoaded', () => {
       updateCalculationsAndPreview();
 
       fetch(`${API_BASE_URL}/admin/clear-db`, { method: 'DELETE' }).catch(e => {});
-      showToast('Historial y base de datos MySQL limpios.', 'info');
+      showToast('Historial limpio.', 'info');
     }
   }
 
