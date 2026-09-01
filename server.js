@@ -348,7 +348,7 @@ app.get('/api/clientes', async (req, res) => {
   }
 });
 
-// POST /api/clientes - Registrar / Actualizar cliente formateado en MySQL
+// POST /api/clientes - Registrar cliente en MySQL (Rechaza duplicados si el cliente ya existe)
 app.post('/api/clientes', async (req, res) => {
   try {
     const identificacion = formatIdentificacion(req.body.identificacion);
@@ -360,22 +360,26 @@ app.post('/api/clientes', async (req, res) => {
       return res.status(400).json({ error: 'La identificación y el nombre son obligatorios.' });
     }
 
-    const [existing] = await pool.query('SELECT id FROM clientes WHERE identificacion = ?', [identificacion]);
+    const cleanNum = identificacion.replace(/[^0-9]/g, '');
+
+    const [existing] = await pool.query(
+      `SELECT id, nombre FROM clientes WHERE UPPER(REPLACE(REPLACE(identificacion, '-', ''), '.', '')) LIKE ? LIMIT 1`,
+      [`%${cleanNum}%`]
+    );
+
     if (existing.length > 0) {
-      await pool.query(
-        `UPDATE clientes SET nombre=?, telefono=?, direccion=? WHERE id=?`,
-        [nombre, telefono, direccion, existing[0].id]
-      );
-      res.json({ message: 'Cliente actualizado exitosamente' });
-    } else {
-      const [result] = await pool.query(
-        `INSERT INTO clientes (identificacion, nombre, telefono, direccion) VALUES (?, ?, ?, ?)`,
-        [identificacion, nombre, telefono, direccion]
-      );
-      res.status(201).json({ message: 'Cliente registrado exitosamente', id: result.insertId });
+      return res.status(409).json({ 
+        error: `El cliente con Cédula/RIF ${identificacion} ya se encuentra registrado (${existing[0].nombre}). No se permite registrar duplicados.` 
+      });
     }
+
+    const [result] = await pool.query(
+      `INSERT INTO clientes (identificacion, nombre, telefono, direccion) VALUES (?, ?, ?, ?)`,
+      [identificacion, nombre, telefono, direccion]
+    );
+    res.status(201).json({ message: 'Cliente registrado exitosamente', id: result.insertId });
   } catch (error) {
-    res.status(500).json({ error: 'Error al guardar cliente' });
+    res.status(500).json({ error: 'Error al registrar cliente en la base de datos' });
   }
 });
 

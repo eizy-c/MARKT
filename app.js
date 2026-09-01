@@ -1597,20 +1597,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const telefono = cleanPhoneInput(document.getElementById('c-phone').value);
     const direccion = cleanInputText(document.getElementById('c-address').value);
 
-    const clientObj = { identificacion, nombre, telefono, direccion };
+    const cleanNum = identificacion.replace(/[^0-9]/g, '');
+    const existing = state.clientsCatalog.find(c => (c.identificacion || '').replace(/[^0-9]/g, '') === cleanNum);
 
-    const existingIdx = state.clientsCatalog.findIndex(c => c.identificacion === identificacion);
-    if (existingIdx !== -1) {
-      state.clientsCatalog[existingIdx] = { ...state.clientsCatalog[existingIdx], ...clientObj };
-    } else {
-      state.clientsCatalog.unshift({ id: Date.now(), ...clientObj });
+    if (existing) {
+      showToast(`El cliente con Cédula/RIF ${identificacion} ya se encuentra registrado (${existing.nombre}).`, 'info');
+      return;
     }
+
+    const clientObj = { id: Date.now(), identificacion, nombre, telefono, direccion };
+    state.clientsCatalog.unshift(clientObj);
 
     localStorage.setItem('martk_clients', JSON.stringify(state.clientsCatalog));
     renderClientsTable();
     clientFormBox.classList.add('hidden');
     formClient.reset();
-    showToast('Cliente guardado correctamente', 'success');
+    showToast('Cliente registrado correctamente', 'success');
 
     fetch(`${API_BASE_URL}/clientes`, {
       method: 'POST',
@@ -1618,8 +1620,12 @@ document.addEventListener('DOMContentLoaded', () => {
       body: JSON.stringify(clientObj)
     })
     .then(res => res.json())
-    .then(() => {
-      loadClientsFromStorage();
+    .then(data => {
+      if (data.error) {
+        showToast(data.error, 'info');
+      } else {
+        loadClientsFromStorage();
+      }
     })
     .catch(e => {});
   }
