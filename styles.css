@@ -394,6 +394,19 @@ body.admin-body {
   font-size: 0.775rem;
 }
 
+.btn-block {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.step-nav-wrapper {
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.85rem;
+  margin-top: 0.85rem;
+}
+
+
 /* VIEWS WRAPPER */
 .app-view {
   padding: 1.5rem;

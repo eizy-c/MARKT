@@ -109,6 +109,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSidebarFetchBcv = document.getElementById('btn-sidebar-fetch-bcv');
   const sidebarHistoryCount = document.getElementById('sidebar-history-count');
 
+  // Subtab elements
+  const tabSubBtns = document.querySelectorAll('.tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+  const tabPersonText = document.getElementById('tab-person-text');
+  const tabItemsText = document.getElementById('tab-items-text');
+  const tabItemsIcon = document.getElementById('tab-items-icon');
+  const sectionPersonTitle = document.getElementById('section-person-title');
+  const btnNextStep1 = document.getElementById('btn-next-step-1');
+  const btnNextStep2 = document.getElementById('btn-next-step-2');
+  const btnNextStepText = document.getElementById('btn-next-step-text');
+  const lblClientId = document.getElementById('lbl-client-id');
+  const lblClientName = document.getElementById('lbl-client-name');
+
   // Form Controls in POS
   const docTypeBtns = document.querySelectorAll('.doc-type-btn');
   const docTypeTitleText = document.getElementById('doc-type-title-text');
@@ -283,6 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadClientsFromStorage();
     loadHistoryFromStorage();
     setupNavigation();
+    setupSubtabsSystem();
     setupDocTypeSelector();
     setupEventListeners();
     setDefaultDateAndTime();
@@ -294,6 +308,35 @@ document.addEventListener('DOMContentLoaded', () => {
   function setDefaultDateAndTime() {
     if (!inputDocDate.value) inputDocDate.value = state.client.date;
     if (!inputDocTime.value) inputDocTime.value = state.client.time;
+  }
+
+  // --- SUBTABS & STEP NAVIGATION ---
+  function setupSubtabsSystem() {
+    const switchSubtab = (targetTabId) => {
+      tabSubBtns.forEach(btn => {
+        if (btn.getAttribute('data-tab') === targetTabId) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+
+      tabContents.forEach(content => {
+        if (content.id === targetTabId) content.classList.remove('hidden');
+        else content.classList.add('hidden');
+      });
+    };
+
+    tabSubBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.getAttribute('data-tab');
+        switchSubtab(targetTab);
+      });
+    });
+
+    if (btnNextStep1) {
+      btnNextStep1.addEventListener('click', () => switchSubtab('tab-items'));
+    }
+    if (btnNextStep2) {
+      btnNextStep2.addEventListener('click', () => switchSubtab('tab-opciones'));
+    }
   }
 
   // --- NAVIGATION SYSTEM (SIDEBAR & VIEWS) ---
@@ -486,16 +529,42 @@ document.addEventListener('DOMContentLoaded', () => {
       state.business.docTitle = 'FACTURA ELECTRÓNICA DE VENTA';
       sectionVentaItems.classList.remove('hidden');
       sectionPaymentDetails.classList.add('hidden');
+
+      if (tabPersonText) tabPersonText.textContent = 'Cliente';
+      if (tabItemsText) tabItemsText.textContent = 'Productos';
+      if (tabItemsIcon) tabItemsIcon.className = 'fa-solid fa-list-check';
+      if (sectionPersonTitle) sectionPersonTitle.textContent = 'Datos del Cliente & Pago';
+      if (lblClientId) lblClientId.textContent = 'Documento / C.I. / RIF';
+      if (lblClientName) lblClientName.textContent = 'Nombre del Cliente *';
+      if (btnNextStepText) btnNextStepText.textContent = 'Continuar a Productos';
+
     } else if (type === 'ingreso') {
       docTypeTitleText.textContent = 'Recibo de Caja (Cobro)';
       state.business.docTitle = 'RECIBO DE CAJA / COMPROBANTE DE INGRESO';
       sectionVentaItems.classList.add('hidden');
       sectionPaymentDetails.classList.remove('hidden');
+
+      if (tabPersonText) tabPersonText.textContent = 'Cliente';
+      if (tabItemsText) tabItemsText.textContent = 'Detalle Cobro';
+      if (tabItemsIcon) tabItemsIcon.className = 'fa-solid fa-money-bill-wave';
+      if (sectionPersonTitle) sectionPersonTitle.textContent = 'Datos del Cliente / Pagador';
+      if (lblClientId) lblClientId.textContent = 'Documento / C.I. / RIF';
+      if (lblClientName) lblClientName.textContent = 'Nombre del Cliente *';
+      if (btnNextStepText) btnNextStepText.textContent = 'Continuar a Detalle del Cobro';
+
     } else if (type === 'egreso') {
       docTypeTitleText.textContent = 'Comprobante de Egreso';
       state.business.docTitle = 'COMPROBANTE DE EGRESO DE CAJA';
       sectionVentaItems.classList.add('hidden');
       sectionPaymentDetails.classList.remove('hidden');
+
+      if (tabPersonText) tabPersonText.textContent = 'Beneficiario';
+      if (tabItemsText) tabItemsText.textContent = 'Detalle Egreso';
+      if (tabItemsIcon) tabItemsIcon.className = 'fa-solid fa-money-bill-transfer';
+      if (sectionPersonTitle) sectionPersonTitle.textContent = 'Datos del Beneficiario';
+      if (lblClientId) lblClientId.textContent = 'Documento / RIF / C.I.';
+      if (lblClientName) lblClientName.textContent = 'Nombre / Razón Social *';
+      if (btnNextStepText) btnNextStepText.textContent = 'Continuar a Detalle del Egreso';
     }
 
     state.business.docNumber = formatFolioNumber(state.folioCounter);

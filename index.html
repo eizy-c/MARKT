@@ -148,9 +148,18 @@
 
             <!-- Subtabs -->
             <div class="editor-tabs">
-              <button class="tab-btn active" data-tab="tab-persona"><i class="fa-solid fa-user" id="tab-person-icon"></i> <span id="tab-person-text">Cliente</span></button>
-              <button class="tab-btn" data-tab="tab-items" id="tab-btn-items"><i class="fa-solid fa-list-check"></i> <span id="tab-items-text">Productos</span></button>
-              <button class="tab-btn" data-tab="tab-opciones"><i class="fa-solid fa-qrcode"></i> QR & Extras</button>
+              <button type="button" class="tab-btn active" data-tab="tab-persona" id="tab-btn-persona">
+                <i class="fa-solid fa-user" id="tab-person-icon"></i>
+                <span id="tab-person-text">Cliente</span>
+              </button>
+              <button type="button" class="tab-btn" data-tab="tab-items" id="tab-btn-items">
+                <i class="fa-solid fa-list-check" id="tab-items-icon"></i>
+                <span id="tab-items-text">Productos</span>
+              </button>
+              <button type="button" class="tab-btn" data-tab="tab-opciones" id="tab-btn-opciones">
+                <i class="fa-solid fa-qrcode"></i>
+                <span>QR & Extras</span>
+              </button>
             </div>
 
             <!-- TAB CONTENT: Cliente -->
@@ -244,11 +253,18 @@
                   <span><i class="fa-solid fa-hashtags"></i> Folio en Emisión: <strong id="pos-doc-number">No. FES-001</strong></span>
                 </div>
 
+                <!-- Botón de avance secuencial paso 1 -> paso 2 -->
+                <div class="step-nav-wrapper mt-2">
+                  <button type="button" id="btn-next-step-1" class="btn btn-primary btn-block">
+                    <span id="btn-next-step-text">Continuar a Productos</span> <i class="fa-solid fa-arrow-right"></i>
+                  </button>
+                </div>
+
               </div>
             </div>
 
             <!-- TAB CONTENT: Detalle de Ítems / Concepto de Pago -->
-            <div class="tab-content" id="tab-items">
+            <div class="tab-content hidden" id="tab-items">
               <div class="form-section">
                 
                 <div id="section-venta-items">
@@ -313,11 +329,18 @@
                   </div>
                 </div>
 
+                <!-- Botón de avance secuencial paso 2 -> paso 3 -->
+                <div class="step-nav-wrapper mt-2">
+                  <button type="button" id="btn-next-step-2" class="btn btn-primary btn-block">
+                    <span>Continuar a QR & Extras</span> <i class="fa-solid fa-arrow-right"></i>
+                  </button>
+                </div>
+
               </div>
             </div>
 
             <!-- TAB CONTENT: Opciones & QR Suiche 7B -->
-            <div class="tab-content" id="tab-opciones">
+            <div class="tab-content hidden" id="tab-opciones">
               <div class="form-section">
                 <h3 class="section-title"><i class="fa-solid fa-qrcode"></i> Datos Pago Móvil QR Suiche 7B</h3>
                 
