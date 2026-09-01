@@ -320,7 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function setupSubtabsSystem() {
     switchSubtabByStepRef = (targetStepNum) => {
-      // Si la opción QR está deshabilitada y se intenta ir al paso 3, redirigir o bloquear
       if (!state.options.showQR && targetStepNum === 3) {
         targetStepNum = 2;
       }
@@ -382,7 +381,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.options.showQR) {
           switchSubtabByStepRef(3);
         } else {
-          // Si el QR está deshabilitado, al presionar Siguiente en Paso 2 se guarda/finaliza
           saveCurrentReceiptToHistory();
         }
       });
@@ -823,10 +821,10 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrar_doble_moneda: state.exchange.showDual,
         logo_base64: state.business.logo,
         logo_size: state.options.logoSize,
-        show_qr: state.options.showQR,
-        show_barcode: state.options.showBarcode,
-        show_signature: state.options.showSignature,
-        show_tax_table: state.options.showTaxTable,
+        show_qr: state.options.showQR ? 1 : 0,
+        show_barcode: state.options.showBarcode ? 1 : 0,
+        show_signature: state.options.showSignature ? 1 : 0,
+        show_tax_table: state.options.showTaxTable ? 1 : 0,
         theme: state.options.theme,
         notas_pie: state.options.notes
       })
@@ -1542,81 +1540,106 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast(`Cliente seleccionado: ${client.nombre}`, 'success');
   }
 
+  // --- SETTINGS PERSISTENCE & LOAD ---
+  function applySettingsObject(settingsObj) {
+    if (!settingsObj) return;
+
+    if (settingsObj.business) {
+      state.business = { ...state.business, ...settingsObj.business };
+      if (inputBizName) inputBizName.value = state.business.name || '';
+      if (inputBizId) inputBizId.value = state.business.id || '';
+      if (inputBizPhone) inputBizPhone.value = state.business.phone || '';
+      if (inputBizAddress) inputBizAddress.value = state.business.address || '';
+    }
+
+    if (settingsObj.suiche) {
+      state.suiche = { ...state.suiche, ...settingsObj.suiche };
+      if (selectSuicheBank) selectSuicheBank.value = state.suiche.bank || '0134';
+      if (selectSuicheDocType) selectSuicheDocType.value = state.suiche.docType || 'J';
+      if (inputSuicheDocNumber) inputSuicheDocNumber.value = state.suiche.docNumber || '';
+      if (inputSuichePhone) inputSuichePhone.value = state.suiche.phone || '';
+      if (selectSuicheAmountMode) selectSuicheAmountMode.value = state.suiche.amountMode || 'dynamic';
+    }
+
+    if (settingsObj.options) {
+      state.options = { ...state.options, ...settingsObj.options };
+      if (inputFooterNotes) inputFooterNotes.value = state.options.notes || '';
+      if (logoSizeRange) {
+        logoSizeRange.value = state.options.logoSize || 220;
+        if (logoSizeVal) logoSizeVal.textContent = `${state.options.logoSize || 220} px`;
+      }
+
+      if (prefShowQr) prefShowQr.checked = !!state.options.showQR;
+      if (prefShowBarcode) prefShowBarcode.checked = !!state.options.showBarcode;
+      if (prefShowSignature) prefShowSignature.checked = !!state.options.showSignature;
+      if (prefShowTaxTable) prefShowTaxTable.checked = !!state.options.showTaxTable;
+
+      if (state.options.theme) {
+        themeCards.forEach(card => {
+          if (card.getAttribute('data-theme') === state.options.theme) {
+            themeCards.forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            ticketCard.className = `ticket-card ${state.options.theme}`;
+          }
+        });
+      }
+    }
+
+    if (state.business.logo) {
+      if (logoPreview) logoPreview.innerHTML = `<img src="${state.business.logo}" alt="Logo" style="max-height:100px;">`;
+      if (ticketLogoImg) {
+        ticketLogoImg.src = state.business.logo;
+        ticketLogoImg.classList.remove('hidden');
+      }
+      if (btnRemoveLogo) btnRemoveLogo.classList.remove('hidden');
+    }
+  }
+
   function loadSavedSettingsAndBusiness() {
+    // 1. Carga inmediata síncrona desde localStorage para respuesta instantánea en refresco
+    try {
+      const savedLocal = localStorage.getItem('martk_settings_permanent');
+      if (savedLocal) {
+        applySettingsObject(JSON.parse(savedLocal));
+        updateCalculationsAndPreview();
+      }
+    } catch(err) {}
+
+    // 2. Sincronización asíncrona desde la base de datos MySQL
     fetch(`${API_BASE_URL}/empresa`)
       .then(res => res.json())
       .then(parsed => {
         if (parsed) {
-          if (parsed.nombre) state.business.name = parsed.nombre;
-          if (parsed.identificacion) state.business.id = parsed.identificacion;
-          if (parsed.telefono) state.business.phone = parsed.telefono;
-          if (parsed.direccion) state.business.address = parsed.direccion;
-          if (parsed.logo_base64) state.business.logo = parsed.logo_base64;
-          if (parsed.logo_size) state.options.logoSize = parsed.logo_size;
-          
-          if (typeof parsed.show_qr !== 'undefined') state.options.showQR = !!parsed.show_qr;
-          if (typeof parsed.show_barcode !== 'undefined') state.options.showBarcode = !!parsed.show_barcode;
-          if (typeof parsed.show_signature !== 'undefined') state.options.showSignature = !!parsed.show_signature;
-          if (typeof parsed.show_tax_table !== 'undefined') state.options.showTaxTable = !!parsed.show_tax_table;
-          if (parsed.theme) state.options.theme = parsed.theme;
-          if (parsed.notas_pie) state.options.notes = parsed.notas_pie;
-
-          inputBizName.value = state.business.name || '';
-          inputBizId.value = state.business.id || '';
-          inputBizPhone.value = state.business.phone || '';
-          inputBizAddress.value = state.business.address || '';
-          inputFooterNotes.value = state.options.notes || '';
-          
-          logoSizeRange.value = state.options.logoSize || 220;
-          logoSizeVal.textContent = `${state.options.logoSize || 220} px`;
-
-          prefShowQr.checked = state.options.showQR;
-          prefShowBarcode.checked = state.options.showBarcode;
-          prefShowSignature.checked = state.options.showSignature;
-          prefShowTaxTable.checked = state.options.showTaxTable;
-
-          themeCards.forEach(card => {
-            if (card.getAttribute('data-theme') === state.options.theme) {
-              themeCards.forEach(c => c.classList.remove('active'));
-              card.classList.add('active');
-              ticketCard.className = `ticket-card ${state.options.theme}`;
+          const dbSettings = {
+            business: {
+              name: parsed.nombre,
+              id: parsed.identificacion,
+              address: parsed.direccion,
+              phone: parsed.telefono,
+              docTitle: parsed.doc_titulo,
+              currency: parsed.moneda,
+              logo: parsed.logo_base64
+            },
+            options: {
+              logoSize: parsed.logo_size,
+              showQR: typeof parsed.show_qr !== 'undefined' ? !!parsed.show_qr : true,
+              showBarcode: typeof parsed.show_barcode !== 'undefined' ? !!parsed.show_barcode : true,
+              showSignature: typeof parsed.show_signature !== 'undefined' ? !!parsed.show_signature : true,
+              showTaxTable: typeof parsed.show_tax_table !== 'undefined' ? !!parsed.show_tax_table : true,
+              theme: parsed.theme,
+              notes: parsed.notas_pie
             }
-          });
-          
-          if (state.business.logo) {
-            logoPreview.innerHTML = `<img src="${state.business.logo}" alt="Logo" style="max-height:100px;">`;
-            ticketLogoImg.src = state.business.logo;
-            ticketLogoImg.classList.remove('hidden');
-            btnRemoveLogo.classList.remove('hidden');
-          }
+          };
+
+          applySettingsObject(dbSettings);
+          localStorage.setItem('martk_settings_permanent', JSON.stringify({
+            business: state.business,
+            suiche: state.suiche,
+            options: state.options
+          }));
           updateCalculationsAndPreview();
         }
-      }).catch(e => {
-        try {
-          const saved = localStorage.getItem('martk_settings_permanent');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed.business) state.business = parsed.business;
-            if (parsed.suiche) state.suiche = parsed.suiche;
-            if (parsed.options) state.options = parsed.options;
-
-            inputBizName.value = state.business.name || '';
-            inputBizId.value = state.business.id || '';
-            inputBizPhone.value = state.business.phone || '';
-            inputBizAddress.value = state.business.address || '';
-            inputFooterNotes.value = state.options.notes || '';
-            
-            logoSizeRange.value = state.options.logoSize || 220;
-            logoSizeVal.textContent = `${state.options.logoSize || 220} px`;
-
-            prefShowQr.checked = state.options.showQR;
-            prefShowBarcode.checked = state.options.showBarcode;
-            prefShowSignature.checked = state.options.showSignature;
-            prefShowTaxTable.checked = state.options.showTaxTable;
-          }
-          updateCalculationsAndPreview();
-        } catch(err) {}
-      });
+      }).catch(e => {});
   }
 
   // --- SAVE RECEIPT TO HISTORY ---
