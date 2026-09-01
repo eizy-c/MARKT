@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cant: 1,
         desc: '',
         subtext: '',
-        taxRate: 16,
+        taxRate: 0,
         unitPrice: 0
       }
     ],
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     totals: {
       subtotal: 0,
-      taxRate: 16,
+      taxRate: 0,
       taxAmount: 0,
       discount: 0,
       grandTotal: 0
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showBarcode: true,
       showQR: true,
       showSignature: true,
-      showTaxTable: true,
+      showTaxTable: false,
       theme: 'theme-thermal',
       notes: 'Montos calculados según tasa oficial de referencia BCV.\nGracias por su compra.'
     },
@@ -558,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
       updateRateOptionsDropdown();
       applyActiveRateMode();
       updateCalculationsAndPreview();
-      showToast(`Tasa BCV actualizada: ${state.exchange.bcvUsd.toFixed(2)} Bs.`, 'success');
+      showToast(`Tasas BCV actualizadas: Dólar ${state.exchange.bcvUsd.toFixed(2)} Bs. | Euro ${state.exchange.bcvEur.toFixed(2)} Bs.`, 'success');
     } catch (err) {
       sidebarBcvUsd.textContent = `${state.exchange.bcvUsd.toFixed(2)} Bs.`;
       sidebarBcvEur.textContent = `${state.exchange.bcvEur.toFixed(2)} Bs.`;
@@ -578,25 +578,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function applyActiveRateMode() {
     const mode = state.exchange.mode || 'bcv-usd';
-    selectRateMode.value = mode;
+    if (selectRateMode) selectRateMode.value = mode;
 
     if (mode === 'bcv-usd') {
       state.exchange.rate = state.exchange.bcvUsd;
-      inputCustomRate.value = state.exchange.bcvUsd.toFixed(2);
-      inputCustomRate.disabled = true;
+      if (inputCustomRate) {
+        inputCustomRate.value = state.exchange.bcvUsd.toFixed(2);
+        inputCustomRate.disabled = true;
+      }
     } else if (mode === 'bcv-eur') {
       state.exchange.rate = state.exchange.bcvEur;
-      inputCustomRate.value = state.exchange.bcvEur.toFixed(2);
-      inputCustomRate.disabled = true;
+      if (inputCustomRate) {
+        inputCustomRate.value = state.exchange.bcvEur.toFixed(2);
+        inputCustomRate.disabled = true;
+      }
     } else if (mode === 'custom') {
-      inputCustomRate.disabled = false;
-      const customVal = parseFloat(inputCustomRate.value);
-      if (customVal && customVal > 0) {
-        state.exchange.customRate = customVal;
-        state.exchange.rate = customVal;
-      } else {
-        state.exchange.rate = state.exchange.customRate || state.exchange.bcvUsd;
-        inputCustomRate.value = state.exchange.rate.toFixed(2);
+      if (inputCustomRate) {
+        inputCustomRate.disabled = false;
+        const customVal = parseFloat(inputCustomRate.value);
+        if (customVal && customVal > 0) {
+          state.exchange.customRate = customVal;
+          state.exchange.rate = customVal;
+        } else {
+          state.exchange.rate = state.exchange.customRate || state.exchange.bcvUsd;
+          inputCustomRate.value = state.exchange.rate.toFixed(2);
+        }
       }
     }
   }
@@ -610,7 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
       applyActiveRateMode();
       autoSaveSettings();
       updateCalculationsAndPreview();
-      showToast('Tasa cambiada a BCV Dólar ($)', 'info');
+      showToast(`Tasa cambiada a BCV Dólar ($): ${state.exchange.bcvUsd.toFixed(2)} Bs.`, 'info');
     });
   }
 
@@ -621,7 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
       applyActiveRateMode();
       autoSaveSettings();
       updateCalculationsAndPreview();
-      showToast('Tasa cambiada a BCV Euro (€)', 'info');
+      showToast(`Tasa cambiada a BCV Euro (€): ${state.exchange.bcvEur.toFixed(2)} Bs.`, 'info');
     });
   }
 
@@ -815,7 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cant: 1,
         desc: '',
         subtext: '',
-        taxRate: 16,
+        taxRate: 0,
         unitPrice: 0
       });
       renderItemsList();
@@ -978,6 +984,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- CALCULATIONS & PREVIEW BINDING ---
   function updateCalculationsAndPreview() {
+    applyActiveRateMode();
+
     const c = state.business.currency || '$';
     const rate = state.exchange.rate > 0 ? state.exchange.rate : 1;
 
@@ -1047,7 +1055,6 @@ document.addEventListener('DOMContentLoaded', () => {
       ticketItemsBlock.classList.remove('hidden');
       ticketPaymentReceiptBlock.classList.add('hidden');
       viewSubtotalRow.classList.remove('hidden');
-      viewTaxRow.classList.remove('hidden');
       viewItemsCountRow.classList.remove('hidden');
       viewTotalLbl.textContent = 'Total ($ USD):';
 
@@ -1075,7 +1082,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="ticket-item-row">
             <span class="col-cant">${item.cant}</span>
             <span class="col-desc">${escapeHtml(item.desc || 'Producto / Servicio')}</span>
-            <span class="col-tax">${taxRate > 0 ? taxRate + '%' : '0'}</span>
             <span class="col-total">${fmtInputCurr(itemTotal)}</span>
           </div>
           ${item.subtext ? `<div class="item-subtext">${escapeHtml(item.subtext)}</div>` : ''}
@@ -1091,13 +1097,20 @@ document.addEventListener('DOMContentLoaded', () => {
         viewDiscountRow.classList.add('hidden');
       }
 
-      viewTax.textContent = fmtInputCurr(taxAmount);
+      // Ocultar IVA si es 0
+      if (taxAmount > 0) {
+        viewTaxRow.classList.remove('hidden');
+        viewTax.textContent = fmtInputCurr(taxAmount);
+      } else {
+        viewTaxRow.classList.add('hidden');
+      }
+
       viewTotal.textContent = `${fmtInputCurr(grandTotalMain)} USD`;
       viewItemsCount.textContent = state.items.length;
 
-      if (state.options.showTaxTable) {
+      if (state.options.showTaxTable && taxAmount > 0) {
         viewTaxTableWrapper.classList.remove('hidden');
-        viewTaxRateLbl.textContent = taxRate > 0 ? `IVA ${taxRate}%` : 'EXCLUIDO 0%';
+        viewTaxRateLbl.textContent = `IVA ${taxRate}%`;
         viewTaxBase.textContent = fmtInputCurr(taxableBase);
         viewTaxVal.textContent = fmtInputCurr(taxAmount);
       } else {
@@ -1158,16 +1171,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.exchange.showDual) {
       viewDualCurrencyWrapper.classList.remove('hidden');
       const totalBs = grandTotalMain * rate;
-      viewDualTitle.textContent = `Equivalente en Bolívares:`;
-      viewUsdTotal.textContent = fmtBs(totalBs);
 
-      let rateLabelText = `Tasa Ref BCV (USD): 1 USD = ${rate.toFixed(2)} Bs.`;
       if (state.exchange.mode === 'bcv-eur') {
-        rateLabelText = `Tasa Ref BCV (EUR): 1 EUR = ${rate.toFixed(2)} Bs.`;
+        viewDualTitle.textContent = `Equivalente en Bolívares (BCV €):`;
+        viewUsdTotal.textContent = fmtBs(totalBs);
+        viewExchangeRateLbl.textContent = `Tasa Ref BCV Euro (€): 1 EUR = ${rate.toFixed(2)} Bs.`;
       } else if (state.exchange.mode === 'custom') {
-        rateLabelText = `Tasa Ref Personalizada: 1 USD = ${rate.toFixed(2)} Bs.`;
+        viewDualTitle.textContent = `Equivalente en Bolívares:`;
+        viewUsdTotal.textContent = fmtBs(totalBs);
+        viewExchangeRateLbl.textContent = `Tasa Ref Personalizada: 1 USD = ${rate.toFixed(2)} Bs.`;
+      } else {
+        viewDualTitle.textContent = `Equivalente en Bolívares (BCV $):`;
+        viewUsdTotal.textContent = fmtBs(totalBs);
+        viewExchangeRateLbl.textContent = `Tasa Ref BCV Dólar ($): 1 USD = ${rate.toFixed(2)} Bs.`;
       }
-      viewExchangeRateLbl.textContent = rateLabelText;
     } else {
       viewDualCurrencyWrapper.classList.add('hidden');
     }
@@ -1350,7 +1367,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td><strong>${escapeHtml(p.codigo || '-')}</strong></td>
         <td>${escapeHtml(p.nombre)}</td>
         <td><strong style="color:#4F46E5;">$${parseFloat(p.precio_usd).toFixed(2)} USD</strong></td>
-        <td>${p.iva_porcentaje}%</td>
+        <td>${p.iva_porcentaje || 0}%</td>
         <td><small>${escapeHtml(p.subtexto || '-')}</small></td>
         <td>
           <button class="btn btn-sm btn-primary btn-add-prod-to-pos" data-id="${p.id}"><i class="fa-solid fa-cart-plus"></i> Usar en POS</button>
@@ -1386,7 +1403,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const codigo = document.getElementById('prod-code').value || `PRD-${Date.now().toString().slice(-4)}`;
     const nombre = document.getElementById('prod-name').value;
     const precio_usd = parseFloat(document.getElementById('prod-price').value) || 0;
-    const iva_porcentaje = parseFloat(document.getElementById('prod-tax').value) || 16;
+    const iva_porcentaje = parseFloat(document.getElementById('prod-tax').value) || 0;
     const subtexto = document.getElementById('prod-subtext').value || '';
 
     const prodObj = {
@@ -1448,7 +1465,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.innerHTML = `
         <span class="picker-card-title">${escapeHtml(p.nombre)}</span>
         <span class="picker-card-price">$${parseFloat(p.precio_usd).toFixed(2)} USD</span>
-        <small style="color:#64748B;">IVA ${p.iva_porcentaje}% ${p.subtexto ? '• ' + escapeHtml(p.subtexto) : ''}</small>
+        <small style="color:#64748B;">${p.subtexto ? escapeHtml(p.subtexto) : 'Sin detalles'}</small>
       `;
       card.addEventListener('click', () => {
         addProductToPosReceipt(p);
@@ -1468,7 +1485,7 @@ document.addEventListener('DOMContentLoaded', () => {
       cant: 1,
       desc: product.nombre,
       subtext: product.subtexto || '',
-      taxRate: product.iva_porcentaje || 16,
+      taxRate: product.iva_porcentaje || 0,
       unitPrice: product.precio_usd || 0
     });
 
@@ -1715,7 +1732,7 @@ document.addEventListener('DOMContentLoaded', () => {
               showQR: typeof parsed.show_qr !== 'undefined' ? !!parsed.show_qr : true,
               showBarcode: typeof parsed.show_barcode !== 'undefined' ? !!parsed.show_barcode : true,
               showSignature: typeof parsed.show_signature !== 'undefined' ? !!parsed.show_signature : true,
-              showTaxTable: typeof parsed.show_tax_table !== 'undefined' ? !!parsed.show_tax_table : true,
+              showTaxTable: typeof parsed.show_tax_table !== 'undefined' ? !!parsed.show_tax_table : false,
               theme: parsed.theme,
               notes: parsed.notas_pie
             }
@@ -1763,7 +1780,7 @@ document.addEventListener('DOMContentLoaded', () => {
       total_bs_bcv: totalBs,
       moneda: state.business.currency,
       tasa_ref: state.exchange.rate,
-      target_currency: state.exchange.targetCurrency,
+      target_currency: state.exchange.mode === 'bcv-eur' ? 'EUR' : 'USD',
       suiche_bank: state.suiche.bank,
       suiche_doc: `${state.suiche.docType}${state.suiche.docNumber}`,
       suiche_phone: state.suiche.phone,
@@ -2015,7 +2032,7 @@ document.addEventListener('DOMContentLoaded', () => {
       msg += `-----------------------------------\n`;
       msg += `*TOTAL A PAGAR: ${fmtInputCurr(state.totals.grandTotal)} USD*\n`;
       msg += `*EQUIVALENTE BS:* ${fmtBs(state.totals.grandTotal * rate)}\n`;
-      msg += `*Tasa Ref (1 USD):* ${rate.toFixed(2)} Bs.\n`;
+      msg += `*Tasa Ref:* ${rate.toFixed(2)} Bs.\n`;
     } else {
       msg += `-----------------------------------\n`;
       msg += `*Concepto:* ${state.paymentDetails.concept}\n`;
@@ -2055,8 +2072,8 @@ document.addEventListener('DOMContentLoaded', () => {
     state.client.salesperson = 'Caja POS 1';
 
     state.items = [
-      { id: '101', cant: 1, desc: 'LICENCIA MARTK POS ADMIN V2.0', subtext: 'Suscripción Anual', taxRate: 16, unitPrice: 50.00 },
-      { id: '102', cant: 2, desc: 'IMPRESORA TÉRMICA BLUETOOTH 80MM', subtext: 'Garantía 12 meses', taxRate: 16, unitPrice: 45.00 }
+      { id: '101', cant: 1, desc: 'LICENCIA MARTK POS ADMIN V2.0', subtext: 'Suscripción Anual', taxRate: 0, unitPrice: 50.00 },
+      { id: '102', cant: 2, desc: 'IMPRESORA TÉRMICA BLUETOOTH 80MM', subtext: 'Garantía 12 meses', taxRate: 0, unitPrice: 45.00 }
     ];
 
     inputBizName.value = state.business.name;
@@ -2088,7 +2105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.paymentDetails.ref = '';
 
     state.items = [
-      { id: Date.now().toString(), cant: 1, desc: '', subtext: '', taxRate: 16, unitPrice: 0 }
+      { id: Date.now().toString(), cant: 1, desc: '', subtext: '', taxRate: 0, unitPrice: 0 }
     ];
 
     inputClientName.value = '';
