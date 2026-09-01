@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MARTK - Panel de Administración POS & Facturación</title>
+  <meta name="description" content="MARTK POS Admin - Sistema de Facturación, Recibos de Caja, Egresos, Catálogo de Productos y Directorio de Clientes.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Space Mono & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Estilos Principales -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- External Libraries: html2canvas & qrcodejs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body class="admin-body">
+
+  <!-- OVERLAY PARA MOBILE SIDEBAR DRAWER -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+  <!-- ADMIN SHELL LAYOUT -->
+  <div class="admin-wrapper">
+
+    <!-- SIDEBAR DE NAVEGACIÓN CORPORATIVA -->
+    <aside id="admin-sidebar" class="admin-sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo-icon">
+          <i class="fa-solid fa-receipt"></i>
+        </div>
+        <div class="brand-info">
+          <h2>MAR<span>TK</span></h2>
+          <span class="brand-tag">ADMIN POS v2.0</span>
+        </div>
+        <button id="btn-close-sidebar-mobile" class="mobile-close-btn">&times;</button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">MENÚ PRINCIPAL</div>
+        <button type="button" class="nav-item active" data-view="view-pos">
+          <i class="fa-solid fa-calculator"></i>
+          <span>Punto de Venta (POS)</span>
+        </button>
+        <button type="button" class="nav-item" data-view="view-productos">
+          <i class="fa-solid fa-boxes-stacked"></i>
+          <span>Catálogo Productos</span>
+        </button>
+        <button type="button" class="nav-item" data-view="view-clientes">
+          <i class="fa-solid fa-users"></i>
+          <span>Directorio Clientes</span>
+        </button>
+        <button type="button" class="nav-item" data-view="view-historial">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>Historial Facturas</span>
+          <strong id="sidebar-history-count" class="nav-badge">0</strong>
+        </button>
+
+        <div class="nav-section-title">SISTEMA</div>
+        <button type="button" class="nav-item" data-view="view-ajustes">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Ajustes & Negocio</span>
+        </button>
+      </nav>
+
+      <!-- SIDEBAR FOOTER CON STATUS BCV -->
+      <div class="sidebar-footer">
+        <div class="bcv-widget">
+          <div class="bcv-widget-header">
+            <span><i class="fa-solid fa-building-columns"></i> Tasa Oficial BCV</span>
+            <button type="button" id="btn-sidebar-fetch-bcv" class="btn-icon-xs" title="Actualizar BCV"><i class="fa-solid fa-arrows-rotate"></i></button>
+          </div>
+          <div class="bcv-widget-rates">
+            <div class="rate-pill">
+              <small>Dólar ($)</small>
+              <strong id="sidebar-bcv-usd">798.33 Bs.</strong>
+            </div>
+            <div class="rate-pill">
+              <small>Euro (€)</small>
+              <strong id="sidebar-bcv-eur">926.55 Bs.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ÁREA DE CONTENIDO PRINCIPAL -->
+    <div class="admin-main">
+      
+      <!-- HEADER PRINCIPAL -->
+      <header class="top-header">
+        <div class="header-left">
+          <button id="btn-toggle-sidebar" class="btn-hamburger">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="header-page-title">
+            <h1 id="page-title-text">Punto de Venta POS</h1>
+            <p id="page-subtitle-text">Emisión y vista previa interactiva de facturas, recibos y egresos</p>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <button id="btn-quick-sample" class="btn btn-sm btn-secondary" title="Cargar Datos de Muestra">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> <span class="hide-mobile">Cargar Muestra</span>
+          </button>
+
+          <button id="btn-quick-reset" class="btn btn-sm btn-outline" title="Limpiar Formulario">
+            <i class="fa-solid fa-rotate-left"></i> <span class="hide-mobile">Limpiar POS</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- VISTA 1: PUNTO DE VENTA (POS) -->
+      <section id="view-pos" class="app-view active">
+        <div class="workspace-grid">
+          
+          <!-- LEFT PANEL: Editor / Controls -->
+          <section class="editor-panel">
+            
+            <!-- Document Type Selector Bar -->
+            <div class="doc-type-selector-bar">
+              <label class="doc-type-label"><i class="fa-solid fa-file-invoice-dollar"></i> Tipo de Documento:</label>
+              <div class="doc-type-options">
+                <button type="button" class="doc-type-btn active" data-doctype="venta">
+                  <i class="fa-solid fa-cart-shopping"></i> Factura Venta
+                </button>
+                <button type="button" class="doc-type-btn" data-doctype="ingreso">
+                  <i class="fa-solid fa-hand-holding-dollar"></i> Recibo de Caja
+                </button>
+                <button type="button" class="doc-type-btn" data-doctype="egreso">
+                  <i class="fa-solid fa-money-bill-transfer"></i> Egreso
+                </button>
+              </div>
+            </div>
+
+            <div class="panel-header">
+              <h2><i class="fa-solid fa-pen-to-square"></i> <span id="doc-type-title-text">Factura de Venta</span></h2>
+              <div class="panel-header-badges">
+                <span class="auto-save-indicator"><i class="fa-solid fa-database"></i> MySQL markt_db</span>
+              </div>
+            </div>
+
+            <!-- Subtabs -->
+            <div class="editor-tabs">
+              <button class="tab-btn active" data-tab="tab-persona"><i class="fa-solid fa-user" id="tab-person-icon"></i> <span id="tab-person-text">Cliente</span></button>
+              <button class="tab-btn" data-tab="tab-items" id="tab-btn-items"><i class="fa-solid fa-list-check"></i> <span id="tab-items-text">Productos</span></button>
+              <button class="tab-btn" data-tab="tab-opciones"><i class="fa-solid fa-qrcode"></i> QR & Extras</button>
+            </div>
+
+            <!-- TAB CONTENT: Cliente -->
+            <div class="tab-content active" id="tab-persona">
+              <div class="form-section">
+                <div class="section-title-wrapper">
+                  <h3 class="section-title"><i class="fa-solid fa-user-tag"></i> <span id="section-person-title">Datos del Cliente & Pago</span></h3>
+                  <button type="button" id="btn-open-select-client-modal" class="btn btn-sm btn-outline"><i class="fa-solid fa-users"></i> Elegir Registrado</button>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-6">
+                    <label for="client-id" id="lbl-client-id">Documento / C.I. / RIF</label>
+                    <div class="input-group">
+                      <input type="text" id="client-id" placeholder="Ej: V-12345678" value="">
+                      <button type="button" id="btn-search-cedula" class="btn btn-primary" title="Buscar en Directorio MySQL">
+                        <i class="fa-solid fa-magnifying-glass"></i> Buscar
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="form-group col-6">
+                    <label for="client-name" id="lbl-client-name">Nombre del Cliente *</label>
+                    <input type="text" id="client-name" placeholder="Ej: Nombre del Cliente" value="">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-6">
+                    <label for="client-phone">WhatsApp del Contacto</label>
+                    <div class="input-with-icon">
+                      <i class="fa-brands fa-whatsapp input-icon"></i>
+                      <input type="tel" id="client-phone" placeholder="Ej: 584140000000" value="">
+                    </div>
+                  </div>
+
+                  <div class="form-group col-6">
+                    <label for="client-city">Ciudad / Dirección</label>
+                    <input type="text" id="client-city" placeholder="Ej: Ciudad / Dirección" value="">
+                  </div>
+                </div>
+
+                <!-- Método de Pago -->
+                <div class="form-row">
+                  <div class="form-group col-6">
+                    <label for="payment-form"><i class="fa-solid fa-wallet"></i> Método de Pago *</label>
+                    <select id="payment-form" class="select-highlight">
+                      <optgroup label="Bolívares">
+                        <option value="Pago Móvil" selected>Pago Móvil</option>
+                        <option value="Transferencia Bancaria Bs.">Transferencia Bancaria Bs.</option>
+                        <option value="Efectivo Bs.">Efectivo Bolívares (Bs.)</option>
+                        <option value="Biopago / Punto de Venta">Punto de Venta / Biopago</option>
+                      </optgroup>
+                      <optgroup label="Dólares / Divisas">
+                        <option value="Zinli">Zinli (USD)</option>
+                        <option value="Binance Pay">Binance Pay (USDT / Crypto)</option>
+                        <option value="Zelle">Zelle (USD)</option>
+                        <option value="Efectivo USD $">Efectivo Dólares (USD $)</option>
+                        <option value="Efectivo EUR €">Efectivo Euros (EUR €)</option>
+                      </optgroup>
+                      <optgroup label="Otros">
+                        <option value="Crédito / Por Cobrar">Crédito / Por Cobrar</option>
+                        <option value="custom">Otro personalizado...</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                  <div class="form-group col-6">
+                    <label for="salesperson" id="lbl-salesperson">Elaborado por</label>
+                    <input type="text" id="salesperson" placeholder="Ej: Nombre del Vendedor" value="">
+                  </div>
+                </div>
+
+                <div class="form-group hidden" id="custom-payment-wrapper">
+                  <label for="custom-payment-name">Escribe el Método de Pago Personalizado</label>
+                  <input type="text" id="custom-payment-name" placeholder="Ej: PayPal, Banesco Panamá, etc.">
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-6">
+                    <label for="doc-date">Fecha</label>
+                    <input type="date" id="doc-date">
+                  </div>
+                  <div class="form-group col-6">
+                    <label for="doc-time">Hora</label>
+                    <input type="text" id="doc-time" placeholder="11:50:31 AM">
+                  </div>
+                </div>
+
+                <!-- Folio correlativo actual en POS -->
+                <div class="folio-quick-bar">
+                  <span><i class="fa-solid fa-hashtags"></i> Folio en Emisión: <strong id="pos-doc-number">No. FES-001</strong></span>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- TAB CONTENT: Detalle de Ítems / Concepto de Pago -->
+            <div class="tab-content" id="tab-items">
+              <div class="form-section">
+                
+                <div id="section-venta-items">
+                  <div class="section-title-wrapper">
+                    <h3 class="section-title"><i class="fa-solid fa-list-check"></i> Productos o Servicios</h3>
+                    <div class="flex-gap-sm">
+                      <button type="button" id="btn-open-catalog-picker" class="btn btn-sm btn-secondary"><i class="fa-solid fa-store"></i> Elegir de Catálogo</button>
+                      <button type="button" id="btn-add-item" class="btn btn-sm btn-primary"><i class="fa-solid fa-plus"></i> Fila Vacía</button>
+                    </div>
+                  </div>
+
+                  <div class="items-list-container" id="items-list-container">
+                    <!-- Filas renderizadas dinámicamente -->
+                  </div>
+
+                  <div class="totals-config-box">
+                    <div class="form-row align-items-center">
+                      <div class="form-group col-6">
+                        <label for="tax-rate">Impuesto / IVA (%)</label>
+                        <div class="input-group">
+                          <input type="number" id="tax-rate" value="16" min="0" max="100" step="1">
+                          <span class="input-addon">%</span>
+                        </div>
+                      </div>
+                      <div class="form-group col-6">
+                        <label for="discount-amount">Descuento Global ($)</label>
+                        <input type="number" id="discount-amount" value="0" min="0" step="1" placeholder="0">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Recibo de Ingreso / Egreso -->
+                <div id="section-payment-details" class="hidden">
+                  <h3 class="section-title"><i class="fa-solid fa-money-check-dollar"></i> Detalle del Pago / Abono</h3>
+
+                  <div class="form-group">
+                    <label for="payment-concept">Por Concepto De *</label>
+                    <textarea id="payment-concept" rows="3" placeholder="Ej: Pago por concepto de servicio..."></textarea>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group col-6">
+                      <label for="payment-amount">Monto Recibido / Pagado ($ USD) *</label>
+                      <input type="number" id="payment-amount" value="0" min="0" step="1" placeholder="0.00 $">
+                    </div>
+                    <div class="form-group col-6">
+                      <label for="payment-ref">No. Referencia / Comprobante</label>
+                      <input type="text" id="payment-ref" placeholder="Ej: Ref. #00000" value="">
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group col-6">
+                      <label for="prev-balance">Saldo Anterior ($ USD)</label>
+                      <input type="number" id="prev-balance" value="0" min="0" step="1" placeholder="0.00 $">
+                    </div>
+                    <div class="form-group col-6">
+                      <label for="new-balance">Nuevo Saldo / Pendiente ($ USD)</label>
+                      <input type="number" id="new-balance" value="0" min="0" step="1" placeholder="0.00 $">
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- TAB CONTENT: Opciones & QR Suiche 7B -->
+            <div class="tab-content" id="tab-opciones">
+              <div class="form-section">
+                <h3 class="section-title"><i class="fa-solid fa-qrcode"></i> Datos Pago Móvil QR Suiche 7B</h3>
+                
+                <div class="suiche7b-box">
+                  <div class="form-row">
+                    <div class="form-group col-6">
+                      <label for="suiche-bank">Banco Receptor *</label>
+                      <select id="suiche-bank" class="select-highlight">
+                        <option value="0104">0104 - Venezolano de Crédito</option>
+                        <option value="0102">0102 - Banco de Venezuela (BDV)</option>
+                        <option value="0105">0105 - Banco Mercantil</option>
+                        <option value="0108">0108 - Banco Provincial (BBVA)</option>
+                        <option value="0114">0114 - BANCARIBE</option>
+                        <option value="0115">0115 - Banco Exterior</option>
+                        <option value="0128">0128 - Banco Caroní</option>
+                        <option value="0134" selected>0134 - BANESCO</option>
+                        <option value="0137">0137 - Banco Sofitasa</option>
+                        <option value="0138">0138 - Banco Plaza</option>
+                        <option value="0151">0151 - Banco Nacional de Crédito (BNC)</option>
+                        <option value="0156">0156 - 100% Banco</option>
+                        <option value="0157">0157 - DelSur Banco Universal</option>
+                        <option value="0163">0163 - Banco del Tesoro</option>
+                        <option value="0168">0168 - Bancrecer</option>
+                        <option value="0169">0169 - Mi Banco</option>
+                        <option value="0171">0171 - Banco Activo</option>
+                        <option value="0172">0172 - Bancamiga</option>
+                        <option value="0174">0174 - Banplus</option>
+                        <option value="0175">0175 - Banco Bicentenario</option>
+                        <option value="0177">0177 - BANFANB</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group col-6">
+                      <label for="suiche-doc">Tipo Doc / RIF / Cédula *</label>
+                      <div class="input-group">
+                        <select id="suiche-doc-type" style="width: 70px;">
+                          <option value="J" selected>J (RIF)</option>
+                          <option value="V">V (Cédula)</option>
+                          <option value="E">E (Extranjero)</option>
+                          <option value="G">G (Gubernamental)</option>
+                        </select>
+                        <input type="text" id="suiche-doc-number" placeholder="Número de RIF / C.I." value="">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-row mt-2">
+                    <div class="form-group col-6">
+                      <label for="suiche-phone">Teléfono Pago Móvil *</label>
+                      <input type="tel" id="suiche-phone" placeholder="Ej: 04140000000" value="">
+                    </div>
+                    <div class="form-group col-6">
+                      <label for="suiche-amount-mode">Modo de Monto en QR</label>
+                      <select id="suiche-amount-mode">
+                        <option value="dynamic" selected>Monto Dinámico en Bs. (Tasa BCV)</option>
+                        <option value="static">Monto Abierto / Estático</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="suiche-payload-preview mt-2">
+                    <label><i class="fa-solid fa-code"></i> Cadena de Salida QR Suiche 7B (BCV en Bolívares):</label>
+                    <div id="suiche-payload-text" class="payload-code-box">pagomovil:v=1;banco=0134...</div>
+                  </div>
+                </div>
+
+                <p class="help-text mt-2">Puedes guardar esta configuración por defecto en la sección Ajustes & Negocio para que no tengas que escribirla cada vez.</p>
+
+              </div>
+            </div>
+
+          </section>
+
+          <!-- RIGHT PANEL: Live Ticket Preview & Fast Actions -->
+          <section class="preview-panel">
+            
+            <div class="actions-toolbar">
+              <button id="btn-save-to-history" class="action-btn btn-primary">
+                <i class="fa-solid fa-floppy-disk"></i>
+                <span>Guardar Factura (+1 Folio)</span>
+              </button>
+
+              <button id="btn-download-img" class="action-btn btn-success">
+                <i class="fa-solid fa-download"></i>
+                <span>Descargar PNG</span>
+              </button>
+              
+              <button id="btn-share-whatsapp" class="action-btn btn-whatsapp">
+                <i class="fa-brands fa-whatsapp"></i>
+                <span>WhatsApp</span>
+              </button>
+
+              <button id="btn-print" class="action-btn btn-dark">
+                <i class="fa-solid fa-print"></i>
+                <span>Imprimir</span>
+              </button>
+            </div>
+
+            <!-- TICKET CANVAS WRAPPER -->
+            <div class="ticket-wrapper">
+              
+              <div id="ticket-container" class="ticket-card theme-thermal">
+                
+                <div class="ticket-header">
+                  <div class="ticket-logo-wrapper" id="ticket-logo-container">
+                    <img id="ticket-logo-img" src="" alt="Logo" class="ticket-logo hidden">
+                  </div>
+                  <h2 id="view-biz-name" class="ticket-biz-name">NOMBRE DE TU NEGOCIO</h2>
+                  <p id="view-biz-id" class="ticket-meta"></p>
+                  <p id="view-biz-address" class="ticket-meta"></p>
+                  <p id="view-biz-phone" class="ticket-meta"></p>
+                </div>
+
+                <div class="ticket-divider dashed"></div>
+
+                <div class="ticket-doc-info">
+                  <span id="view-doc-badge" class="ticket-badge-tag">VENTA</span>
+                  <h3 id="view-doc-title" class="doc-title">FACTURA ELECTRÓNICA DE VENTA</h3>
+                  <p id="view-doc-number" class="doc-number">No. FES-001</p>
+                  
+                  <div id="barcode-wrapper" class="barcode-container">
+                    <canvas id="barcode-canvas"></canvas>
+                  </div>
+                </div>
+
+                <div class="ticket-divider"></div>
+
+                <div class="ticket-meta-block">
+                  <div class="meta-row">
+                    <span class="lbl">Fecha:</span>
+                    <span id="view-doc-date" class="val"></span>
+                    <span class="lbl right-lbl">Hora:</span>
+                    <span id="view-doc-time" class="val"></span>
+                  </div>
+                  
+                  <div class="meta-row vertical" id="client-info-block">
+                    <div class="meta-line"><span class="lbl" id="view-lbl-person">Cliente:</span> <strong id="view-client-name" class="val">Cliente Mostrador</strong></div>
+                    <div class="meta-line hidden" id="view-client-id-row"><span class="lbl">Doc / RIF:</span> <span id="view-client-id" class="val"></span></div>
+                    <div class="meta-line hidden" id="view-client-city-row"><span class="lbl">Dirección:</span> <span id="view-client-city" class="val"></span></div>
+                  </div>
+                  
+                  <div class="meta-row">
+                    <span class="lbl">Forma de Pago:</span> <strong id="view-payment-form" class="val highlight-payment">Pago Móvil</strong>
+                  </div>
+                  <div class="meta-row">
+                    <span class="lbl" id="view-lbl-salesperson">Vendedor:</span> <span id="view-salesperson" class="val">Caja</span>
+                  </div>
+                </div>
+
+                <div class="ticket-divider dashed"></div>
+
+                <!-- ÍTEMS DE FACTURA -->
+                <div id="ticket-items-block" class="ticket-items-table">
+                  <div class="table-head">
+                    <span class="col-cant">Cant</span>
+                    <span class="col-desc">Detalle</span>
+                    <span class="col-tax">Iva</span>
+                    <span class="col-total">Total</span>
+                  </div>
+                  <div class="ticket-divider micro"></div>
+                  
+                  <div id="view-items-body" class="table-body">
+                    <!-- Inyectado dinámicamente -->
+                  </div>
+                </div>
+
+                <!-- DETALLE INGRESO / EGRESO -->
+                <div id="ticket-payment-receipt-block" class="ticket-payment-box hidden">
+                  <div class="payment-concept-wrapper">
+                    <span class="lbl-concept">POR CONCEPTO DE:</span>
+                    <p id="view-payment-concept" class="val-concept"></p>
+                  </div>
+
+                  <div class="ticket-divider micro"></div>
+
+                  <div class="meta-row" id="view-payment-ref-row">
+                    <span class="lbl">Ref. Comprobante:</span>
+                    <span id="view-payment-ref" class="val"></span>
+                  </div>
+
+                  <div class="meta-row hidden" id="view-prev-balance-row">
+                    <span class="lbl">Saldo Anterior:</span>
+                    <span id="view-prev-balance" class="val">$0.00</span>
+                  </div>
+
+                  <div class="meta-row hidden" id="view-new-balance-row">
+                    <span class="lbl">Nuevo Saldo Pendiente:</span>
+                    <strong id="view-new-balance" class="val">$0.00</strong>
+                  </div>
+                </div>
+
+                <div class="ticket-divider dashed"></div>
+
+                <!-- TOTALES EN $ Y BS BCV -->
+                <div class="ticket-totals">
+                  <div class="totals-row" id="view-subtotal-row">
+                    <span>Subtotal:</span>
+                    <span id="view-subtotal">$0.00</span>
+                  </div>
+                  <div class="totals-row hidden" id="view-discount-row">
+                    <span>Descuento:</span>
+                    <span id="view-discount">-$0.00</span>
+                  </div>
+                  <div class="totals-row" id="view-tax-row">
+                    <span>Iva (16%):</span>
+                    <span id="view-tax">$0.00</span>
+                  </div>
+                  
+                  <div class="ticket-divider micro"></div>
+                  
+                  <div class="totals-row grand-total">
+                    <span id="view-total-lbl">Total ($ USD):</span>
+                    <strong id="view-total">$0.00 USD</strong>
+                  </div>
+
+                  <div id="view-dual-currency-wrapper" class="dual-currency-ticket-block">
+                    <div class="dual-total-row">
+                      <span id="view-dual-title">Equivalente en Bolívares (BCV):</span>
+                      <strong id="view-usd-total">Bs. 0,00</strong>
+                    </div>
+                    <div class="exchange-rate-row">
+                      <span id="view-exchange-rate-lbl">Tasa Ref BCV (USD): 1 USD = 798.33 Bs.</span>
+                    </div>
+                  </div>
+                  
+                  <div class="items-count" id="view-items-count-row">
+                    <span>Cantidad ítems:</span>
+                    <strong id="view-items-count">1</strong>
+                  </div>
+                </div>
+
+                <div id="view-tax-table-wrapper" class="tax-detail-box">
+                  <div class="ticket-divider micro"></div>
+                  <div class="tax-table-title">DETALLES DE IMPUESTOS</div>
+                  <div class="tax-table-head">
+                    <span>TARIFA</span>
+                    <span>BASE</span>
+                    <span>IMPUESTO</span>
+                  </div>
+                  <div class="tax-table-row">
+                    <span id="view-tax-rate-lbl">IVA 16%</span>
+                    <span id="view-tax-base">$0.00</span>
+                    <span id="view-tax-val">$0.00</span>
+                  </div>
+                </div>
+
+                <div id="view-signature-wrapper" class="ticket-signature">
+                  <div class="signature-line" id="view-signature-text">Firma ___________________________</div>
+                </div>
+
+                <div id="view-qr-wrapper" class="ticket-qr-container">
+                  <div id="qrcode" class="qr-code-box"></div>
+                  <div class="qr-caption" id="view-qr-caption">Escanea con la App de tu Banco (Suiche 7B)</div>
+                </div>
+
+                <div id="view-notes-wrapper" class="ticket-notes">
+                  <div class="ticket-divider micro"></div>
+                  <p id="view-notes-text">Montos calculados según tasa oficial de referencia BCV.&#10;Gracias por su compra.</p>
+                </div>
+
+                <div class="ticket-footer-brand">
+                  <p>MARTK • Comprobante Digital</p>
+                </div>
+
+              </div>
+
+            </div>
+
+          </section>
+
+        </div>
+      </section>
+
+      <!-- VISTA 2: CATÁLOGO DE PRODUCTOS / SERVICIOS -->
+      <section id="view-productos" class="app-view hidden">
+        <div class="card-panel">
+          <div class="card-panel-header">
+            <div>
+              <h2><i class="fa-solid fa-boxes-stacked"></i> Catálogo de Productos y Servicios (MySQL)</h2>
+              <p class="text-muted">Registra tus productos con precio en $ USD para agregarlos a las facturas en 1 clic</p>
+            </div>
+            <button id="btn-show-add-product-form" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nuevo Producto</button>
+          </div>
+
+          <!-- FORMULARIO AGREGAR PRODUCTO -->
+          <div id="product-form-box" class="form-box-collapse hidden">
+            <form id="form-product">
+              <input type="hidden" id="prod-id">
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="prod-code">Código de Producto (Opcional)</label>
+                  <input type="text" id="prod-code" placeholder="Ej: PRD-001">
+                </div>
+                <div class="form-group col-6">
+                  <label for="prod-name">Nombre / Descripción del Producto *</label>
+                  <input type="text" id="prod-name" placeholder="Ej: Camisa Polo Manga Corta" required>
+                </div>
+              </div>
+
+              <div class="form-row mt-2">
+                <div class="form-group col-6">
+                  <label for="prod-price">Precio Unitario ($ USD) *</label>
+                  <input type="number" id="prod-price" min="0" step="0.01" placeholder="0.00 $" required>
+                </div>
+                <div class="form-group col-6">
+                  <label for="prod-tax">Tarifa IVA (%)</label>
+                  <input type="number" id="prod-tax" min="0" max="100" value="16">
+                </div>
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="prod-subtext">Subtexto / Garantía (Opcional)</label>
+                <input type="text" id="prod-subtext" placeholder="Ej: Garantía 30 días">
+              </div>
+
+              <div class="form-actions mt-3">
+                <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Guardar Producto en MySQL</button>
+                <button type="button" id="btn-cancel-product" class="btn btn-outline">Cancelar</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- BUSCADOR Y TABLA DE PRODUCTOS -->
+          <div class="table-toolbar mt-3">
+            <div class="input-with-icon">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input type="text" id="search-products" placeholder="Buscar productos por código o nombre...">
+            </div>
+          </div>
+
+          <div class="table-responsive mt-2">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Producto / Servicio</th>
+                  <th>Precio ($ USD)</th>
+                  <th>IVA</th>
+                  <th>Subtexto</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="products-table-body">
+                <!-- Productos inyectados dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 3: DIRECTORIO DE CLIENTES -->
+      <section id="view-clientes" class="app-view hidden">
+        <div class="card-panel">
+          <div class="card-panel-header">
+            <div>
+              <h2><i class="fa-solid fa-users"></i> Directorio de Clientes (MySQL)</h2>
+              <p class="text-muted">Consulta, agrega y gestiona la base de datos de tus clientes</p>
+            </div>
+            <button id="btn-show-add-client-form" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Nuevo Cliente</button>
+          </div>
+
+          <!-- FORMULARIO CLIENTE -->
+          <div id="client-form-box" class="form-box-collapse hidden">
+            <form id="form-client">
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="c-doc">Cédula / RIF / NIT *</label>
+                  <input type="text" id="c-doc" placeholder="Ej: V-12345678 o J-3014145662" required>
+                </div>
+                <div class="form-group col-6">
+                  <label for="c-name">Nombre Completo / Razón Social *</label>
+                  <input type="text" id="c-name" placeholder="Ej: Carlos Gómez C.A." required>
+                </div>
+              </div>
+
+              <div class="form-row mt-2">
+                <div class="form-group col-6">
+                  <label for="c-phone">Teléfono / WhatsApp</label>
+                  <input type="tel" id="c-phone" placeholder="Ej: 584141234567">
+                </div>
+                <div class="form-group col-6">
+                  <label for="c-address">Ciudad / Dirección</label>
+                  <input type="text" id="c-address" placeholder="Ej: Caracas, Venezuela">
+                </div>
+              </div>
+
+              <div class="form-actions mt-3">
+                <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Guardar Cliente en MySQL</button>
+                <button type="button" id="btn-cancel-client" class="btn btn-outline">Cancelar</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="table-toolbar mt-3">
+            <div class="input-with-icon">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input type="text" id="search-clients" placeholder="Buscar clientes por C.I., RIF o nombre...">
+            </div>
+          </div>
+
+          <div class="table-responsive mt-2">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Doc / RIF</th>
+                  <th>Nombre del Cliente</th>
+                  <th>WhatsApp</th>
+                  <th>Dirección</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="clients-table-body">
+                <!-- Clientes inyectados dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 4: HISTORIAL DE FACTURAS -->
+      <section id="view-historial" class="app-view hidden">
+        <div class="card-panel">
+          <div class="card-panel-header">
+            <div>
+              <h2><i class="fa-solid fa-clock-rotate-left"></i> Historial de Comprobantes Emitidos (MySQL)</h2>
+              <p class="text-muted">Registro de todas las facturas, recibos de caja y egresos guardados en MySQL</p>
+            </div>
+            <button id="btn-clear-all-history" class="btn btn-danger-outline btn-sm"><i class="fa-solid fa-trash-can"></i> Vaciar Historial</button>
+          </div>
+
+          <div class="table-toolbar mt-3">
+            <div class="input-with-icon">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input type="text" id="search-history" placeholder="Buscar en historial por No. Folio, cliente o concepto...">
+            </div>
+          </div>
+
+          <div class="table-responsive mt-2">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Folio</th>
+                  <th>Tipo</th>
+                  <th>Fecha y Hora</th>
+                  <th>Cliente</th>
+                  <th>Método Pago</th>
+                  <th>Total ($ USD)</th>
+                  <th>Total (Bs. BCV)</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body">
+                <!-- Comprobantes inyectados dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 5: AJUSTES & PREFERENCIAS PERMANENTES -->
+      <section id="view-ajustes" class="app-view hidden">
+        <div class="card-panel">
+          <div class="card-panel-header">
+            <div>
+              <h2><i class="fa-solid fa-sliders"></i> Ajustes de Negocio & Preferencias de Impresión</h2>
+              <p class="text-muted">Guarda la configuración en MySQL para que tus facturas salgan exactamente como quieres cada vez</p>
+            </div>
+            <button id="btn-save-all-settings" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Preferencias en MySQL</button>
+          </div>
+
+          <div class="settings-grid">
+            
+            <!-- CAJA 1: DATOS DEL NEGOCIO -->
+            <div class="settings-box">
+              <h3 class="section-title"><i class="fa-solid fa-store"></i> Perfil de Tu Empresa (MySQL)</h3>
+              
+              <div class="logo-upload-box mt-2">
+                <div class="logo-preview" id="logo-preview">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <span>Subir Logo</span>
+                </div>
+                <div class="logo-controls">
+                  <input type="file" id="input-logo" accept="image/*" class="file-input">
+                  <label for="input-logo" class="btn btn-sm btn-outline"><i class="fa-solid fa-image"></i> Cargar Logo</label>
+                  <button type="button" id="btn-remove-logo" class="btn btn-sm btn-danger-outline hidden"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </div>
+
+              <div class="form-group logo-size-control-box mt-2">
+                <div class="logo-size-label-row">
+                  <label for="logo-size-range"><i class="fa-solid fa-expand"></i> Tamaño del Logo:</label>
+                  <strong id="logo-size-val">220 px</strong>
+                </div>
+                <input type="range" id="logo-size-range" min="100" max="340" step="10" value="220" class="range-slider">
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="biz-name">Nombre Comercial / Empresa *</label>
+                <input type="text" id="biz-name" placeholder="Ej: Tu Empresa C.A.">
+              </div>
+
+              <div class="form-row mt-2">
+                <div class="form-group col-6">
+                  <label for="biz-id">RIF / C.I. / NIT</label>
+                  <input type="text" id="biz-id" placeholder="Ej: RIF: J-00000000-0">
+                </div>
+                <div class="form-group col-6">
+                  <label for="biz-phone">Teléfono / WhatsApp</label>
+                  <input type="text" id="biz-phone" placeholder="Ej: Tel: 0414-0000000">
+                </div>
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="biz-address">Dirección Fiscal & Ciudad</label>
+                <input type="text" id="biz-address" placeholder="Ej: Av. Principal, Caracas">
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="footer-notes">Nota de Pie de Página / Garantía</label>
+                <textarea id="footer-notes" rows="3">Montos calculados según tasa oficial de referencia BCV.&#10;Gracias por su compra.</textarea>
+              </div>
+            </div>
+
+            <!-- CAJA 2: PREFERENCIAS PERMANENTES DE IMPRESIÓN POS -->
+            <div class="settings-box">
+              <h3 class="section-title"><i class="fa-solid fa-print"></i> Preferencias Permanentes de Impresión Ticket</h3>
+              <p class="help-text mb-2">Estas opciones quedarán guardadas en la base de datos MySQL para no tener que configurarlas cada vez.</p>
+
+              <div class="toggles-box">
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-title"><i class="fa-solid fa-qrcode"></i> Mostrar QR Suiche 7B Pago Móvil</span>
+                    <span class="toggle-desc">Código QR al pie de la factura para pago directo</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="pref-show-qr" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-title"><i class="fa-solid fa-barcode"></i> Mostrar Código de Barras</span>
+                    <span class="toggle-desc">Gráfico de barras correlativo bajo el número de folio</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="pref-show-barcode" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-title"><i class="fa-solid fa-signature"></i> Mostrar Línea de Firma</span>
+                    <span class="toggle-desc">Espacio para firma de conformidad</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="pref-show-signature" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-title"><i class="fa-solid fa-table"></i> Mostrar Cuadro Detalle IVA</span>
+                    <span class="toggle-desc">Tabla de desglose de tasa e impuesto</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="pref-show-tax-table" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- SELECCIÓN DE TEMA VISUAL POR DEFECTO -->
+              <div class="theme-selector-box mt-3">
+                <label class="section-title-sm">Tema Estético Predeterminado del Ticket</label>
+                <div class="theme-options">
+                  <button type="button" class="theme-card active" data-theme="theme-thermal">
+                    <div class="theme-swatch thermal"></div>
+                    <span>POS Térmico</span>
+                  </button>
+                  <button type="button" class="theme-card" data-theme="theme-modern">
+                    <div class="theme-swatch modern"></div>
+                    <span>Indigo Moderno</span>
+                  </button>
+                  <button type="button" class="theme-card" data-theme="theme-emerald">
+                    <div class="theme-swatch emerald"></div>
+                    <span>Esmeralda Eco</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- CONFIGURACIÓN DE FOLIO AUTO-INCREMENTAL -->
+              <div class="folio-config-box mt-3">
+                <div class="folio-header">
+                  <div class="section-title-sm"><i class="fa-solid fa-hashtags"></i> Contador de Folio Correlativo</div>
+                  <span class="folio-badge"><i class="fa-solid fa-database"></i> MySQL</span>
+                </div>
+
+                <div class="form-row mt-2">
+                  <div class="form-group col-6">
+                    <label for="doc-number">Folio Actual en Edición</label>
+                    <input type="text" id="doc-number" value="No. FES-001" style="font-weight:800; color:#4F46E5;">
+                  </div>
+                  <div class="form-group col-6">
+                    <label for="folio-counter">Número Secuencial</label>
+                    <input type="number" id="folio-counter" min="1" step="1" value="1">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+    </div> <!-- END ADMIN MAIN -->
+
+  </div> <!-- END ADMIN WRAPPER -->
+
+  <!-- NAVBAR MOBILE INFERIOR PARA TOUCH -->
+  <div class="mobile-bottom-nav">
+    <button type="button" class="mobile-nav-btn active" data-view="view-pos">
+      <i class="fa-solid fa-calculator"></i>
+      <span>POS</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-view="view-productos">
+      <i class="fa-solid fa-boxes-stacked"></i>
+      <span>Productos</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-view="view-clientes">
+      <i class="fa-solid fa-users"></i>
+      <span>Clientes</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-view="view-historial">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <span>Historial</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-view="view-ajustes">
+      <i class="fa-solid fa-sliders"></i>
+      <span>Ajustes</span>
+    </button>
+  </div>
+
+  <!-- MODAL: SELECTOR RÁPIDO DE PRODUCTOS PARA EL POS -->
+  <div id="modal-product-picker" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-store"></i> Agregar Producto del Catálogo</h3>
+        <button id="btn-close-product-picker" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-with-icon mb-2">
+          <i class="fa-solid fa-magnifying-glass input-icon"></i>
+          <input type="text" id="picker-search-product" placeholder="Buscar producto por nombre o código...">
+        </div>
+        <div id="picker-product-list" class="picker-grid">
+          <!-- Tarjetas de productos inyectadas dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SELECTOR RÁPIDO DE CLIENTES REGISTRADOS -->
+  <div id="modal-client-picker" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-users"></i> Seleccionar Cliente Registrado</h3>
+        <button id="btn-close-client-picker" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-with-icon mb-2">
+          <i class="fa-solid fa-magnifying-glass input-icon"></i>
+          <input type="text" id="picker-search-client" placeholder="Buscar por Cédula, RIF o nombre...">
+        </div>
+        <div id="picker-client-list" class="picker-list">
+          <!-- Lista de clientes inyectados dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Oculto para compatibilidad de binding de moneda de entrada -->
+  <select id="currency-symbol" class="hidden">
+    <option value="$" selected>$ (USD Dólares)</option>
+    <option value="Bs.">Bs. (Bolívares)</option>
+  </select>
+  <input type="text" id="doc-title" value="FACTURA ELECTRÓNICA DE VENTA" class="hidden">
+  <input type="checkbox" id="toggle-dual-currency" checked class="hidden">
+  <input type="radio" name="target-currency" value="USD" checked class="hidden">
+  <input type="number" id="exchange-rate" value="798.33" class="hidden">
+  <span id="label-target-usd" class="hidden"></span>
+  <span id="label-target-eur" class="hidden"></span>
+  <span id="lbl-exchange-rate" class="hidden"></span>
+  <span id="bcv-usd-val" class="hidden">798.33 Bs.</span>
+  <span id="bcv-eur-val" class="hidden">926.55 Bs.</span>
+
+  <!-- Script Principal -->
+  <script src="app.js"></script>
+
+</body>
+</html>
