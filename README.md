@@ -1,33 +1,27 @@
-# MARTK - Sistema POS & Panel de Administración
+# MARKT POS - Sistema de Facturación & POS Web Móvil (v2.1.0)
 
-MARTK es un sistema web de Punto de Venta (POS) y administración integral diseñado para negocios en Venezuela. Ofrece emisión de facturas electrónicas de venta, recibos de caja (ingresos), comprobantes de egreso, catálogo de productos, directorio de clientes y cálculo automático de montos con la tasa de referencia del Banco Central de Venezuela (BCV).
+**MARKT** es un sistema web de Punto de Venta (POS) y emisión de facturas electrónicas, recibos de caja y comprobantes de egreso diseñado para comercios en Venezuela. Opera en modo **100% Autónomo (Serverless / Standalone)**: no requiere instalar ni configurar bases de datos MySQL, permitiendo su uso instantáneo en computadoras y **teléfonos móviles**.
 
-## Características Principales
+## ✨ Características Principales
 
-- **Panel de Administración POS**: Interfaz sobria y profesional con navegación lateral y soporte responsivo para dispositivos móviles.
-- **Múltiples Documentos**: Factura de Venta, Recibo de Caja (Ingreso) y Comprobante de Egreso.
-- **Dualidad Monetaria ($ USD / Bs. BCV)**: Entrada de precios en dólares ($ USD) con cálculo y conversión automática a Bolívares (Bs.) usando la tasa oficial del día de DolarApi / BCV.
-- **Directorio de Clientes**: Búsqueda por número de Cédula o RIF con autocompletado y guardado directo en base de datos.
+- **100% Sin Base de Datos**: Funciona de forma inmediata en el navegador del usuario utilizando `localStorage`.
+- **Optimizado para Teléfonos Móviles (PWA & Responsive)**: Interfaz adaptada a pantallas táctiles, barra de navegación inferior móvil y soporte para agregar como App a la pantalla de inicio en Android e iOS.
+- **Múltiples Documentos**: Factura de Venta, Recibo de Caja (Ingreso) y Comprobante de Egreso con numeración correlativa automática.
+- **Dualidad Monetaria ($ USD / Bs. BCV)**: Entrada de precios en dólares ($ USD) con cálculo y conversión automática a Bolívares usando la tasa oficial del día de **DolarApi / BCV** en tiempo real.
+- **Directorio de Clientes Inteligente**: Búsqueda por número de Cédula o RIF y **auto-registro automático** de clientes al emitir cada factura.
 - **Catálogo de Productos y Servicios**: Registro de productos con precios en USD e IVA que pueden agregarse a la factura en un clic.
 - **Generación de Código QR Suiche 7B**: Creación de cadenas Pago Móvil interbancario de Venezuela con banco receptor, RIF, teléfono y monto ajustado en Bolívares.
 - **Formatos de Salida**: Descarga de comprobantes en formato de imagen PNG, impresión limpia adaptada a impresoras térmicas y envío estructurado por WhatsApp.
-- **Persistencia en MySQL (`markt_db`)**: Almacenamiento directo de datos de empresa, productos, clientes, historial de facturas y preferencias de formato.
+- **Respaldo y Migración (JSON)**: Exporta e importa copias de seguridad de todos tus datos para transferirlos entre tu computadora y tu teléfono.
 
 ## Estructura del Proyecto
 
-- `server.js`: Servidor REST API en Node.js y Express con conexión a MySQL.
-- `schema.sql`: Script de creación y estructura de tablas para la base de datos `markt_db`.
-- `index.html`: Estructura principal de la interfaz web.
-- `styles.css`: Sistema de diseño visual sobrio y corporativo.
-- `app.js`: Lógica cliente en JavaScript para gestión de estado, eventos y previsualización.
-- `create_db.js`: Script auxiliar para creación inicial de la base de datos `markt_db`.
-- `clear_db.js`: Script auxiliar para limpieza de registros en MySQL.
-
-## Requisitos del Sistema
-
-- **Node.js** v16.0 o superior.
-- **MySQL Server** (u otro servidor MariaDB compatible) escuchando en `localhost:3306`.
-- Navegador web moderno (Chrome, Edge, Firefox, Safari).
+- `index.html`: Estructura principal de la interfaz web y soporte PWA móvil.
+- `styles.css`: Sistema de diseño visual sobrio, corporativo y táctil.
+- `app.js`: Lógica cliente en JavaScript 100% autónoma (`localStorage`, DolarApi BCV, Suiche 7B y respaldo JSON).
+- `server.js`: Servidor web ligero opcional en Node.js que detecta la IP local para acceso desde el teléfono en la red Wi-Fi.
+- `CHANGELOG.md`: Historial de versiones y releases.
+- `schema.sql`: Esquema SQL de referencia.
 
 ## Instrucciones de Instalación y Uso
 
@@ -44,37 +38,28 @@ cd MARKT
 npm install
 ```
 
-### 3. Configurar la Base de Datos MySQL
+### Opción 1: Abrir directamente (Sin instalar nada)
+Simplemente haz doble clic en `index.html` en tu computadora para empezar a facturar de inmediato.
 
-Verifica que tu servicio MySQL se encuentre en ejecución y ejecuta el script de inicialización de la base de datos:
-
-```bash
-node create_db.js
-```
-
-O bien, importa directamente la estructura desde la consola de MySQL:
+### Opción 2: Iniciar servidor local y conectar con el Teléfono Móvil
+Si deseas compartir la aplicación con tu teléfono móvil en la misma red Wi-Fi:
 
 ```bash
-mysql -u root -p < schema.sql
+# 1. Instalar dependencias
+npm install
+
+# 2. Iniciar servidor
+npm start
 ```
 
-### 4. Iniciar el Servidor Backend
+La consola te mostrará dos enlaces:
+- `http://localhost:5000` para abrir en tu computadora.
+- `http://192.168.X.X:5000` para abrir en el navegador de tu **teléfono móvil** conectado al mismo Wi-Fi.
 
-```bash
-node server.js
-```
-
-El servidor indicará que está escuchando en `http://localhost:5000`.
-
-### 5. Iniciar la Interfaz de Usuario
-
-Abre `index.html` directamente en tu navegador o ejecuta un servidor web local:
-
-```bash
-python -m http.server 3000
-```
-
-Accede a `http://localhost:3000` en tu navegador.
+### Opción 3: Despliegue en la Web (Landing Page / Hosting Gratuito)
+Al ser una aplicación web estática autónoma, puedes subirla con 1 clic a:
+- **GitHub Pages**: Sube los archivos al repositorio `https://github.com/eizy-c/MARKT` y activa GitHub Pages en *Settings > Pages*.
+- **Vercel** o **Netlify**: Conecta tu repositorio para tener un enlace público HTTPS accesible desde cualquier teléfono en cualquier lugar.
 
 ## Desarrollado Por
 

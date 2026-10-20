@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MARTK POS">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>MARTK - Sistema de Facturación & POS Web Móvil</title>
+  <meta name="description" content="MARTK POS - Facturación Electrónica, Recibos y Egresos 100% Web sin Base de Datos. Funciona en PC y Teléfono Móvil.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Space Mono & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Estilos Principales -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- External Libraries: html2canvas & qrcodejs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body class="admin-body">
+
+  <!-- OVERLAY PARA MOBILE SIDEBAR DRAWER -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+  <!-- ADMIN SHELL LAYOUT -->
+  <div class="admin-wrapper">
+
+    <!-- SIDEBAR DE NAVEGACIÓN CORPORATIVA -->
+    <aside id="admin-sidebar" class="admin-sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo-icon">
+          <i class="fa-solid fa-receipt"></i>
+        </div>
+        <div class="brand-info">
+          <h2>MAR<span>TK</span></h2>
+          <span class="brand-tag">ADMIN POS v2.1</span>
+        </div>
+        <button id="btn-close-sidebar-mobile" class="mobile-close-btn">&times;</button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">MENÚ PRINCIPAL</div>
+        <button type="button" class="nav-item active" data-view="view-pos">
+          <i class="fa-solid fa-calculator"></i>
+          <span>Punto de Venta (POS)</span>
+        </button>
+        <button type="button" class="nav-item" data-view="view-cotizaciones">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+          <span>Cotizaciones & Presupuestos</span>
+        </button>
+        <button type="button" class="nav-item" data-view="view-proyectos">
+          <i class="fa-solid fa-list-check"></i>
+          <span>Proyectos & Agenda</span>
+          <strong id="sidebar-projects-count" class="nav-badge" style="background:#4F46E5;">0</strong>
+        </button>
+        <button type="button" class="nav-item" data-view="view-productos">
+          <i class="fa-solid fa-boxes-stacked"></i>
+          <span>Catálogo Productos</span>
+        </button>
+        <button type="button" class="nav-item" data-view="view-clientes">
+          <i class="fa-solid fa-users"></i>
+          <span>Directorio Clientes</span>
+        </button>
+        <button type="button" class="nav-item" data-view="view-galeria">
+          <i class="fa-solid fa-images"></i>
+          <span>Galería de Trabajos</span>
+        </button>
+        <button type="button" class="nav-item" data-view="view-historial">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>Historial Facturas</span>
+          <strong id="sidebar-history-count" class="nav-badge">0</strong>
+        </button>
+
+        <div class="nav-section-title">SISTEMA</div>
+        <button type="button" class="nav-item" data-view="view-ajustes">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Ajustes & Negocio</span>
+        </button>
+      </nav>
+
+      <!-- SIDEBAR FOOTER CON STATUS BCV -->
+      <div class="sidebar-footer">
+        <div class="bcv-widget">
+          <div class="bcv-widget-header">
+            <span><i class="fa-solid fa-building-columns"></i> Tasa Oficial BCV</span>
+            <button type="button" id="btn-sidebar-fetch-bcv" class="btn-icon-xs" title="Actualizar BCV"><i class="fa-solid fa-arrows-rotate"></i></button>
+          </div>
+          <div class="bcv-widget-rates">
+            <div class="rate-pill">
+              <small>Dólar ($)</small>
+              <strong id="sidebar-bcv-usd">798.33 Bs.</strong>
+            </div>
+            <div class="rate-pill">
+              <small>Euro (€)</small>
+              <strong id="sidebar-bcv-eur">926.55 Bs.</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-system-brand">
+          <small><i class="fa-solid fa-code"></i> Desarrollado por <strong>EIZY SYSTEM</strong></small>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ÁREA DE CONTENIDO PRINCIPAL -->
+    <div class="admin-main">
+      
+      <!-- HEADER PRINCIPAL -->
+      <header class="top-header">
+        <div class="header-left">
+          <button id="btn-toggle-sidebar" class="btn-hamburger">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="header-page-title">
+            <h1 id="page-title-text">Punto de Venta POS</h1>
+            <p id="page-subtitle-text">Emisión y vista previa interactiva de facturas, recibos y egresos</p>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <button id="btn-quick-sample" class="btn btn-sm btn-secondary" title="Cargar Datos de Muestra">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> <span class="hide-mobile">Cargar Muestra</span>
+          </button>
+
+          <button id="btn-quick-reset" class="btn btn-sm btn-outline" title="Limpiar Formulario">
+            <i class="fa-solid fa-rotate-left"></i> <span class="hide-mobile">Limpiar POS</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- VISTA 1: PUNTO DE VENTA (POS) -->
+      <section id="view-pos" class="app-view active">
+        <div class="workspace-grid">
+          
+          <!-- LEFT PANEL: Editor / Controls -->
+          <section class="editor-panel">
+            
+            <!-- Document Type Selector Bar -->
+            <div class="doc-type-selector-bar">
+              <label class="doc-type-label"><i class="fa-solid fa-file-invoice-dollar"></i> Tipo de Documento:</label>
+              <div class="doc-type-options">
+                <button type="button" class="doc-type-btn active" data-doctype="venta">
+                  <i class="fa-solid fa-cart-shopping"></i> Factura Venta
+                </button>
+                <button type="button" class="doc-type-btn" data-doctype="ingreso">
+                  <i class="fa-solid fa-hand-holding-dollar"></i> Recibo de Caja
+                </button>
+                <button type="button" class="doc-type-btn" data-doctype="egreso">
+                  <i class="fa-solid fa-money-bill-transfer"></i> Egreso
+                </button>
+              </div>
+            </div>
+
+            <div class="panel-header">
+              <h2><i class="fa-solid fa-pen-to-square"></i> <span id="doc-type-title-text">Factura de Venta</span></h2>
+              <div class="panel-header-badges">
+                <span class="auto-save-indicator"><i class="fa-solid fa-circle-check"></i> En Línea</span>
+              </div>
+            </div>
+
+            <!-- Subtabs / Pestañas de Pasos Secuenciales -->
+            <div class="editor-tabs">
+              <button type="button" class="tab-btn active" data-tab="tab-persona" id="tab-btn-persona">
+                <i class="fa-solid fa-user" id="tab-person-icon"></i>
+                <span id="tab-person-text">Cliente</span>
+              </button>
+              <button type="button" class="tab-btn" data-tab="tab-items" id="tab-btn-items">
+                <i class="fa-solid fa-list-check" id="tab-items-icon"></i>
+                <span id="tab-items-text">Productos</span>
+              </button>
+              <button type="button" class="tab-btn" data-tab="tab-opciones" id="tab-btn-opciones">
+                <i class="fa-solid fa-qrcode"></i>
+                <span>QR & Extras</span>
+              </button>
+            </div>
+
+            <!-- TAB CONTENT 1: Cliente / Beneficiario -->
+            <div class="tab-content active" id="tab-persona">
+              <div class="form-section">
+                <div class="section-title-wrapper">
+                  <h3 class="section-title"><i class="fa-solid fa-user-tag"></i> <span id="section-person-title">Datos del Cliente & Pago</span></h3>
+                  <button type="button" id="btn-open-select-client-modal" class="btn btn-sm btn-outline"><i class="fa-solid fa-users"></i> Elegir Registrado</button>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-6">
+                    <label for="client-id" id="lbl-client-id">Documento / C.I. / RIF</label>
+                    <div class="input-group">
+                      <input type="text" id="client-id" placeholder="Ej: V-12345678" value="">
+                      <button type="button" id="btn-search-cedula" class="btn btn-primary" title="Buscar en Directorio">
+                        <i class="fa-solid fa-magnifying-glass"></i> Buscar
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="form-group col-6">
+                    <label for="client-name" id="lbl-client-name">Nombre del Cliente *</label>
+                    <input type="text" id="client-name" placeholder="Ej: Nombre del Cliente" value="">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-6">
+                    <label for="client-phone">WhatsApp del Contacto</label>
+                    <div class="input-with-icon">
+                      <i class="fa-brands fa-whatsapp input-icon"></i>
+                      <input type="tel" id="client-phone" placeholder="Ej: 584140000000" value="">
+                    </div>
+                  </div>
+
+                  <div class="form-group col-6">
+                    <label for="client-city">Ciudad / Dirección</label>
+                    <input type="text" id="client-city" placeholder="Ej: Ciudad / Dirección" value="">
+                  </div>
+                </div>
+
+                <!-- Método de Pago -->
+                <div class="form-row">
+                  <div class="form-group col-6">
+                    <label for="payment-form"><i class="fa-solid fa-wallet"></i> Método de Pago *</label>
+                    <select id="payment-form" class="select-highlight">
+                      <optgroup label="Bolívares">
+                        <option value="Pago Móvil" selected>Pago Móvil</option>
+                        <option value="Transferencia Bancaria Bs.">Transferencia Bancaria Bs.</option>
+                        <option value="Efectivo Bs.">Efectivo Bolívares (Bs.)</option>
+                        <option value="Biopago / Punto de Venta">Punto de Venta / Biopago</option>
+                      </optgroup>
+                      <optgroup label="Dólares / Divisas">
+                        <option value="Zinli">Zinli (USD)</option>
+                        <option value="Binance Pay">Binance Pay (USDT / Crypto)</option>
+                        <option value="Zelle">Zelle (USD)</option>
+                        <option value="Efectivo USD $">Efectivo Dólares (USD $)</option>
+                        <option value="Efectivo EUR €">Efectivo Euros (EUR €)</option>
+                      </optgroup>
+                      <optgroup label="Otros">
+                        <option value="Crédito / Por Cobrar">Crédito / Por Cobrar</option>
+                        <option value="custom">Otro personalizado...</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                  <div class="form-group col-6">
+                    <label for="salesperson" id="lbl-salesperson">Elaborado por</label>
+                    <input type="text" id="salesperson" placeholder="Ej: Nombre del Vendedor" value="">
+                  </div>
+                </div>
+
+                <div class="form-group hidden" id="custom-payment-wrapper">
+                  <label for="custom-payment-name">Escribe el Método de Pago Personalizado</label>
+                  <input type="text" id="custom-payment-name" placeholder="Ej: PayPal, Banesco Panamá, etc.">
+                </div>
+
+                <!-- Selección de Tasa de Cambio Oficial BCV / Euro / Manual -->
+                <div class="form-row mt-2">
+                  <div class="form-group col-6">
+                    <label for="select-rate-mode"><i class="fa-solid fa-building-columns"></i> Tasa de Cambio a Aplicar *</label>
+                    <select id="select-rate-mode" class="select-highlight">
+                      <option value="bcv-usd" selected>Tasa Oficial BCV Dólar ($)</option>
+                      <option value="bcv-eur">Tasa Oficial BCV Euro (€)</option>
+                      <option value="custom">Tasa Personalizada / Manual</option>
+                    </select>
+                  </div>
+                  <div class="form-group col-6" id="custom-rate-wrapper">
+                    <label for="input-custom-rate"><i class="fa-solid fa-coins"></i> Valor Tasa (Bs.)</label>
+                    <input type="number" id="input-custom-rate" step="0.01" min="0" placeholder="Ej: 798.33" value="798.33">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-6">
+                    <label for="doc-date">Fecha</label>
+                    <input type="date" id="doc-date">
+                  </div>
+                  <div class="form-group col-6">
+                    <label for="doc-time">Hora</label>
+                    <input type="text" id="doc-time" placeholder="11:50:31 AM">
+                  </div>
+                </div>
+
+                <!-- Folio correlativo actual en POS -->
+                <div class="folio-quick-bar">
+                  <span><i class="fa-solid fa-hashtags"></i> Folio en Emisión: <strong id="pos-doc-number">No. FES-001</strong></span>
+                </div>
+
+                <!-- Botón de avance secuencial paso 1 -> paso 2 -->
+                <div class="step-nav-wrapper mt-2">
+                  <button type="button" id="btn-next-step-1" class="btn btn-primary btn-block">
+                    <span id="btn-next-step-text">Siguiente: Productos</span> <i class="fa-solid fa-arrow-right"></i>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- TAB CONTENT 2: Productos / Detalle del Comprobante -->
+            <div class="tab-content hidden" id="tab-items">
+              <div class="form-section">
+                
+                <!-- Para Factura de Venta -->
+                <div id="section-venta-items">
+                  <div class="section-title-wrapper">
+                    <h3 class="section-title"><i class="fa-solid fa-list-check"></i> Productos o Servicios</h3>
+                    <div class="flex-gap-sm">
+                      <button type="button" id="btn-open-catalog-picker" class="btn btn-sm btn-secondary"><i class="fa-solid fa-store"></i> Elegir de Catálogo</button>
+                      <button type="button" id="btn-add-item" class="btn btn-sm btn-primary"><i class="fa-solid fa-plus"></i> Fila Vacía</button>
+                    </div>
+                  </div>
+
+                  <div class="items-list-container" id="items-list-container">
+                    <!-- Filas renderizadas dinámicamente -->
+                  </div>
+
+                  <div class="totals-config-box">
+                    <div class="form-row align-items-center">
+                      <div class="form-group col-6">
+                        <label for="tax-rate">Impuesto / IVA (%)</label>
+                        <div class="input-group">
+                          <input type="number" id="tax-rate" value="0" min="0" max="100" step="1">
+                          <span class="input-addon">%</span>
+                        </div>
+                      </div>
+                      <div class="form-group col-6">
+                        <label for="discount-amount">Descuento Global ($)</label>
+                        <input type="number" id="discount-amount" value="0" min="0" step="1" placeholder="0">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Para Recibo de Ingreso / Egreso -->
+                <div id="section-payment-details" class="hidden">
+                  <h3 class="section-title"><i class="fa-solid fa-money-check-dollar"></i> Detalle del Pago / Abono / Concepto</h3>
+
+                  <div class="form-group">
+                    <label for="payment-concept">Por Concepto De *</label>
+                    <textarea id="payment-concept" rows="3" placeholder="Ej: Pago por concepto de servicio..."></textarea>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group col-6">
+                      <label for="payment-amount">Monto Recibido / Pagado ($ USD) *</label>
+                      <input type="number" id="payment-amount" value="0" min="0" step="1" placeholder="0.00 $">
+                    </div>
+                    <div class="form-group col-6">
+                      <label for="payment-ref">No. Referencia / Comprobante</label>
+                      <input type="text" id="payment-ref" placeholder="Ej: Ref. #00000" value="">
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group col-6">
+                      <label for="prev-balance">Saldo Anterior ($ USD)</label>
+                      <input type="number" id="prev-balance" value="0" min="0" step="1" placeholder="0.00 $">
+                    </div>
+                    <div class="form-group col-6">
+                      <label for="new-balance">Nuevo Saldo / Pendiente ($ USD)</label>
+                      <input type="number" id="new-balance" value="0" min="0" step="1" placeholder="0.00 $">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Navegación Paso 2: Anterior & Siguiente -->
+                <div class="step-nav-wrapper mt-2 flex-gap-sm">
+                  <button type="button" id="btn-prev-step-2" class="btn btn-outline col-6">
+                    <i class="fa-solid fa-arrow-left"></i> <span id="btn-prev-step-2-text">Anterior: Cliente</span>
+                  </button>
+                  <button type="button" id="btn-next-step-2" class="btn btn-primary col-6">
+                    <span>Siguiente: QR & Extras</span> <i class="fa-solid fa-arrow-right"></i>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- TAB CONTENT 3: Opciones & QR Suiche 7B -->
+            <div class="tab-content hidden" id="tab-opciones">
+              <div class="form-section">
+                <h3 class="section-title"><i class="fa-solid fa-qrcode"></i> Datos Pago Móvil QR Suiche 7B</h3>
+                
+                <div class="suiche7b-box">
+                  <div class="form-row">
+                    <div class="form-group col-6">
+                      <label for="suiche-bank">Banco Receptor *</label>
+                      <select id="suiche-bank" class="select-highlight">
+                        <option value="0104">0104 - Venezolano de Crédito</option>
+                        <option value="0102">0102 - Banco de Venezuela (BDV)</option>
+                        <option value="0105">0105 - Banco Mercantil</option>
+                        <option value="0108">0108 - Banco Provincial (BBVA)</option>
+                        <option value="0114">0114 - BANCARIBE</option>
+                        <option value="0115">0115 - Banco Exterior</option>
+                        <option value="0128">0128 - Banco Caroní</option>
+                        <option value="0134" selected>0134 - BANESCO</option>
+                        <option value="0137">0137 - Banco Sofitasa</option>
+                        <option value="0138">0138 - Banco Plaza</option>
+                        <option value="0151">0151 - Banco Nacional de Crédito (BNC)</option>
+                        <option value="0156">0156 - 100% Banco</option>
+                        <option value="0157">0157 - DelSur Banco Universal</option>
+                        <option value="0163">0163 - Banco del Tesoro</option>
+                        <option value="0168">0168 - Bancrecer</option>
+                        <option value="0169">0169 - Mi Banco</option>
+                        <option value="0171">0171 - Banco Activo</option>
+                        <option value="0172">0172 - Bancamiga</option>
+                        <option value="0174">0174 - Banplus</option>
+                        <option value="0175">0175 - Banco Bicentenario</option>
+                        <option value="0177">0177 - BANFANB</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group col-6">
+                      <label for="suiche-doc">Tipo Doc / RIF / Cédula *</label>
+                      <div class="input-group">
+                        <select id="suiche-doc-type" style="width: 70px;">
+                          <option value="J" selected>J (RIF)</option>
+                          <option value="V">V (Cédula)</option>
+                          <option value="E">E (Extranjero)</option>
+                          <option value="G">G (Gubernamental)</option>
+                        </select>
+                        <input type="text" id="suiche-doc-number" placeholder="Número de RIF / C.I." value="">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-row mt-2">
+                    <div class="form-group col-6">
+                      <label for="suiche-phone">Teléfono Pago Móvil *</label>
+                      <input type="tel" id="suiche-phone" placeholder="Ej: 04140000000" value="">
+                    </div>
+                    <div class="form-group col-6">
+                      <label for="suiche-amount-mode">Modo de Monto en QR</label>
+                      <select id="suiche-amount-mode">
+                        <option value="dynamic" selected>Monto Dinámico en Bs. (Tasa BCV)</option>
+                        <option value="static">Monto Abierto / Estático</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="suiche-payload-preview mt-2">
+                    <label><i class="fa-solid fa-code"></i> Cadena de Salida QR Suiche 7B (BCV en Bolívares):</label>
+                    <div id="suiche-payload-text" class="payload-code-box">pagomovil:v=1;banco=0134...</div>
+                  </div>
+                </div>
+
+                <p class="help-text mt-2">Puedes guardar esta configuración por defecto en la sección Ajustes & Negocio para que no tengas que escribirla cada vez.</p>
+
+                <!-- Navegación Paso 3: Anterior -->
+                <div class="step-nav-wrapper mt-3">
+                  <button type="button" id="btn-prev-step-3" class="btn btn-outline btn-block">
+                    <i class="fa-solid fa-arrow-left"></i> <span id="btn-prev-step-3-text">Anterior: Productos</span>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+          </section>
+
+          <!-- RIGHT PANEL: Live Ticket Preview & Fast Actions -->
+          <section class="preview-panel">
+            
+            <div class="actions-toolbar">
+              <button id="btn-save-to-history" class="action-btn btn-primary">
+                <i class="fa-solid fa-floppy-disk"></i>
+                <span>Guardar Factura (+1 Folio)</span>
+              </button>
+
+              <button id="btn-download-img" class="action-btn btn-success">
+                <i class="fa-solid fa-download"></i>
+                <span>Descargar PNG</span>
+              </button>
+              
+              <button id="btn-share-whatsapp" class="action-btn btn-whatsapp">
+                <i class="fa-brands fa-whatsapp"></i>
+                <span>WhatsApp</span>
+              </button>
+
+              <button id="btn-print" class="action-btn btn-dark">
+                <i class="fa-solid fa-print"></i>
+                <span>Imprimir</span>
+              </button>
+            </div>
+
+            <!-- TICKET CANVAS WRAPPER -->
+            <div class="ticket-wrapper">
+              
+              <div id="ticket-container" class="ticket-card theme-thermal">
+                
+                <div class="ticket-header">
+                  <div class="ticket-logo-wrapper" id="ticket-logo-container">
+                    <img id="ticket-logo-img" src="" alt="Logo" class="ticket-logo hidden">
+                  </div>
+                  <h2 id="view-biz-name" class="ticket-biz-name">NOMBRE DE TU NEGOCIO</h2>
+                  <p id="view-biz-id" class="ticket-meta"></p>
+                  <p id="view-biz-address" class="ticket-meta"></p>
+                  <p id="view-biz-phone" class="ticket-meta"></p>
+                </div>
+
+                <div class="ticket-divider dashed"></div>
+
+                <div class="ticket-doc-info">
+                  <span id="view-doc-badge" class="ticket-badge-tag">VENTA</span>
+                  <h3 id="view-doc-title" class="doc-title">FACTURA ELECTRÓNICA DE VENTA</h3>
+                  <p id="view-doc-number" class="doc-number">No. FES-001</p>
+                  
+                  <div id="barcode-wrapper" class="barcode-container">
+                    <canvas id="barcode-canvas"></canvas>
+                  </div>
+                </div>
+
+                <div class="ticket-divider"></div>
+
+                <div class="ticket-meta-block">
+                  <div class="meta-row">
+                    <span class="lbl">Fecha:</span>
+                    <span id="view-doc-date" class="val"></span>
+                    <span class="lbl right-lbl">Hora:</span>
+                    <span id="view-doc-time" class="val"></span>
+                  </div>
+                  
+                  <div class="meta-row vertical" id="client-info-block">
+                    <div class="meta-line"><span class="lbl" id="view-lbl-person">Cliente:</span> <strong id="view-client-name" class="val">Cliente Mostrador</strong></div>
+                    <div class="meta-line hidden" id="view-client-id-row"><span class="lbl">Doc / RIF:</span> <span id="view-client-id" class="val"></span></div>
+                    <div class="meta-line hidden" id="view-client-city-row"><span class="lbl">Dirección:</span> <span id="view-client-city" class="val"></span></div>
+                  </div>
+                  
+                  <div class="meta-row">
+                    <span class="lbl">Forma de Pago:</span> <strong id="view-payment-form" class="val highlight-payment">Pago Móvil</strong>
+                  </div>
+                  <div class="meta-row">
+                    <span class="lbl" id="view-lbl-salesperson">Vendedor:</span> <span id="view-salesperson" class="val">Caja</span>
+                  </div>
+                </div>
+
+                <div class="ticket-divider dashed"></div>
+
+                <!-- ÍTEMS DE FACTURA -->
+                <div id="ticket-items-block" class="ticket-items-table">
+                  <div class="table-head">
+                    <span class="col-cant">Cant</span>
+                    <span class="col-desc">Detalle</span>
+                    <span class="col-tax">Iva</span>
+                    <span class="col-total">Total</span>
+                  </div>
+                  <div class="ticket-divider micro"></div>
+                  
+                  <div id="view-items-body" class="table-body">
+                    <!-- Inyectado dinámicamente -->
+                  </div>
+                </div>
+
+                <!-- DETALLE INGRESO / EGRESO -->
+                <div id="ticket-payment-receipt-block" class="ticket-payment-box hidden">
+                  <div class="payment-concept-wrapper">
+                    <span class="lbl-concept">POR CONCEPTO DE:</span>
+                    <p id="view-payment-concept" class="val-concept"></p>
+                  </div>
+
+                  <div class="ticket-divider micro"></div>
+
+                  <div class="meta-row" id="view-payment-ref-row">
+                    <span class="lbl">Ref. Comprobante:</span>
+                    <span id="view-payment-ref" class="val"></span>
+                  </div>
+
+                  <div class="meta-row hidden" id="view-prev-balance-row">
+                    <span class="lbl">Saldo Anterior:</span>
+                    <span id="view-prev-balance" class="val">$0.00</span>
+                  </div>
+
+                  <div class="meta-row hidden" id="view-new-balance-row">
+                    <span class="lbl">Nuevo Saldo Pendiente:</span>
+                    <strong id="view-new-balance" class="val">$0.00</strong>
+                  </div>
+                </div>
+
+                <div class="ticket-divider dashed"></div>
+
+                <!-- TOTALES EN $ Y BS BCV -->
+                <div class="ticket-totals">
+                  <div class="totals-row" id="view-subtotal-row">
+                    <span>Subtotal:</span>
+                    <span id="view-subtotal">$0.00</span>
+                  </div>
+                  <div class="totals-row hidden" id="view-discount-row">
+                    <span>Descuento:</span>
+                    <span id="view-discount">-$0.00</span>
+                  </div>
+                  <div class="totals-row" id="view-tax-row">
+                    <span>Iva (16%):</span>
+                    <span id="view-tax">$0.00</span>
+                  </div>
+                  
+                  <div class="ticket-divider micro"></div>
+                  
+                  <div class="totals-row grand-total">
+                    <span id="view-total-lbl">Total ($ USD):</span>
+                    <strong id="view-total">$0.00 USD</strong>
+                  </div>
+
+                  <div id="view-dual-currency-wrapper" class="dual-currency-ticket-block">
+                    <div class="dual-total-row">
+                      <span id="view-dual-title">Equivalente en Bolívares (BCV):</span>
+                      <strong id="view-usd-total">Bs. 0,00</strong>
+                    </div>
+                    <div class="exchange-rate-row">
+                      <span id="view-exchange-rate-lbl">Tasa Ref BCV (USD): 1 USD = 798.33 Bs.</span>
+                    </div>
+                  </div>
+                  
+                  <div class="items-count" id="view-items-count-row">
+                    <span>Cantidad ítems:</span>
+                    <strong id="view-items-count">1</strong>
+                  </div>
+                </div>
+
+                <div id="view-tax-table-wrapper" class="tax-detail-box">
+                  <div class="ticket-divider micro"></div>
+                  <div class="tax-table-title">DETALLES DE IMPUESTOS</div>
+                  <div class="tax-table-head">
+                    <span>TARIFA</span>
+                    <span>BASE</span>
+                    <span>IMPUESTO</span>
+                  </div>
+                  <div class="tax-table-row">
+                    <span id="view-tax-rate-lbl">IVA 16%</span>
+                    <span id="view-tax-base">$0.00</span>
+                    <span id="view-tax-val">$0.00</span>
+                  </div>
+                </div>
+
+                <div id="view-signature-wrapper" class="ticket-signature">
+                  <div class="signature-line" id="view-signature-text">Firma ___________________________</div>
+                </div>
+
+                <div id="view-qr-wrapper" class="ticket-qr-container">
+                  <div id="qrcode" class="qr-code-box"></div>
+                  <div class="qr-caption" id="view-qr-caption">Escanea con la App de tu Banco (Suiche 7B)</div>
+                </div>
+
+                <div id="view-notes-wrapper" class="ticket-notes">
+                  <div class="ticket-divider micro"></div>
+                  <p id="view-notes-text">Montos calculados según tasa oficial de referencia BCV.&#10;Gracias por su compra.</p>
+                </div>
+
+                <div class="ticket-footer-brand">
+                  <p>MARTK • Desarrollado por <strong>EIZY SYSTEM</strong></p>
+                </div>
+
+              </div>
+
+            </div>
+
+          </section>
+
+        </div>
+      </section>
+
+      <!-- VISTA 2: CATÁLOGO DE PRODUCTOS / SERVICIOS -->
+      <section id="view-productos" class="app-view hidden">
+        <div class="card-panel">
+          <div class="card-panel-header">
+            <div>
+              <h2><i class="fa-solid fa-boxes-stacked"></i> Catálogo de Productos y Servicios</h2>
+              <p class="text-muted">Registra tus productos con precio en $ USD para agregarlos a las facturas en 1 clic</p>
+            </div>
+            <button id="btn-show-add-product-form" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nuevo Producto</button>
+          </div>
+
+          <!-- FORMULARIO AGREGAR PRODUCTO -->
+          <div id="product-form-box" class="form-box-collapse hidden">
+            <form id="form-product">
+              <input type="hidden" id="prod-id">
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="prod-code">Código de Producto (Opcional)</label>
+                  <input type="text" id="prod-code" placeholder="Ej: PRD-001">
+                </div>
+                <div class="form-group col-6">
+                  <label for="prod-name">Nombre / Descripción del Producto *</label>
+                  <input type="text" id="prod-name" placeholder="Ej: Camisa Polo Manga Corta" required>
+                </div>
+              </div>
+
+              <div class="form-row mt-2">
+                <div class="form-group col-6">
+                  <label for="prod-price">Precio Unitario ($ USD) *</label>
+                  <input type="number" id="prod-price" min="0" step="0.01" placeholder="0.00 $" required>
+                </div>
+                <div class="form-group col-6">
+                  <label for="prod-tax">Tarifa IVA (%)</label>
+                  <input type="number" id="prod-tax" min="0" max="100" value="0">
+                </div>
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="prod-subtext">Subtexto / Garantía (Opcional)</label>
+                <input type="text" id="prod-subtext" placeholder="Ej: Garantía 30 días">
+              </div>
+
+              <div class="form-actions mt-3">
+                <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Guardar Producto</button>
+                <button type="button" id="btn-cancel-product" class="btn btn-outline">Cancelar</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- BUSCADOR Y TABLA DE PRODUCTOS -->
+          <div class="table-toolbar mt-3">
+            <div class="input-with-icon">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input type="text" id="search-products" placeholder="Buscar productos por código o nombre...">
+            </div>
+          </div>
+
+          <div class="table-responsive mt-2">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Producto / Servicio</th>
+                  <th>Precio ($ USD)</th>
+                  <th>IVA</th>
+                  <th>Subtexto</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="products-table-body">
+                <!-- Productos inyectados dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 3: DIRECTORIO DE CLIENTES -->
+      <section id="view-clientes" class="app-view hidden">
+        <div class="card-panel">
+          <div class="card-panel-header">
+            <div>
+              <h2><i class="fa-solid fa-users"></i> Directorio de Clientes</h2>
+              <p class="text-muted">Consulta, agrega y gestiona la base de datos de tus clientes</p>
+            </div>
+            <button id="btn-show-add-client-form" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Nuevo Cliente</button>
+          </div>
+
+          <!-- FORMULARIO CLIENTE -->
+          <div id="client-form-box" class="form-box-collapse hidden">
+            <form id="form-client">
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="c-doc">Cédula / RIF / NIT *</label>
+                  <input type="text" id="c-doc" placeholder="Ej: V-12345678 o J-3014145662" required>
+                </div>
+                <div class="form-group col-6">
+                  <label for="c-name">Nombre Completo / Razón Social *</label>
+                  <input type="text" id="c-name" placeholder="Ej: Carlos Gómez C.A." required>
+                </div>
+              </div>
+
+              <div class="form-row mt-2">
+                <div class="form-group col-6">
+                  <label for="c-phone">Teléfono / WhatsApp</label>
+                  <input type="tel" id="c-phone" placeholder="Ej: 584141234567">
+                </div>
+                <div class="form-group col-6">
+                  <label for="c-address">Ciudad / Dirección</label>
+                  <input type="text" id="c-address" placeholder="Ej: Caracas, Venezuela">
+                </div>
+              </div>
+
+              <div class="form-actions mt-3">
+                <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Guardar Cliente</button>
+                <button type="button" id="btn-cancel-client" class="btn btn-outline">Cancelar</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="table-toolbar mt-3">
+            <div class="input-with-icon">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input type="text" id="search-clients" placeholder="Buscar clientes por C.I., RIF o nombre...">
+            </div>
+          </div>
+
+          <div class="table-responsive mt-2">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Doc / RIF</th>
+                  <th>Nombre del Cliente</th>
+                  <th>WhatsApp</th>
+                  <th>Dirección</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="clients-table-body">
+                <!-- Clientes inyectados dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 4: HISTORIAL DE FACTURAS -->
+      <section id="view-historial" class="app-view hidden">
+        <div class="card-panel">
+          <div class="card-panel-header">
+            <div>
+              <h2><i class="fa-solid fa-clock-rotate-left"></i> Historial de Comprobantes Emitidos</h2>
+              <p class="text-muted">Registro de todas las facturas, recibos de caja y egresos guardados</p>
+            </div>
+            <button id="btn-clear-all-history" class="btn btn-danger-outline btn-sm"><i class="fa-solid fa-trash-can"></i> Vaciar Historial</button>
+          </div>
+
+          <div class="table-toolbar mt-3">
+            <div class="input-with-icon">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input type="text" id="search-history" placeholder="Buscar en historial por No. Folio, cliente o concepto...">
+            </div>
+          </div>
+
+          <div class="table-responsive mt-2">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Folio</th>
+                  <th>Tipo</th>
+                  <th>Fecha y Hora</th>
+                  <th>Cliente</th>
+                  <th>Método Pago</th>
+                  <th>Total ($ USD)</th>
+                  <th>Total (Bs. BCV)</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body">
+                <!-- Comprobantes inyectados dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 5: AJUSTES & PREFERENCIAS PERMANENTES -->
+      <section id="view-ajustes" class="app-view hidden">
+        <div class="card-panel">
+          <div class="card-panel-header">
+            <div>
+              <h2><i class="fa-solid fa-sliders"></i> Ajustes de Negocio & Preferencias de Impresión</h2>
+              <p class="text-muted">Guarda la configuración para que tus facturas salgan exactamente como quieres cada vez</p>
+            </div>
+            <button id="btn-save-all-settings" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Preferencias</button>
+          </div>
+
+          <div class="settings-grid">
+            
+            <!-- CAJA 1: DATOS DEL NEGOCIO -->
+            <div class="settings-box">
+              <h3 class="section-title"><i class="fa-solid fa-store"></i> Perfil de Tu Empresa</h3>
+              
+              <div class="logo-upload-box mt-2">
+                <div class="logo-preview" id="logo-preview">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <span>Subir Logo</span>
+                </div>
+                <div class="logo-controls">
+                  <input type="file" id="input-logo" accept="image/*" class="file-input">
+                  <label for="input-logo" class="btn btn-sm btn-outline"><i class="fa-solid fa-image"></i> Cargar Archivo</label>
+                  <button type="button" id="btn-paste-logo" class="btn btn-sm btn-outline"><i class="fa-solid fa-link"></i> Pegar Enlace Logo</button>
+                  <button type="button" id="btn-remove-logo" class="btn btn-sm btn-danger-outline hidden"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </div>
+
+              <div class="form-group logo-size-control-box mt-2">
+                <div class="logo-size-label-row">
+                  <label for="logo-size-range"><i class="fa-solid fa-expand"></i> Tamaño del Logo:</label>
+                  <strong id="logo-size-val">220 px</strong>
+                </div>
+                <input type="range" id="logo-size-range" min="100" max="340" step="10" value="220" class="range-slider">
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="biz-name">Nombre Comercial / Empresa *</label>
+                <input type="text" id="biz-name" placeholder="Ej: Tu Empresa C.A.">
+              </div>
+
+              <div class="form-row mt-2">
+                <div class="form-group col-6">
+                  <label for="biz-id">RIF / C.I. / NIT</label>
+                  <input type="text" id="biz-id" placeholder="Ej: RIF: J-00000000-0">
+                </div>
+                <div class="form-group col-6">
+                  <label for="biz-phone">Teléfono / WhatsApp</label>
+                  <input type="text" id="biz-phone" placeholder="Ej: Tel: 0414-0000000">
+                </div>
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="biz-address">Dirección Fiscal & Ciudad</label>
+                <input type="text" id="biz-address" placeholder="Ej: Av. Principal, Caracas">
+              </div>
+
+              <div class="form-group mt-2">
+                <label for="footer-notes">Nota de Pie de Página / Garantía</label>
+                <textarea id="footer-notes" rows="3">Montos calculados según tasa oficial de referencia BCV.&#10;Gracias por su compra.</textarea>
+              </div>
+            </div>
+
+            <!-- CAJA 1.5: CUENTAS BANCARIAS PARA PAGO DE ANTICIPOS (STITCH) -->
+            <div class="settings-box">
+              <h3 class="section-title"><i class="fa-solid fa-building-columns"></i> Cuentas para Pago de Anticipos & Cobros</h3>
+              <p class="help-text mb-2">Datos bancarios visibles en presupuestos formales para recepción de pagos con botón de copiado rápido.</p>
+
+              <div class="bank-card">
+                <div class="bank-card-info">
+                  <span class="bank-card-title"><i class="fa-solid fa-mobile-screen-button text-secondary"></i> Pago Móvil Predeterminado</span>
+                  <span class="bank-card-clabe" id="setting-pm-display">Banesco (0134) • C.I: 12.345.678 • Tel: 0414-0000000</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline btn-copy-bank" data-target="setting-pm-display" title="Copiar Datos">
+                  <i class="fa-solid fa-copy"></i>
+                </button>
+              </div>
+
+              <div class="bank-card mt-2">
+                <div class="bank-card-info">
+                  <span class="bank-card-title"><i class="fa-solid fa-credit-card text-secondary"></i> Transferencia Bancaria (CLABE / Cuenta)</span>
+                  <span class="bank-card-clabe" id="setting-trans-display">0134-0000-00-0000000000</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline btn-copy-bank" data-target="setting-trans-display" title="Copiar Datos">
+                  <i class="fa-solid fa-copy"></i>
+                </button>
+              </div>
+
+              <div class="form-group mt-3">
+                <label for="bank-info-textarea">Texto de Cuentas para Presupuestos</label>
+                <textarea id="bank-info-textarea" rows="2">Pago Móvil: Banesco (0134) - C.I: 12345678 - Tel: 0414-0000000</textarea>
+              </div>
+            </div>
+
+            <!-- CAJA 2: PREFERENCIAS PERMANENTES DE IMPRESIÓN POS -->
+            <div class="settings-box">
+              <h3 class="section-title"><i class="fa-solid fa-print"></i> Preferencias Permanentes de Impresión Ticket</h3>
+              <p class="help-text mb-2">Estas opciones quedarán guardadas en el sistema para no tener que configurarlas cada vez.</p>
+
+              <div class="toggles-box">
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-title"><i class="fa-solid fa-qrcode"></i> Mostrar QR Suiche 7B Pago Móvil</span>
+                    <span class="toggle-desc">Código QR al pie de la factura para pago directo</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="pref-show-qr" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-title"><i class="fa-solid fa-barcode"></i> Mostrar Código de Barras</span>
+                    <span class="toggle-desc">Gráfico de barras correlativo bajo el número de folio</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="pref-show-barcode" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-title"><i class="fa-solid fa-signature"></i> Mostrar Línea de Firma</span>
+                    <span class="toggle-desc">Espacio para firma de conformidad</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="pref-show-signature" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-title"><i class="fa-solid fa-table"></i> Mostrar Cuadro Detalle IVA</span>
+                    <span class="toggle-desc">Tabla de desglose de tasa e impuesto</span>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="pref-show-tax-table" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- SELECCIÓN DE TEMA VISUAL POR DEFECTO -->
+              <div class="theme-selector-box mt-3">
+                <label class="section-title-sm">Tema Estético Predeterminado del Ticket</label>
+                <div class="theme-options">
+                  <button type="button" class="theme-card active" data-theme="theme-thermal">
+                    <div class="theme-swatch thermal"></div>
+                    <span>POS Térmico</span>
+                  </button>
+                  <button type="button" class="theme-card" data-theme="theme-modern">
+                    <div class="theme-swatch modern"></div>
+                    <span>Indigo Moderno</span>
+                  </button>
+                  <button type="button" class="theme-card" data-theme="theme-emerald">
+                    <div class="theme-swatch emerald"></div>
+                    <span>Esmeralda Eco</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- CONFIGURACIÓN DE FOLIO AUTO-INCREMENTAL -->
+              <div class="folio-config-box mt-3">
+                <div class="folio-header">
+                  <div class="section-title-sm"><i class="fa-solid fa-hashtags"></i> Contador de Folio Correlativo</div>
+                  <span class="folio-badge"><i class="fa-solid fa-check"></i> Folio</span>
+                </div>
+
+                <div class="form-row mt-2">
+                  <div class="form-group col-6">
+                    <label for="doc-number">Folio Actual en Edición</label>
+                    <input type="text" id="doc-number" value="No. FES-001" style="font-weight:800; color:#4F46E5;">
+                  </div>
+                  <div class="form-group col-6">
+                    <label for="folio-counter">Número Secuencial</label>
+                    <input type="number" id="folio-counter" min="1" step="1" value="1">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- CAJA 3: COPIA DE SEGURIDAD Y MIGRACIÓN (MODO WEB & MÓVIL) -->
+            <div class="settings-box" style="grid-column: 1 / -1;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.5rem;">
+                <h3 class="section-title"><i class="fa-solid fa-cloud-arrow-down"></i> Respaldo & Migración de Datos</h3>
+                <span style="background:#10B981; color:#fff; font-size:0.7rem; padding:0.25rem 0.6rem; border-radius:999px; font-weight:700;"><i class="fa-solid fa-bolt"></i> Modo 100% Sin Base de Datos</span>
+              </div>
+              <p class="help-text mb-3">Tus productos, clientes, historial y configuración se guardan de forma instantánea en este navegador. Utiliza estas herramientas para transferir tus datos entre tu PC y tu teléfono móvil o guardar una copia segura en tu dispositivo.</p>
+
+              <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                  <button type="button" id="btn-export-backup" class="btn btn-primary" style="flex:1; min-width:180px;">
+                    <i class="fa-solid fa-file-export"></i> Descargar Respaldo JSON
+                  </button>
+                  <button type="button" id="btn-import-backup" class="btn btn-outline" style="flex:1; min-width:180px;">
+                    <i class="fa-solid fa-file-import"></i> Restaurar Respaldo JSON
+                  </button>
+                  <input type="file" id="input-import-backup" accept=".json,application/json" class="hidden">
+                </div>
+
+                <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                  <span style="font-size:0.75rem; color:#64748B;"><i class="fa-solid fa-circle-info"></i> ¿Deseas reiniciar la aplicación a su estado de fábrica?</span>
+                  <button type="button" id="btn-reset-factory" class="btn btn-sm btn-danger-outline">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Restablecer de Fábrica
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 6: COTIZACIONES & PRESUPUESTOS (PUBLICIDAD, LED, CORPÓREOS) -->
+      <section id="view-cotizaciones" class="app-view hidden">
+        <div class="card-panel">
+          <div class="card-panel-header">
+            <div>
+              <h2><i class="fa-solid fa-file-invoice-dollar"></i> Cotizaciones & Presupuestos</h2>
+              <p class="text-muted">Presupuestos detallados para avisos LED, corpóreos, stickers, corte CNC y levantamiento en sitio</p>
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <button id="btn-new-quote" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nueva Cotización</button>
+              <button id="btn-open-cost-templates" class="btn btn-outline"><i class="fa-solid fa-calculator"></i> Precios de Referencia</button>
+            </div>
+          </div>
+
+          <!-- SUMMARY KPI BENTO (STITCH ENGINE) -->
+          <div class="kpi-bento-grid mt-3">
+            <div class="kpi-bento-card">
+              <div class="kpi-bento-header">
+                <span>Pipeline Total</span>
+                <i class="fa-solid fa-wallet text-secondary"></i>
+              </div>
+              <div class="kpi-bento-value" id="kpi-quote-pipeline-total">$0.00</div>
+              <div class="kpi-bento-sub" id="kpi-quote-active-count">0 activas en USD</div>
+              <div class="kpi-bento-trend kpi-trend-up">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+                <span>Pipeline comercial activo</span>
+              </div>
+            </div>
+
+            <div class="kpi-bento-card">
+              <div class="kpi-bento-header">
+                <span>Tasa de Cierre</span>
+                <i class="fa-solid fa-circle-check" style="color:#059669;"></i>
+              </div>
+              <div class="kpi-bento-value" id="kpi-quote-close-rate">0%</div>
+              <div class="kpi-bento-sub" id="kpi-quote-approved-count">0 aprobadas</div>
+              <div class="kpi-bento-trend kpi-trend-info">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span id="kpi-quote-rate-label">Efectividad de ventas</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- STATUS FILTER PILLS (STITCH) -->
+          <div class="projects-filter-bar mb-3">
+            <button type="button" class="filter-chip active quote-filter-chip" data-status="all">
+              <i class="fa-solid fa-layer-group"></i> Todas (<span id="quote-count-all">0</span>)
+            </button>
+            <button type="button" class="filter-chip quote-filter-chip" data-status="Aprobado">
+              <i class="fa-solid fa-check-double"></i> Aprobadas (<span id="quote-count-aprobadas">0</span>)
+            </button>
+            <button type="button" class="filter-chip quote-filter-chip" data-status="Enviada">
+              <i class="fa-solid fa-paper-plane"></i> Enviadas (<span id="quote-count-enviadas">0</span>)
+            </button>
+            <button type="button" class="filter-chip quote-filter-chip" data-status="Borrador">
+              <i class="fa-solid fa-file-pen"></i> Borradores (<span id="quote-count-borradores">0</span>)
+            </button>
+          </div>
+
+          <!-- FORMULARIO DE COTIZACIÓN -->
+          <div id="quote-editor-box" class="mt-3">
+            <div class="quote-top-bar">
+              <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; flex:1;">
+                <span class="project-code-tag" id="quote-number-tag">COT-001</span>
+                <input type="text" id="quote-title" placeholder="Ej: Aviso Corpóreo Acrílico 3D con Luz Neón Flex + 2 Pendones" style="font-weight:700; min-width:280px; flex:1;">
+              </div>
+              <div class="quote-mode-toggle">
+                <span style="font-size:0.8rem; font-weight:700; color:#475569;"><i class="fa-solid fa-eye"></i> Ver Costos & Utilidad</span>
+                <label class="switch">
+                  <input type="checkbox" id="quote-toggle-profit-mode" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- DATOS DEL CLIENTE EN COTIZACIÓN -->
+            <div class="form-row mt-2">
+              <div class="form-group col-6">
+                <label for="quote-client-name">Nombre del Cliente / Empresa *</label>
+                <div class="input-group">
+                  <input type="text" id="quote-client-name" placeholder="Ej: Boutique Velvet & Co.">
+                  <button type="button" id="btn-quote-pick-client" class="btn btn-outline" title="Seleccionar de Directorio"><i class="fa-solid fa-users"></i></button>
+                </div>
+              </div>
+              <div class="form-group col-6">
+                <label for="quote-client-phone">Teléfono / WhatsApp</label>
+                <input type="tel" id="quote-client-phone" placeholder="Ej: 584141234567">
+              </div>
+            </div>
+
+            <div class="form-row mt-2">
+              <div class="form-group col-6">
+                <label for="quote-date">Fecha de Emisión</label>
+                <input type="date" id="quote-date">
+              </div>
+              <div class="form-group col-6">
+                <label for="quote-validity">Validez de Oferta (Días)</label>
+                <input type="number" id="quote-validity" min="1" max="90" value="15">
+              </div>
+            </div>
+
+            <!-- FICHA DE MATERIALES INCLUIDOS (CHIPS SEMÁNTICOS STITCH) -->
+            <div class="mt-3">
+              <label style="font-size:0.75rem; font-weight:800; color:#64748B; text-transform:uppercase; letter-spacing:0.04em;">
+                <i class="fa-solid fa-palette"></i> Ficha de Materiales & Acabados
+              </label>
+              <div class="materials-chip-group">
+                <span class="materials-pill"><span class="materials-dot" style="background:#F59E0B;"></span>Acrílico Espejo Dorado</span>
+                <span class="materials-pill"><span class="materials-dot" style="background:#10B981;"></span>Puntera LED Neón IP67</span>
+                <span class="materials-pill"><span class="materials-dot" style="background:#3B82F6;"></span>Lona Front 13oz Sellada</span>
+                <span class="materials-pill"><span class="materials-dot" style="background:#6366F1;"></span>Alucobond / MDF 12mm</span>
+                <span class="materials-pill"><span class="materials-dot" style="background:#EC4899;"></span>Vinil Laminado UV</span>
+              </div>
+            </div>
+
+            <!-- MÓDULO DE CARGA VECTORIAL (CNC / LÁSER) -->
+            <div class="mt-3 pt-3" style="border-top:1px solid var(--border-color);">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                <div>
+                  <h4 style="font-size:0.95rem; font-weight:800; color:#0F172A; margin:0;">
+                    <i class="fa-solid fa-vector-square" style="color:#2563EB;"></i> Planos & Trazos Vectoriales (CNC / Láser)
+                  </h4>
+                  <p style="font-size:0.75rem; color:#64748B; margin:0.2rem 0 0;">Archivos de corte Router CNC y grabado láser para el taller</p>
+                </div>
+                <button type="button" id="btn-add-vector-file" class="btn btn-sm btn-outline">
+                  <i class="fa-solid fa-file-arrow-up"></i> Cargar Archivo Vectorial
+                </button>
+              </div>
+
+              <!-- Lista de archivos vectoriales cargados -->
+              <div id="vector-files-list" class="vector-files-list">
+                <!-- Se inyectan dinámicamente -->
+              </div>
+            </div>
+
+            <!-- MÓDULO LEVANTAMIENTO EN SITIO & FACHADA -->
+            <div class="mt-3 pt-3" style="border-top:1px solid var(--border-color);">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                <div>
+                  <h4 style="font-size:0.95rem; font-weight:800; color:#0F172A; margin:0;">
+                    <i class="fa-solid fa-ruler-combined" style="color:#2563EB;"></i> Levantamiento en Sitio & Fachada
+                  </h4>
+                  <p style="font-size:0.75rem; color:#64748B; margin:0.2rem 0 0;">Medidas con cotas, textura de muro y anclajes requeridos</p>
+                </div>
+                <button type="button" id="btn-add-facade-survey" class="btn btn-sm btn-outline">
+                  <i class="fa-solid fa-camera"></i> Tomar / Adjuntar Foto Fachada
+                </button>
+              </div>
+
+              <div class="form-row mt-2">
+                <div class="form-group col-4">
+                  <label for="survey-dim">Medidas de Fachada / Aviso</label>
+                  <input type="text" id="survey-dim" placeholder="Ej: 380 x 140 cm">
+                </div>
+                <div class="form-group col-4">
+                  <label for="survey-wall">Textura de Muro / Fijación</label>
+                  <input type="text" id="survey-wall" placeholder="Ej: Muro Concreto / Broca 3/8">
+                </div>
+                <div class="form-group col-4">
+                  <label for="survey-power">Punto Eléctrico Disponible</label>
+                  <input type="text" id="survey-power" placeholder="Ej: Punto 220V + Anclajes">
+                </div>
+              </div>
+
+              <!-- Vista previa de fotos del levantamiento -->
+              <div id="facade-survey-grid" class="facade-survey-grid">
+                <!-- Inyectadas dinámicamente -->
+              </div>
+            </div>
+
+            <!-- BOTONES RÁPIDOS DE PLANTILLAS DE PUBLICIDAD -->
+            <div class="mt-4 mb-2" style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+              <small style="font-weight:800; color:#64748B; text-transform:uppercase; margin-right:0.25rem;">+ Agregar Rápido:</small>
+              <button type="button" class="btn btn-sm btn-outline btn-quick-cost" data-type="material" data-desc="Acrílico Cristal 3mm (Plancha/Corte)" data-cost="25.00" data-price="45.00"><i class="fa-solid fa-gem"></i> Acrílico</button>
+              <button type="button" class="btn btn-sm btn-outline btn-quick-cost" data-type="material" data-desc="Módulo Neón Flex LED 12V 2da Gen (x metro)" data-cost="4.50" data-price="9.00"><i class="fa-solid fa-bolt"></i> Neón LED x m</button>
+              <button type="button" class="btn btn-sm btn-outline btn-quick-cost" data-type="corte" data-desc="Tiempo de Corte Láser / Router CNC (por hora)" data-cost="8.00" data-price="20.00"><i class="fa-solid fa-microchip"></i> Corte CNC/Láser</button>
+              <button type="button" class="btn btn-sm btn-outline btn-quick-cost" data-type="instalacion" data-desc="Servicio de Instalación en Sitio y Fijación" data-cost="15.00" data-price="35.00"><i class="fa-solid fa-wrench"></i> Instalación</button>
+              <button type="button" class="btn btn-sm btn-outline btn-quick-cost" data-type="material" data-desc="Impresión Vinil Autoadhesivo Laminado (m²)" data-cost="6.00" data-price="15.00"><i class="fa-solid fa-scroll"></i> Vinil/Stickers</button>
+            </div>
+
+            <!-- TABLA DINÁMICA DE DESGLOSE DE COSTOS Y VENTA -->
+            <div class="table-responsive mt-2">
+              <table class="quote-items-table" id="quote-items-table">
+                <thead>
+                  <tr>
+                    <th style="width:130px;">Rubro</th>
+                    <th>Descripción Detallada</th>
+                    <th style="width:75px;">Cant</th>
+                    <th class="th-cost" style="width:110px;">Costo Taller ($)</th>
+                    <th class="th-cost" style="width:110px;">Subt. Costo ($)</th>
+                    <th style="width:110px;">P. Venta ($)</th>
+                    <th style="width:110px;">Subt. Venta ($)</th>
+                    <th style="width:50px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="quote-items-body">
+                  <!-- Filas inyectadas dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-2" style="display:flex; justify-content:space-between; align-items:center;">
+              <button type="button" id="btn-add-quote-row" class="btn btn-sm btn-primary"><i class="fa-solid fa-plus"></i> Agregar Fila Manual</button>
+            </div>
+
+            <!-- RESUMEN Y CALCULADORA DE UTILIDAD BRUTA -->
+            <div class="profit-summary-grid">
+              <div class="profit-card card-client">
+                <small><i class="fa-solid fa-money-bill-wave"></i> Total al Cliente</small>
+                <strong id="quote-view-total-client">$0.00 USD</strong>
+                <span id="quote-view-total-bcv" style="font-size:0.8rem; font-weight:700;">Bs. 0,00</span>
+              </div>
+              <div class="profit-card card-cost quote-profit-block">
+                <small><i class="fa-solid fa-receipt"></i> Costo Real Materiales & Mano</small>
+                <strong id="quote-view-total-cost">$0.00 USD</strong>
+                <span style="font-size:0.75rem; color:#991B1B;">Gastos de producción</span>
+              </div>
+              <div class="profit-card card-gain quote-profit-block">
+                <small><i class="fa-solid fa-chart-line"></i> Tu Utilidad Bruta</small>
+                <strong id="quote-view-gain">$0.00 USD</strong>
+                <span style="font-size:0.75rem; color:#065F46;">Ganancia neta estimada</span>
+              </div>
+              <div class="profit-card card-margin quote-profit-block">
+                <small><i class="fa-solid fa-percent"></i> Margen de Ganancia</small>
+                <strong id="quote-view-margin">0%</strong>
+                <span style="font-size:0.75rem; color:#92400E;">Rentabilidad del proyecto</span>
+              </div>
+            </div>
+
+            <!-- BARRA DE ANTICIPO REQUERIDO 50% (STITCH PREVIEWS) -->
+            <div class="mt-3 p-3 rounded" style="background:#F8FAFC; border-bottom:1px solid #E2E8F0;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem; flex-wrap:wrap; gap:0.5rem;">
+                <span style="font-size:0.8rem; font-weight:700; color:#475569; text-transform:uppercase;">
+                  <i class="fa-solid fa-shield-halved text-secondary"></i> Anticipo Requerido (50% al Iniciar)
+                </span>
+                <strong id="quote-anticipo-val" style="font-size:1.1rem; color:#2563EB;">$0.00 USD</strong>
+              </div>
+              <div style="width:100%; height:8px; background:#E2E8F0; border-radius:999px; overflow:hidden; display:flex;">
+                <div style="width:50%; background:#2563EB; height:100%;"></div>
+                <div style="width:50%; background:#CBD5E1; height:100%;"></div>
+              </div>
+              <p style="font-size:0.72rem; color:#64748B; margin:0.35rem 0 0; text-align:center;">50% anticipo para adquisición de materiales y corte • 50% contra entrega e instalación</p>
+            </div>
+
+            <!-- INTEGRACIÓN GOOGLE CALENDAR DIRECTA -->
+            <div class="calendar-slot-card mt-3">
+              <div class="calendar-slot-date">
+                <div class="calendar-date-box">
+                  <span class="calendar-date-month" id="quote-cal-month">OCT</span>
+                  <span class="calendar-date-day" id="quote-cal-day">24</span>
+                </div>
+                <div>
+                  <p style="font-size:0.85rem; font-weight:700; color:#0F172A; margin:0;" id="quote-cal-title">Visita / Instalación en Sitio</p>
+                  <p style="font-size:0.75rem; color:#64748B; margin:0.15rem 0 0;">Cuadrilla: Técnico CNC + 2 Montajistas • Duración: 3 horas</p>
+                </div>
+              </div>
+              <button type="button" id="btn-quote-gcalendar" class="btn btn-calendar">
+                <i class="fa-solid fa-calendar-plus"></i> Agendar en Google Calendar
+              </button>
+            </div>
+
+            <!-- BOTONES DE ACCIÓN PARA LA COTIZACIÓN -->
+            <div class="form-actions mt-4" style="flex-wrap:wrap; gap:0.75rem;">
+              <button type="button" id="btn-save-quote" class="btn btn-primary" style="flex:1; min-width:180px;"><i class="fa-solid fa-floppy-disk"></i> Guardar Presupuesto</button>
+              <button type="button" id="btn-preview-quote-client" class="btn btn-outline" style="flex:1; min-width:180px;"><i class="fa-solid fa-file-pdf"></i> Hoja Presupuesto Formal</button>
+              <button type="button" id="btn-quote-whatsapp" class="btn btn-whatsapp" style="flex:1; min-width:180px;"><i class="fa-brands fa-whatsapp"></i> Enviar por WhatsApp</button>
+              <button type="button" id="btn-convert-quote-to-project" class="btn btn-secondary" style="flex:1; min-width:180px;"><i class="fa-solid fa-rocket"></i> Convertir en Proyecto Activo</button>
+            </div>
+          </div>
+
+          <!-- HISTORIAL DE COTIZACIONES -->
+          <div class="mt-4 pt-4" style="border-top:1px solid var(--border-color);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+              <h3 class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> Presupuestos Guardados</h3>
+              <div class="input-with-icon" style="max-width:320px;">
+                <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                <input type="text" id="search-quotes" placeholder="Buscar por cliente o folio...">
+              </div>
+            </div>
+
+            <div id="quotes-history-cards" class="quotes-cards-container">
+              <!-- Cotizaciones estilo Stitch inyectadas dinámicamente -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 7: GESTIÓN DE PROYECTOS, PIPELINE & AGENDA -->
+      <section id="view-proyectos" class="app-view hidden">
+        <div class="card-panel">
+          <div class="card-panel-header">
+            <div>
+              <h2><i class="fa-solid fa-list-check"></i> Gestión de Proyectos & Agenda</h2>
+              <p class="text-muted">Embudo operativo de producción, corte CNC, instalación y control de anticipos</p>
+            </div>
+            <button id="btn-show-add-project" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nuevo Proyecto</button>
+          </div>
+
+          <!-- OVERVIEW METRICS STRIP (STITCH PIPELINE ENGINE) -->
+          <div class="kpi-bento-grid mt-3">
+            <div class="kpi-bento-card">
+              <div class="kpi-bento-header">
+                <span>Activos en Curso</span>
+                <i class="fa-solid fa-list-check text-secondary"></i>
+              </div>
+              <div class="kpi-bento-value" id="kpi-proj-active-count">0</div>
+              <div class="kpi-bento-sub">Proyectos en taller & campo</div>
+            </div>
+
+            <div class="kpi-bento-card">
+              <div class="kpi-bento-header">
+                <span>Por Cobrar (Saldos)</span>
+                <i class="fa-solid fa-money-bill-transfer" style="color:#DC2626;"></i>
+              </div>
+              <div class="kpi-bento-value" style="color:#DC2626;" id="kpi-proj-pending-money">$0.00</div>
+              <div class="kpi-bento-sub">Anticipos y liquidaciones pendientes</div>
+            </div>
+
+            <div class="kpi-bento-card">
+              <div class="kpi-bento-header">
+                <span>En Sitio / Montaje</span>
+                <i class="fa-solid fa-person-digging" style="color:#059669;"></i>
+              </div>
+              <div class="kpi-bento-value" id="kpi-proj-site-count">0</div>
+              <div class="kpi-bento-sub">Instalaciones en curso</div>
+            </div>
+          </div>
+
+          <!-- INTERACTIVE STAGE STEPPER / EMBUDO HORIZONTAL (STITCH) -->
+          <div class="stage-stepper-container" id="stage-stepper">
+            <button type="button" class="stage-step-chip active" data-filter="all">
+              <span class="stage-step-num"><i class="fa-solid fa-layer-group" style="font-size:0.65rem;"></i></span>
+              <span>Todos (<span id="count-all-projects">0</span>)</span>
+            </button>
+            <button type="button" class="stage-step-chip" data-filter="presupuesto">
+              <span class="stage-step-num">1</span>
+              <span>Aprobación</span>
+            </button>
+            <button type="button" class="stage-step-chip" data-filter="abono">
+              <span class="stage-step-num">2</span>
+              <span>Pago Anticipo</span>
+            </button>
+            <button type="button" class="stage-step-chip" data-filter="produccion">
+              <span class="stage-step-num">3</span>
+              <span>Armado / Taller CNC</span>
+            </button>
+            <button type="button" class="stage-step-chip" data-filter="instalacion">
+              <span class="stage-step-num">4</span>
+              <span>En Sitio / Montaje</span>
+            </button>
+            <button type="button" class="stage-step-chip" data-filter="culminado">
+              <span class="stage-step-num">5</span>
+              <span>Liquidación & Entrega</span>
+            </button>
+            <button type="button" class="stage-step-chip" data-filter="detenido" style="color:#DC2626;">
+              <span class="stage-step-num" style="background:#FEE2E2; color:#DC2626;"><i class="fa-solid fa-pause" style="font-size:0.65rem;"></i></span>
+              <span>Detenidos / Pausados</span>
+            </button>
+          </div>
+
+          <!-- BUSCADOR DE PROYECTOS -->
+          <div class="table-toolbar mb-3">
+            <div class="input-with-icon">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input type="text" id="search-projects" placeholder="Buscar proyecto por nombre, cliente o código...">
+            </div>
+          </div>
+
+          <!-- GRID DE TARJETAS DE PROYECTO / PIPELINE -->
+          <div id="projects-pipeline-container" class="projects-pipeline-grid">
+            <!-- Proyectos inyectados dinámicamente -->
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA 8: GALERÍA DE TRABAJOS CULMINADOS -->
+      <section id="view-galeria" class="app-view hidden">
+        <div class="card-panel">
+          <div class="card-panel-header">
+            <div>
+              <h2><i class="fa-solid fa-images"></i> Galería de Trabajos Culminados</h2>
+              <p class="text-muted">Portafolio fotográfico de tus avisos LED, corpóreos, stickers y fachadas terminadas</p>
+            </div>
+            <button id="btn-show-upload-gallery" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Subir Foto a Portafolio</button>
+          </div>
+
+          <!-- FILTROS DE CATEGORÍA -->
+          <div class="projects-filter-bar mt-3">
+            <button type="button" class="filter-chip active" data-cat="all">Todas las Fotos</button>
+            <button type="button" class="filter-chip" data-cat="Aviso LED">Avisos Neón / LED</button>
+            <button type="button" class="filter-chip" data-cat="Corpóreo">Letras Corpóreas 3D</button>
+            <button type="button" class="filter-chip" data-cat="Sticker/Vinil">Stickers & Viniles</button>
+            <button type="button" class="filter-chip" data-cat="Fachada">Fachadas & Banners</button>
+            <button type="button" class="filter-chip" data-cat="Otro">Otros Trabajos</button>
+          </div>
+
+          <!-- GRID FOTOGRÁFICO DE LA GALERÍA -->
+          <div id="gallery-container" class="gallery-grid">
+            <!-- Fotos inyectadas dinámicamente -->
+          </div>
+        </div>
+      </section>
+
+    </div> <!-- END ADMIN MAIN -->
+
+  </div> <!-- END ADMIN WRAPPER -->
+
+  <!-- NAVBAR MOBILE INFERIOR PARA TOUCH -->
+  <div class="mobile-bottom-nav">
+    <button type="button" class="mobile-nav-btn active" data-view="view-pos">
+      <i class="fa-solid fa-calculator"></i>
+      <span>POS</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-view="view-cotizaciones">
+      <i class="fa-solid fa-file-invoice-dollar"></i>
+      <span>Cotizar</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-view="view-proyectos">
+      <i class="fa-solid fa-list-check"></i>
+      <span>Proyectos</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-view="view-historial">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <span>Historial</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-view="view-galeria">
+      <i class="fa-solid fa-images"></i>
+      <span>Galería</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-view="view-ajustes">
+      <i class="fa-solid fa-sliders"></i>
+      <span>Ajustes</span>
+    </button>
+  </div>
+
+  <!-- MODAL: SELECTOR RÁPIDO DE PRODUCTOS PARA EL POS -->
+  <div id="modal-product-picker" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-store"></i> Agregar Producto del Catálogo</h3>
+        <button id="btn-close-product-picker" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-with-icon mb-2">
+          <i class="fa-solid fa-magnifying-glass input-icon"></i>
+          <input type="text" id="picker-search-product" placeholder="Buscar producto por nombre o código...">
+        </div>
+        <div id="picker-product-list" class="picker-grid">
+          <!-- Tarjetas de productos inyectadas dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SELECTOR RÁPIDO DE CLIENTES REGISTRADOS -->
+  <div id="modal-client-picker" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-users"></i> Seleccionar Cliente Registrado</h3>
+        <button id="btn-close-client-picker" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-with-icon mb-2">
+          <i class="fa-solid fa-magnifying-glass input-icon"></i>
+          <input type="text" id="picker-search-client" placeholder="Buscar por Cédula, RIF o nombre...">
+        </div>
+        <div id="picker-client-list" class="picker-list">
+          <!-- Lista de clientes inyectados dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CAMBIO DE ESTADO Y PAUSA DE PROYECTO -->
+  <div id="modal-project-status" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-arrows-spin"></i> Actualizar Estado del Proyecto</h3>
+        <button id="btn-close-project-status" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="status-modal-project-id">
+        <div class="form-group mb-2">
+          <label for="select-project-pipeline-status">Nuevo Estado del Proyecto *</label>
+          <select id="select-project-pipeline-status" style="font-weight:700;">
+            <option value="presupuesto">Presupuesto (En Espera de Aprobación)</option>
+            <option value="aprobado">Aprobado por el Cliente</option>
+            <option value="abono">Abono Inicial Recibido</option>
+            <option value="produccion">En Proceso de Producción / Taller</option>
+            <option value="envio">Listo para Envío / Entrega</option>
+            <option value="instalacion">En Proceso de Instalación en Sitio</option>
+            <option value="culminado">Proyecto Culminado / Finalizado</option>
+            <option value="detenido" style="color:#DC2626; font-weight:800;">DETENIDO / EN PAUSA (Requiere Acotación)</option>
+          </select>
+        </div>
+
+        <!-- CAMPO OBLIGATORIO SI ESTÁ DETENIDO -->
+        <div id="pause-reason-wrapper" class="form-group mb-2 hidden">
+          <label for="input-pause-reason" style="color:#DC2626; font-weight:800;"><i class="fa-solid fa-triangle-exclamation"></i> Razón por la que el proyecto está detenido *</label>
+          <textarea id="input-pause-reason" rows="3" placeholder="Ej: Esperando entrega de plancha acrílica 3mm del proveedor. El cliente solicitó cambio de medidas de última hora."></textarea>
+        </div>
+
+        <div class="form-actions mt-3">
+          <button type="button" id="btn-save-project-status" class="btn btn-primary"><i class="fa-solid fa-check"></i> Actualizar Estado</button>
+          <button type="button" id="btn-cancel-project-status" class="btn btn-outline">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR / EDITAR PROYECTO MANUAL -->
+  <div id="modal-project-form" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-project-form-title"><i class="fa-solid fa-folder-plus"></i> Nuevo Proyecto de Publicidad</h3>
+        <button id="btn-close-project-form" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="p-form-id">
+        <div class="form-group mb-2">
+          <label for="p-form-title">Título / Descripción del Trabajo *</label>
+          <input type="text" id="p-form-title" placeholder="Ej: Letras Corpóreas Neón LED 'Hamburguesas 24/7'" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="p-form-client-name">Nombre del Cliente *</label>
+            <input type="text" id="p-form-client-name" placeholder="Ej: Marcos Pérez" required>
+          </div>
+          <div class="form-group col-6">
+            <label for="p-form-client-phone">Teléfono / WhatsApp</label>
+            <input type="tel" id="p-form-client-phone" placeholder="Ej: 584141234567">
+          </div>
+        </div>
+
+        <div class="form-row mt-2">
+          <div class="form-group col-6">
+            <label for="p-form-date-start">Fecha de Inicio</label>
+            <input type="date" id="p-form-date-start">
+          </div>
+          <div class="form-group col-6">
+            <label for="p-form-date-deadline">Fecha Prometida de Entrega / Instalación *</label>
+            <input type="date" id="p-form-date-deadline" required>
+          </div>
+        </div>
+
+        <div class="form-row mt-2">
+          <div class="form-group col-6">
+            <label for="p-form-total">Monto Total del Proyecto ($ USD) *</label>
+            <input type="number" id="p-form-total" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div class="form-group col-6">
+            <label for="p-form-abono">Abono Inicial Recibido ($ USD)</label>
+            <input type="number" id="p-form-abono" min="0" step="0.01" value="0.00">
+          </div>
+        </div>
+
+        <div class="form-group mt-2">
+          <label for="p-form-address">Dirección o Lugar de Instalación (Opcional)</label>
+          <input type="text" id="p-form-address" placeholder="Ej: Av. Bolívar, Centro Comercial Plaza, Local 12">
+        </div>
+
+        <div class="form-group mt-2">
+          <label for="p-form-initial-status">Estado Inicial</label>
+          <select id="p-form-initial-status">
+            <option value="presupuesto">Presupuesto</option>
+            <option value="aprobado">Aprobado</option>
+            <option value="abono" selected>Abono Inicial</option>
+            <option value="produccion">Proceso de Producción</option>
+            <option value="envio">Envío</option>
+            <option value="instalacion">Instalación</option>
+          </select>
+        </div>
+
+        <div class="form-actions mt-3">
+          <button type="button" id="btn-save-project-form" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Guardar Proyecto</button>
+          <button type="button" id="btn-cancel-project-form" class="btn btn-outline">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: BITÁCORA Y NOTAS DE SEGUIMIENTO DEL PROYECTO -->
+  <div id="modal-project-notes" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-clipboard-list"></i> Bitácora de Seguimiento</h3>
+        <button id="btn-close-project-notes" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="notes-modal-project-id">
+        <p id="notes-modal-project-subtitle" class="text-muted mb-2"></p>
+
+        <!-- LISTA DE NOTAS -->
+        <div id="notes-timeline-container" class="notes-timeline mb-3">
+          <!-- Notas inyectadas dinámicamente -->
+        </div>
+
+        <!-- AGREGAR NUEVA NOTA / ACOTACIÓN -->
+        <div class="form-group">
+          <label for="input-new-project-note">Nueva Acotación / Avance:</label>
+          <textarea id="input-new-project-note" rows="2" placeholder="Ej: Se finalizó el corte de acrílico. Mañana a las 9am se inicia el cableado de módulos LED."></textarea>
+        </div>
+
+        <div class="form-actions mt-2">
+          <button type="button" id="btn-add-project-note" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Guardar Acotación</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FOTOS DEL PROYECTO (AVANCES & CULMINACIÓN) -->
+  <div id="modal-project-photos" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-camera"></i> Fotos del Proyecto</h3>
+        <button id="btn-close-project-photos" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="photos-modal-project-id">
+        <p id="photos-modal-project-subtitle" class="text-muted mb-2"></p>
+
+        <!-- SUBIR FOTO AL PROYECTO -->
+        <div style="background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:var(--radius-md); padding:1rem; text-align:center; margin-bottom:1rem;">
+          <input type="file" id="input-upload-project-photo" accept="image/*" class="file-input">
+          <label for="input-upload-project-photo" class="btn btn-sm btn-primary" style="display:inline-flex; align-items:center; gap:0.4rem; cursor:pointer;">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Tomar / Subir Foto del Proyecto
+          </label>
+          <p style="font-size:0.75rem; color:#64748B; margin-top:0.4rem;">Las fotos se optimizan automáticamente para ahorrar memoria.</p>
+        </div>
+
+        <!-- GRID DE FOTOS DEL PROYECTO -->
+        <div id="project-photos-grid" class="gallery-grid" style="margin-top:0; max-height:360px; overflow-y:auto;">
+          <!-- Fotos inyectadas dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SUBIR FOTO A GALERÍA DE PORTAFOLIO -->
+  <div id="modal-gallery-upload" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-image"></i> Agregar Foto a Portafolio</h3>
+        <button id="btn-close-gallery-upload" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group mb-2">
+          <label for="gal-input-title">Título del Trabajo *</label>
+          <input type="text" id="gal-input-title" placeholder="Ej: Aviso Neón Doble Faz 'Barber Shop'" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="gal-select-cat">Categoría *</label>
+            <select id="gal-select-cat">
+              <option value="Aviso LED">Avisos Neón / LED</option>
+              <option value="Corpóreo">Letras Corpóreas 3D</option>
+              <option value="Sticker/Vinil">Stickers & Viniles</option>
+              <option value="Fachada">Fachadas & Banners</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="form-group col-6">
+            <label for="gal-input-client">Cliente (Opcional)</label>
+            <input type="text" id="gal-input-client" placeholder="Ej: Vintage Barber">
+          </div>
+        </div>
+
+        <div class="form-group mt-2">
+          <label>Seleccionar Imagen *</label>
+          <input type="file" id="gal-input-file" accept="image/*" class="file-input">
+          <label for="gal-input-file" class="btn btn-outline btn-block" style="cursor:pointer; display:flex; align-items:center; gap:0.4rem; justify-content:center;">
+            <i class="fa-solid fa-photo-film"></i> Elegir Foto de la Galería
+          </label>
+          <div id="gal-preview-box" class="mt-2 text-center" style="display:none;">
+            <img id="gal-preview-img" src="" alt="Preview" style="max-height:160px; border-radius:var(--radius-md); object-fit:contain;">
+          </div>
+        </div>
+
+        <div class="form-actions mt-3">
+          <button type="button" id="btn-save-gallery-photo" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Publicar en Portafolio</button>
+          <button type="button" id="btn-cancel-gallery-photo" class="btn btn-outline">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VISOR DE IMAGEN A PANTALLA COMPLETA -->
+  <div id="modal-image-viewer" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width:650px;">
+      <div class="modal-header">
+        <h3 id="image-viewer-title">Visualizador</h3>
+        <button id="btn-close-image-viewer" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body text-center">
+        <div class="image-viewer-container">
+          <img id="image-viewer-img" src="" alt="Foto" class="image-viewer-img">
+          <div style="display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap; width:100%;">
+            <a id="btn-download-viewer-img" href="#" download="MARKT_Foto.jpg" class="btn btn-primary"><i class="fa-solid fa-download"></i> Descargar Imagen</a>
+            <button type="button" id="btn-close-viewer-alt" class="btn btn-outline">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: HOJA DE PRESUPUESTO FORMAL PARA EL CLIENTE (STITCH CERTIFICADO) -->
+  <div id="modal-quote-sheet" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width:680px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-invoice"></i> Presupuesto Oficial Certificado</h3>
+        <button id="btn-close-quote-sheet" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- CONTENEDOR CAPTURABLE DE LA COTIZACIÓN -->
+        <div id="quote-printable-card" style="background:#FFFFFF; color:#0F172A; padding:1.5rem; border:1px solid #E2E8F0; border-radius:var(--radius-md); font-family:var(--font-sans);">
+          
+          <!-- MICRO-INDICADOR OFICIAL STITCH -->
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#F8FAFC; padding:0.4rem 0.75rem; border-radius:4px; margin-bottom:1rem; font-size:0.75rem; color:#64748B;">
+            <span><i class="fa-solid fa-shield-halved" style="color:#2563EB;"></i> Documento Certificado con Validez Digital</span>
+            <span style="font-weight:700; color:#2563EB;">Pág 1 de 1</span>
+          </div>
+
+          <!-- ENCABEZADO MEMBRETADO CON LOGO -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0F172A; padding-bottom:1rem; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+            <div style="display:flex; gap:0.75rem; align-items:center;">
+              <div id="qsheet-logo-container" style="max-width:70px; max-height:70px; display:flex; align-items:center; justify-content:center;">
+                <img id="qsheet-logo-img" src="" alt="Logo" style="max-width:100%; max-height:60px; object-fit:contain; display:none;">
+              </div>
+              <div>
+                <h2 id="qsheet-biz-name" style="font-size:1.25rem; font-weight:800; color:#0F172A; margin:0;">NOMBRE DE TU NEGOCIO</h2>
+                <p id="qsheet-biz-sub" style="font-size:0.78rem; color:#64748B; margin:0.2rem 0 0;">Publicidad Exterior, Avisos LED & Corpóreos</p>
+                <p id="qsheet-biz-phone" style="font-size:0.78rem; color:#64748B; margin:0;">Tel / WhatsApp: 0414-0000000</p>
+                <p id="qsheet-biz-address" style="font-size:0.75rem; color:#64748B; margin:0;">Dirección: Venezuela</p>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <span style="background:#0F172A; color:#FFFFFF; font-weight:800; font-size:0.75rem; padding:0.25rem 0.6rem; border-radius:4px;">COTIZACIÓN FORMAL</span>
+              <h3 id="qsheet-folio" style="font-size:1.2rem; font-weight:800; color:#2563EB; margin:0.3rem 0 0;">COT-001</h3>
+              <p id="qsheet-date" style="font-size:0.75rem; color:#64748B; margin:0;">Emisión: 2026-10-19</p>
+              <p id="qsheet-validity-text" style="font-size:0.75rem; color:#64748B; margin:0;">Vence: 15 días</p>
+            </div>
+          </div>
+
+          <!-- RESPONSABLE TÉCNICO & DATOS DE LA OBRA -->
+          <div style="background:#F8FAFC; border-radius:var(--radius-sm); padding:0.85rem; margin-bottom:1rem; font-size:0.85rem;">
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.4rem;">
+              <p style="margin:0;"><strong>Cliente:</strong> <span id="qsheet-client-name">Cliente</span></p>
+              <p style="margin:0;"><strong>Contacto:</strong> <span id="qsheet-client-phone">-</span></p>
+            </div>
+            <p style="margin:0.2rem 0 0;"><strong>Proyecto / Alcance:</strong> <span id="qsheet-title" style="font-weight:700; color:#2563EB;">Aviso</span></p>
+            <div id="qsheet-materials-row" style="margin-top:0.5rem; display:flex; flex-wrap:wrap; gap:0.35rem;">
+              <!-- Badges de materiales incluidos -->
+            </div>
+          </div>
+
+          <!-- TABLA LIMPIA CLIENTE (SIN COSTOS DE TALLER) -->
+          <table style="width:100%; border-collapse:collapse; font-size:0.85rem; margin-bottom:1rem;">
+            <thead>
+              <tr style="background:#0F172A; color:#FFFFFF; text-align:left;">
+                <th style="padding:0.6rem 0.8rem; width:40px;">#</th>
+                <th style="padding:0.6rem 0.8rem;">Descripción de Partida</th>
+                <th style="padding:0.6rem 0.8rem; width:60px; text-align:center;">Cant</th>
+                <th style="padding:0.6rem 0.8rem; text-align:right;">P. Unit ($)</th>
+                <th style="padding:0.6rem 0.8rem; text-align:right;">Total ($)</th>
+              </tr>
+            </thead>
+            <tbody id="qsheet-items-body">
+              <!-- Filas inyectadas -->
+            </tbody>
+          </table>
+
+          <!-- TOTALES Y ANTICIPO 50% -->
+          <div style="border-top:2px solid #0F172A; padding-top:0.75rem; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:0.75rem;">
+            <div>
+              <span style="font-size:0.75rem; font-weight:700; color:#64748B; text-transform:uppercase;">Condición Comercial:</span>
+              <div style="font-size:0.9rem; font-weight:800; color:#2563EB;">
+                Anticipo 50%: <span id="qsheet-anticipo-usd">$0.00 USD</span>
+              </div>
+              <p style="font-size:0.7rem; color:#64748B; margin:0.15rem 0 0;">Saldo restante (50%) al culminar e instalar.</p>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:1.25rem; font-weight:800; color:#0F172A;">
+                Total: <span id="qsheet-total-usd">$0.00 USD</span>
+              </div>
+              <div style="font-size:0.95rem; font-weight:700; color:#059669;" id="qsheet-total-bcv">
+                Equivalente: Bs. 0,00
+              </div>
+              <p id="qsheet-rate-note" style="font-size:0.7rem; color:#64748B; margin:0.2rem 0 0;">Tasa Oficial BCV de referencia.</p>
+            </div>
+          </div>
+
+          <!-- CUENTAS BANCARIAS PARA PAGO DE ANTICIPO -->
+          <div style="margin-top:1rem; padding:0.65rem 0.85rem; background:#F8FAFC; border-radius:4px; font-size:0.75rem; color:#475569;">
+            <strong style="color:#0F172A;"><i class="fa-solid fa-building-columns"></i> Cuentas para Pago de Anticipos:</strong>
+            <div id="qsheet-bank-info" style="margin-top:0.25rem; line-height:1.4;">
+              Pago Móvil: Banesco (0134) • C.I: 12.345.678 • Tel: 0414-0000000
+            </div>
+          </div>
+
+          <!-- FIRMA DIGITAL DEL CLIENTE (INTERACTIVA CANVAS) -->
+          <div class="digital-signature-container">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.75rem; font-weight:700; color:#0F172A; text-transform:uppercase;">
+                <i class="fa-solid fa-signature"></i> Firma Digital de Aprobación del Cliente
+              </span>
+              <button type="button" id="btn-clear-signature" class="btn btn-xs btn-outline" style="font-size:0.7rem; padding:0.15rem 0.4rem;">
+                <i class="fa-solid fa-eraser"></i> Limpiar Firma
+              </button>
+            </div>
+            <div class="signature-canvas-wrapper" id="signature-canvas-box">
+              <canvas id="quote-signature-canvas"></canvas>
+              <div class="signature-placeholder" id="signature-placeholder">
+                Toca o firma aquí con el dedo o ratón para registrar conformidad
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:1rem; font-size:0.72rem; color:#64748B; border-top:1px dashed #CBD5E1; padding-top:0.65rem; text-align:center;">
+            <p id="qsheet-notes" style="margin:0;">Válido por 15 días. Presupuesto incluye mano de obra especializada e insumos de anclaje.</p>
+          </div>
+        </div>
+
+        <div class="form-actions mt-3" style="flex-wrap:wrap; gap:0.5rem;">
+          <button type="button" id="btn-download-quote-img" class="btn btn-primary" style="flex:1; min-width:160px;"><i class="fa-solid fa-download"></i> Descargar Imagen</button>
+          <button type="button" id="btn-print-quote-sheet" class="btn btn-outline" style="flex:1; min-width:140px;"><i class="fa-solid fa-print"></i> Imprimir</button>
+          <button type="button" id="btn-share-quote-sheet-wa" class="btn btn-whatsapp" style="flex:1; min-width:160px;"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Oculto para compatibilidad de binding de moneda de entrada -->
+  <select id="currency-symbol" class="hidden">
+    <option value="$" selected>$ (USD Dólares)</option>
+    <option value="Bs.">Bs. (Bolívares)</option>
+  </select>
+  <input type="text" id="doc-title" value="FACTURA ELECTRÓNICA DE VENTA" class="hidden">
+  <input type="checkbox" id="toggle-dual-currency" checked class="hidden">
+  <input type="radio" name="target-currency" value="USD" checked class="hidden">
+  <input type="number" id="exchange-rate" value="798.33" class="hidden">
+  <span id="label-target-usd" class="hidden"></span>
+  <span id="label-target-eur" class="hidden"></span>
+  <span id="lbl-exchange-rate" class="hidden"></span>
+  <span id="bcv-usd-val" class="hidden">798.33 Bs.</span>
+  <span id="bcv-eur-val" class="hidden">926.55 Bs.</span>
+
+  <!-- Script Principal -->
+  <script src="app.js"></script>
+
+</body>
+</html>

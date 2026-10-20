@@ -4,9 +4,8 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  // --- MODO 100% STANDALONE WEB & MOBILE (Sin Base de Datos / LocalStorage) ---
 
-  // --- STATE SYSTEM ---
   const state = {
     activeView: 'view-pos',
     docType: 'venta', // 'venta' | 'ingreso' | 'egreso'
@@ -82,7 +81,15 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     productsCatalog: [],
     clientsCatalog: [],
-    history: []
+    history: [],
+    cotizaciones: [],
+    proyectos: [],
+    galeria: [],
+    activeQuote: null,
+    quoteProfitMode: true,
+    quoteStatusFilter: 'all',
+    projectFilter: 'all',
+    galleryCatFilter: 'all'
   };
 
   // --- FRONTEND SANITIZATION & AUTO-FORMATTING HELPERS ---
@@ -320,12 +327,17 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProductsFromStorage();
     loadClientsFromStorage();
     loadHistoryFromStorage();
+    loadCotizacionesFromStorage();
+    loadProyectosFromStorage();
+    loadGaleriaFromStorage();
     setupNavigation();
     setupSubtabsSystem();
     setupDocTypeSelector();
     setupEventListeners();
+    setupNewModulesEventListeners();
     setDefaultDateAndTime();
     renderItemsList();
+    initActiveQuote();
     fetchBcvRatesFromApi();
     updateCalculationsAndPreview();
   }
@@ -434,6 +446,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (targetView === 'view-pos') {
         pageTitleText.textContent = 'Punto de Venta POS';
         pageSubtitleText.textContent = 'Emisión y vista previa interactiva de facturas, recibos y egresos';
+      } else if (targetView === 'view-cotizaciones') {
+        pageTitleText.textContent = 'Cotizaciones & Presupuestos';
+        pageSubtitleText.textContent = 'Presupuestos de avisos LED, corpóreos, stickers y análisis de utilidad';
+        renderQuotesHistory();
+      } else if (targetView === 'view-proyectos') {
+        pageTitleText.textContent = 'Gestión de Proyectos & Agenda';
+        pageSubtitleText.textContent = 'Seguimiento de ciclo de vida del trabajo, bitácora y Google Calendar';
+        renderProjectsPipeline();
+      } else if (targetView === 'view-galeria') {
+        pageTitleText.textContent = 'Galería de Trabajos Culminados';
+        pageSubtitleText.textContent = 'Portafolio fotográfico de avisos LED, corpóreos y publicidad terminada';
+        renderGallery();
       } else if (targetView === 'view-productos') {
         pageTitleText.textContent = 'Catálogo de Productos';
         pageSubtitleText.textContent = 'Gestiona tus productos o servicios con precios en $ USD';
@@ -486,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- CÉDULA / RIF LOOKUP & DIRECTORY ---
-  async function performCedulaLookup() {
+  function performCedulaLookup() {
     const rawVal = cleanIdentificacionInput(inputClientId.value);
     if (!rawVal) {
       showToast('Ingresa el número de Cédula o RIF para consultar.', 'info');
@@ -509,41 +533,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       updateCalculationsAndPreview();
       showToast(`Cliente encontrado en directorio: ${matchClient.nombre}`, 'success');
-      return;
-    }
-
-    showToast('Buscando en directorio...', 'info');
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/consultar-cedula/${encodeURIComponent(rawVal)}`);
-      const data = await res.json();
-
-      if (data.success && data.nombre && data.nombre.length > 2 && !data.nombre.includes('&')) {
-        state.client.name = cleanInputText(data.nombre);
-        inputClientName.value = state.client.name;
-
-        if (data.doc) {
-          state.client.id = cleanIdentificacionInput(data.doc);
-          inputClientId.value = state.client.id;
-        }
-        if (data.telefono) {
-          state.client.phone = cleanPhoneInput(data.telefono);
-          inputClientPhone.value = state.client.phone;
-        }
-        if (data.direccion) {
-          state.client.city = cleanInputText(data.direccion);
-          inputClientCity.value = state.client.city;
-        }
-
-        updateCalculationsAndPreview();
-        showToast(`Cliente encontrado en directorio: ${data.nombre}`, 'success');
-
-      } else {
-        showToast('Cliente nuevo. Ingresa el nombre para guardarlo.', 'info');
-        inputClientName.focus();
-      }
-    } catch (err) {
-      showToast('Ingresa el nombre del cliente.', 'info');
+    } else {
+      showToast('Cliente no registrado en directorio. Ingresa el nombre y se guardará automáticamente al emitir la factura.', 'info');
       inputClientName.focus();
     }
   }
@@ -851,9 +842,24 @@ document.addEventListener('DOMContentLoaded', () => {
       updateCalculationsAndPreview();
     });
 
-    inputLogo.addEventListener('change', handleLogoUpload);
-    btnRemoveLogo.addEventListener('click', handleLogoRemove);
-    btnSaveAllSettings.addEventListener('click', () => autoSaveSettings(true));
+    if (inputLogo) inputLogo.addEventListener('change', handleLogoUpload);
+    if (logoPreview) {
+      logoPreview.addEventListener('click', () => {
+        if (inputLogo) inputLogo.click();
+      });
+    }
+    const btnPasteLogo = document.getElementById('btn-paste-logo');
+    if (btnPasteLogo) {
+      btnPasteLogo.addEventListener('click', () => {
+        const url = prompt('Ingresa la URL pública o Base64 de la imagen de tu logo:');
+        if (url && url.trim()) {
+          applyLogoToStateAndUI(url.trim());
+          showToast('Logo asignado correctamente.', 'success');
+        }
+      });
+    }
+    if (btnRemoveLogo) btnRemoveLogo.addEventListener('click', handleLogoRemove);
+    if (btnSaveAllSettings) btnSaveAllSettings.addEventListener('click', () => autoSaveSettings(true));
 
     btnAddItem.addEventListener('click', () => {
       state.items.push({
@@ -903,6 +909,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnQuickSample.addEventListener('click', loadSampleData);
     btnQuickReset.addEventListener('click', resetForm);
+
+    // Copia de Seguridad y Migración
+    const btnExportBackup = document.getElementById('btn-export-backup');
+    const btnImportBackup = document.getElementById('btn-import-backup');
+    const inputImportBackup = document.getElementById('input-import-backup');
+    const btnResetFactory = document.getElementById('btn-reset-factory');
+
+    if (btnExportBackup) btnExportBackup.addEventListener('click', exportDataBackup);
+    if (btnImportBackup && inputImportBackup) {
+      btnImportBackup.addEventListener('click', () => inputImportBackup.click());
+      inputImportBackup.addEventListener('change', e => {
+        if (e.target.files && e.target.files[0]) {
+          importDataBackup(e.target.files[0]);
+          inputImportBackup.value = '';
+        }
+      });
+    }
+    if (btnResetFactory) btnResetFactory.addEventListener('click', resetToFactoryDefaults);
   }
 
   // --- AUTO-SAVE SETTINGS HELPER ---
@@ -933,30 +957,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     localStorage.setItem('martk_settings_permanent', JSON.stringify(settingsObj));
-    if (showNotification) showToast('Ajustes guardados correctamente', 'success');
-
-    fetch(`${API_BASE_URL}/empresa`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nombre: state.business.name,
-        identificacion: state.business.id,
-        direccion: state.business.address,
-        telefono: state.business.phone,
-        doc_titulo: state.business.docTitle,
-        moneda: state.business.currency,
-        tasa_cambio: state.exchange.rate,
-        mostrar_doble_moneda: state.exchange.showDual,
-        logo_base64: state.business.logo,
-        logo_size: state.options.logoSize,
-        show_qr: state.options.showQR ? 1 : 0,
-        show_barcode: state.options.showBarcode ? 1 : 0,
-        show_signature: state.options.showSignature ? 1 : 0,
-        show_tax_table: state.options.showTaxTable ? 1 : 0,
-        theme: state.options.theme,
-        notas_pie: state.options.notes
-      })
-    }).catch(e => {});
+    if (showNotification) showToast('Ajustes guardados correctamente en este navegador', 'success');
   }
 
   // --- ITEMS LIST RENDERER IN POS ---
@@ -1330,30 +1331,66 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillText(text, canvas.width / 2, 35);
   }
 
-  // --- LOGO UPLOAD & REMOVE ---
-  function handleLogoUpload(e) {
-    const file = e.target.files[0];
+  // --- COMPRESOR DE IMÁGENES CLIENT-SIDE (Previene errores de memoria en localStorage) ---
+  function compressImageFile(file, maxWidth, maxHeight, quality, callback) {
     if (!file) return;
-
-    if (file.size > 3 * 1024 * 1024) {
-      showToast('La imagen supera los 3MB.', 'info');
-      return;
-    }
-
+    const isPng = file.type === 'image/png';
+    const outputFormat = isPng ? 'image/png' : 'image/jpeg';
     const reader = new FileReader();
     reader.onload = function (evt) {
-      const dataUrl = evt.target.result;
-      state.business.logo = dataUrl;
-
-      logoPreview.innerHTML = `<img src="${dataUrl}" alt="Logo Preview" style="max-height:100px;">`;
-      ticketLogoImg.src = dataUrl;
-      ticketLogoImg.classList.remove('hidden');
-      btnRemoveLogo.classList.remove('hidden');
-
-      autoSaveSettings();
-      showToast('Logo cargado.', 'success');
+      const img = new Image();
+      img.onload = function () {
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth || h > maxHeight) {
+          if (w > h) {
+            h = Math.round((h * maxWidth) / w);
+            w = maxWidth;
+          } else {
+            w = Math.round((w * maxHeight) / h);
+            h = maxHeight;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressedDataUrl = canvas.toDataURL(outputFormat, quality || 0.85);
+        callback(compressedDataUrl);
+      };
+      img.onerror = function () {
+        // Fallback: direct data URL
+        callback(evt.target.result);
+      };
+      img.src = evt.target.result;
+    };
+    reader.onerror = function () {
+      showToast('Error al leer el archivo de imagen.', 'info');
     };
     reader.readAsDataURL(file);
+  }
+
+  // --- LOGO UPLOAD & REMOVE ---
+  function handleLogoUpload(e) {
+    const file = e.target.files ? e.target.files[0] : null;
+    if (!file) return;
+
+    showToast('Procesando logo de la empresa...', 'info');
+
+    compressImageFile(file, 600, 600, 0.85, function(dataUrl) {
+      applyLogoToStateAndUI(dataUrl);
+      showToast('Logo de la empresa guardado exitosamente.', 'success');
+    });
+  }
+
+  function applyLogoToStateAndUI(dataUrl) {
+    state.business.logo = dataUrl;
+    logoPreview.innerHTML = `<img src="${dataUrl}" alt="Logo Preview" style="max-height:100px;">`;
+    ticketLogoImg.src = dataUrl;
+    ticketLogoImg.classList.remove('hidden');
+    btnRemoveLogo.classList.remove('hidden');
+    autoSaveSettings();
   }
 
   function handleLogoRemove() {
@@ -1368,21 +1405,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- PRODUCT CATALOG MANAGEMENT ---
   function loadProductsFromStorage() {
-    fetch(`${API_BASE_URL}/productos`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          state.productsCatalog = data;
-          localStorage.setItem('martk_products', JSON.stringify(data));
-          renderProductsTable();
-        }
-      }).catch(e => {
-        try {
-          const saved = localStorage.getItem('martk_products');
-          if (saved) state.productsCatalog = JSON.parse(saved);
-          renderProductsTable();
-        } catch(err) {}
-      });
+    try {
+      const saved = localStorage.getItem('martk_products');
+      if (saved) {
+        state.productsCatalog = JSON.parse(saved);
+      } else {
+        // Catálogo inicial de ejemplo para inicio rápido
+        state.productsCatalog = [
+          { id: 1, codigo: 'SRV-001', nombre: 'Servicio / Honorarios Profesionales', precio_usd: 25.00, iva_porcentaje: 0, subtexto: 'Servicio general' },
+          { id: 2, codigo: 'PRD-001', nombre: 'Producto / Mercancía General', precio_usd: 10.00, iva_porcentaje: 16.00, subtexto: 'Venta al detal' }
+        ];
+        localStorage.setItem('martk_products', JSON.stringify(state.productsCatalog));
+      }
+      renderProductsTable();
+    } catch(err) {
+      state.productsCatalog = [];
+      renderProductsTable();
+    }
   }
 
   function renderProductsTable() {
@@ -1429,7 +1468,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = btn.getAttribute('data-id');
         state.productsCatalog = state.productsCatalog.filter(p => String(p.id) !== String(id));
         localStorage.setItem('martk_products', JSON.stringify(state.productsCatalog));
-        fetch(`${API_BASE_URL}/productos/${id}`, { method: 'DELETE' }).catch(e => {});
         renderProductsTable();
         showToast('Producto eliminado.', 'info');
       });
@@ -1466,17 +1504,6 @@ document.addEventListener('DOMContentLoaded', () => {
     productFormBox.classList.add('hidden');
     formProduct.reset();
     showToast('Producto guardado correctamente', 'success');
-
-    fetch(`${API_BASE_URL}/productos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(prodObj)
-    })
-    .then(res => res.json())
-    .then(() => {
-      loadProductsFromStorage();
-    })
-    .catch(e => {});
   }
 
   function openProductPickerModal() {
@@ -1535,21 +1562,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- CLIENT CATALOG MANAGEMENT ---
   function loadClientsFromStorage() {
-    fetch(`${API_BASE_URL}/clientes`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          state.clientsCatalog = data;
-          localStorage.setItem('martk_clients', JSON.stringify(data));
-          renderClientsTable();
-        }
-      }).catch(e => {
-        try {
-          const saved = localStorage.getItem('martk_clients');
-          if (saved) state.clientsCatalog = JSON.parse(saved);
-          renderClientsTable();
-        } catch(err) {}
-      });
+    try {
+      const saved = localStorage.getItem('martk_clients');
+      if (saved) {
+        state.clientsCatalog = JSON.parse(saved);
+      } else {
+        state.clientsCatalog = [];
+      }
+      renderClientsTable();
+    } catch(err) {
+      state.clientsCatalog = [];
+      renderClientsTable();
+    }
   }
 
   function renderClientsTable() {
@@ -1563,7 +1587,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (filtered.length === 0) {
-      clientsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:#94A3B8;">No hay clientes en el directorio.</td></tr>`;
+      clientsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:#94A3B8;">No hay clientes en el directorio. Regístralos o se guardarán solos al facturar.</td></tr>`;
       return;
     }
 
@@ -1576,6 +1600,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td><small>${escapeHtml(c.direccion || '-')}</small></td>
         <td>
           <button class="btn btn-sm btn-primary btn-select-client-pos" data-id="${c.id}"><i class="fa-solid fa-user-check"></i> Facturar A</button>
+          <button class="btn btn-sm btn-danger-outline btn-del-client" data-id="${c.id}"><i class="fa-solid fa-trash"></i></button>
         </td>
       `;
       clientsTableBody.appendChild(tr);
@@ -1586,6 +1611,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = btn.getAttribute('data-id');
         const client = state.clientsCatalog.find(c => String(c.id) === String(id));
         if (client) selectClientForPosReceipt(client);
+      });
+    });
+
+    clientsTableBody.querySelectorAll('.btn-del-client').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        state.clientsCatalog = state.clientsCatalog.filter(c => String(c.id) !== String(id));
+        localStorage.setItem('martk_clients', JSON.stringify(state.clientsCatalog));
+        renderClientsTable();
+        showToast('Cliente eliminado del directorio.', 'info');
       });
     });
   }
@@ -1613,21 +1648,6 @@ document.addEventListener('DOMContentLoaded', () => {
     clientFormBox.classList.add('hidden');
     formClient.reset();
     showToast('Cliente registrado correctamente', 'success');
-
-    fetch(`${API_BASE_URL}/clientes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(clientObj)
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) {
-        showToast(data.error, 'info');
-      } else {
-        loadClientsFromStorage();
-      }
-    })
-    .catch(e => {});
   }
 
   function openClientPickerModal() {
@@ -1754,49 +1774,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const savedLocal = localStorage.getItem('martk_settings_permanent');
       if (savedLocal) {
         applySettingsObject(JSON.parse(savedLocal));
-        updateCalculationsAndPreview();
+      } else {
+        // Valores por defecto iniciales
+        state.business.name = 'MI NEGOCIO / COMERCIO';
+        state.business.id = 'RIF: J-00000000-0';
+        state.business.phone = 'Tel: 0414-0000000';
+        state.business.address = 'Caracas, Venezuela';
+        state.business.docTitle = 'FACTURA ELECTRÓNICA DE VENTA';
+        state.business.currency = '$';
+        autoSaveSettings();
       }
+      updateCalculationsAndPreview();
     } catch(err) {}
-
-    fetch(`${API_BASE_URL}/empresa`)
-      .then(res => res.json())
-      .then(parsed => {
-        if (parsed) {
-          const dbSettings = {
-            business: {
-              name: parsed.nombre,
-              id: parsed.identificacion,
-              address: parsed.direccion,
-              phone: parsed.telefono,
-              docTitle: parsed.doc_titulo,
-              currency: parsed.moneda,
-              logo: parsed.logo_base64
-            },
-            options: {
-              logoSize: parsed.logo_size,
-              showQR: typeof parsed.show_qr !== 'undefined' ? !!parsed.show_qr : true,
-              showBarcode: typeof parsed.show_barcode !== 'undefined' ? !!parsed.show_barcode : true,
-              showSignature: typeof parsed.show_signature !== 'undefined' ? !!parsed.show_signature : true,
-              showTaxTable: typeof parsed.show_tax_table !== 'undefined' ? !!parsed.show_tax_table : false,
-              theme: parsed.theme,
-              notes: parsed.notas_pie
-            }
-          };
-
-          applySettingsObject(dbSettings);
-          localStorage.setItem('martk_settings_permanent', JSON.stringify({
-            business: state.business,
-            exchange: state.exchange,
-            suiche: state.suiche,
-            options: state.options
-          }));
-          updateCalculationsAndPreview();
-        }
-      }).catch(e => {});
   }
 
   // --- SAVE RECEIPT TO HISTORY ---
-  async function saveCurrentReceiptToHistory() {
+  function saveCurrentReceiptToHistory() {
     const rate = state.exchange.rate || 1;
     const totalBs = state.totals.grandTotal * rate;
 
@@ -1835,14 +1828,24 @@ document.addEventListener('DOMContentLoaded', () => {
     state.history.unshift(receiptRecord);
     saveHistoryToStorage();
 
-    try {
-      await fetch(`${API_BASE_URL}/comprobantes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(receiptRecord)
-      });
-      loadClientsFromStorage();
-    } catch (e) {}
+    // Auto-registrar cliente en el directorio si tiene cédula y nombre válido
+    if (state.client.id && state.client.name && state.client.name !== 'Cliente Mostrador') {
+      const cleanNum = state.client.id.replace(/[^0-9]/g, '');
+      if (cleanNum) {
+        const exists = state.clientsCatalog.some(c => (c.identificacion || '').replace(/[^0-9]/g, '') === cleanNum);
+        if (!exists) {
+          state.clientsCatalog.unshift({
+            id: Date.now(),
+            identificacion: state.client.id,
+            nombre: state.client.name,
+            telefono: state.client.phone || '',
+            direccion: state.client.city || ''
+          });
+          localStorage.setItem('martk_clients', JSON.stringify(state.clientsCatalog));
+          renderClientsTable();
+        }
+      }
+    }
 
     incrementFolioCounter();
     updateCalculationsAndPreview();
@@ -1915,7 +1918,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.history = state.history.filter(h => h.uuid !== uuid);
         saveHistoryToStorage();
         renderHistoryTable();
-        fetch(`${API_BASE_URL}/comprobantes/${uuid}`, { method: 'DELETE' }).catch(e => {});
+        showToast('Comprobante eliminado del historial.', 'info');
       });
     });
   }
@@ -1972,22 +1975,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function loadHistoryFromStorage() {
-    fetch(`${API_BASE_URL}/comprobantes`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          state.history = data;
-          saveHistoryToStorage();
-        }
-      }).catch(e => {
-        try {
-          const savedHist = localStorage.getItem('martk_history_records');
-          if (savedHist) {
-            state.history = JSON.parse(savedHist);
-            if (sidebarHistoryCount) sidebarHistoryCount.textContent = state.history.length;
-          }
-        } catch(err) {}
-      });
+    try {
+      const savedHist = localStorage.getItem('martk_history_records');
+      if (savedHist) {
+        state.history = JSON.parse(savedHist);
+      } else {
+        state.history = [];
+      }
+    } catch(err) {
+      state.history = [];
+    }
+    if (sidebarHistoryCount) sidebarHistoryCount.textContent = state.history.length;
 
     const savedCounter = localStorage.getItem('martk_folio_counter');
     if (savedCounter) {
@@ -2013,9 +2011,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saveHistoryToStorage();
       renderHistoryTable();
       updateCalculationsAndPreview();
-
-      fetch(`${API_BASE_URL}/admin/clear-db`, { method: 'DELETE' }).catch(e => {});
-      showToast('Historial limpio.', 'info');
+      showToast('Historial vaciado completamente.', 'info');
     }
   }
 
@@ -2192,6 +2188,2420 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  // --- BACKUP & RESTORE DATA SYSTEM ---
+  function exportDataBackup() {
+    const backupData = {
+      app: 'MARTK_POS',
+      version: '3.0.0',
+      exportDate: new Date().toISOString(),
+      settings: JSON.parse(localStorage.getItem('martk_settings_permanent') || '{}'),
+      products: state.productsCatalog,
+      clients: state.clientsCatalog,
+      history: state.history,
+      cotizaciones: state.cotizaciones,
+      proyectos: state.proyectos,
+      galeria: state.galeria,
+      folioCounter: state.folioCounter
+    };
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().split('T')[0];
+    a.href = url;
+    a.download = `MARTK_Respaldo_${dateStr}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Respaldo exportado exitosamente en JSON.', 'success');
+  }
+
+  function importDataBackup(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data || typeof data !== 'object') throw new Error('Formato inválido');
+
+        if (data.products && Array.isArray(data.products)) {
+          state.productsCatalog = data.products;
+          localStorage.setItem('martk_products', JSON.stringify(data.products));
+        }
+
+        if (data.clients && Array.isArray(data.clients)) {
+          state.clientsCatalog = data.clients;
+          localStorage.setItem('martk_clients', JSON.stringify(data.clients));
+        }
+
+        if (data.history && Array.isArray(data.history)) {
+          state.history = data.history;
+          localStorage.setItem('martk_history_records', JSON.stringify(data.history));
+        }
+
+        if (data.cotizaciones && Array.isArray(data.cotizaciones)) {
+          state.cotizaciones = data.cotizaciones;
+          localStorage.setItem('martk_quotes', JSON.stringify(data.cotizaciones));
+        }
+
+        if (data.proyectos && Array.isArray(data.proyectos)) {
+          state.proyectos = data.proyectos;
+          localStorage.setItem('martk_projects', JSON.stringify(data.proyectos));
+        }
+
+        if (data.galeria && Array.isArray(data.galeria)) {
+          state.galeria = data.galeria;
+          localStorage.setItem('martk_gallery', JSON.stringify(data.galeria));
+        }
+
+        if (data.folioCounter) {
+          state.folioCounter = parseInt(data.folioCounter) || 1;
+          localStorage.setItem('martk_folio_counter', state.folioCounter.toString());
+        }
+
+        if (data.settings && typeof data.settings === 'object') {
+          applySettingsObject(data.settings);
+          localStorage.setItem('martk_settings_permanent', JSON.stringify(data.settings));
+        }
+
+        renderProductsTable();
+        renderClientsTable();
+        renderHistoryTable();
+        renderQuotesHistory();
+        renderProjectsPipeline();
+        renderGallery();
+        updateCalculationsAndPreview();
+        showToast('¡Respaldo importado y restaurado exitosamente!', 'success');
+      } catch (err) {
+        showToast('Error al leer el archivo de respaldo JSON.', 'info');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ==========================================================================
+  // MÓDULO 6: COTIZACIONES & PRESUPUESTOS (STITCH PUBLICRAFT & VECTOR ENGINE)
+  // ==========================================================================
+
+  function initActiveQuote(existing) {
+    if (existing) {
+      state.activeQuote = JSON.parse(JSON.stringify(existing));
+      if (!state.activeQuote.vectorFiles) state.activeQuote.vectorFiles = getDefaultVectorFiles();
+      if (!state.activeQuote.facadeSurvey) state.activeQuote.facadeSurvey = getDefaultFacadeSurvey();
+    } else {
+      const qNum = (state.cotizaciones.length + 1).toString().padStart(3, '0');
+      state.activeQuote = {
+        id: Date.now(),
+        folio: `COT-${qNum}`,
+        title: 'Aviso Corpóreo Acrílico 3D con Luz Neón Flex + 2 Pendones Frontlight',
+        clientName: 'Boutique Velvet & Co.',
+        clientPhone: '584141234567',
+        date: new Date().toISOString().split('T')[0],
+        validityDays: 15,
+        items: [
+          { type: 'material', desc: 'Acrílico Espejo Dorado 3mm + Base MDF 12mm', cant: 1, unitCost: 45.00, unitPrice: 110.00 },
+          { type: 'material', desc: 'Módulos Neón Flex LED 12V Siliconado IP67 (metros)', cant: 12, unitCost: 4.50, unitPrice: 10.00 },
+          { type: 'corte', desc: 'Corte CNC Router y grabado de contornos 1:1', cant: 3, unitCost: 10.00, unitPrice: 25.00 },
+          { type: 'material', desc: 'Pendón Frontlight 13oz 3x2m con ojetes y refuerzo', cant: 2, unitCost: 20.00, unitPrice: 45.00 },
+          { type: 'instalacion', desc: 'Montaje Técnico en Altura (Andamio + Eléctrico 220V)', cant: 1, unitCost: 35.00, unitPrice: 85.00 }
+        ],
+        vectorFiles: getDefaultVectorFiles(),
+        facadeSurvey: getDefaultFacadeSurvey(),
+        status: 'Borrador'
+      };
+    }
+
+    const tag = document.getElementById('quote-number-tag');
+    const titleInput = document.getElementById('quote-title');
+    const cName = document.getElementById('quote-client-name');
+    const cPhone = document.getElementById('quote-client-phone');
+    const qDate = document.getElementById('quote-date');
+    const qVal = document.getElementById('quote-validity');
+    const sDim = document.getElementById('survey-dim');
+    const sWall = document.getElementById('survey-wall');
+    const sPower = document.getElementById('survey-power');
+
+    if (tag) tag.textContent = state.activeQuote.folio;
+    if (titleInput) titleInput.value = state.activeQuote.title;
+    if (cName) cName.value = state.activeQuote.clientName;
+    if (cPhone) cPhone.value = state.activeQuote.clientPhone;
+    if (qDate) qDate.value = state.activeQuote.date;
+    if (qVal) qVal.value = state.activeQuote.validityDays;
+
+    if (state.activeQuote.facadeSurvey) {
+      if (sDim) sDim.value = state.activeQuote.facadeSurvey.dim || '380 x 140 cm';
+      if (sWall) sWall.value = state.activeQuote.facadeSurvey.wall || 'Muro Concreto / Broca 3/8';
+      if (sPower) sPower.value = state.activeQuote.facadeSurvey.power || 'Punto 220V + Anclajes';
+    }
+
+    renderQuoteItemsTable();
+    renderVectorFilesList();
+    renderFacadeSurveyGrid();
+    recalcQuoteTotals();
+  }
+
+  function getDefaultVectorFiles() {
+    return [
+      {
+        id: 'vec-1',
+        name: 'aviso_corporeo_velvet_letras_3d.dxf',
+        type: 'dxf',
+        size: '4.2 MB',
+        machine: 'Router 12mm MDF + Acrílico 3mm',
+        validStatus: 'Vector Validado 1:1'
+      },
+      {
+        id: 'vec-2',
+        name: 'caja_luz_perfil_aluminio.ai',
+        type: 'ai',
+        size: '18.6 MB',
+        machine: 'Trazos en Curvas CMYK',
+        validStatus: 'Listo para Nesting'
+      }
+    ];
+  }
+
+  function getDefaultFacadeSurvey() {
+    return {
+      dim: '380 x 140 cm',
+      wall: 'Muro Concreto / Broca 3/8',
+      power: 'Punto 220V + Anclajes',
+      photos: [
+        {
+          title: 'Fachada Principal con Cotas',
+          cota: '380 x 140 cm',
+          note: 'Punto 220V + Anclajes listos',
+          url: 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?auto=format&fit=crop&w=600&q=80'
+        },
+        {
+          title: 'Simulación Render 3D Diurno',
+          cota: 'Render Aprobado',
+          note: 'Visto bueno del cliente',
+          url: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=600&q=80'
+        }
+      ]
+    };
+  }
+
+  function renderVectorFilesList() {
+    const container = document.getElementById('vector-files-list');
+    if (!container || !state.activeQuote) return;
+    container.innerHTML = '';
+
+    const files = state.activeQuote.vectorFiles || [];
+    if (files.length === 0) {
+      container.innerHTML = '<p style="font-size:0.75rem; color:#94A3B8; padding:0.5rem 0;">No hay archivos vectoriales adjuntos. Toca "Cargar Archivo Vectorial" para registrar planos DXF, DWG o AI.</p>';
+      return;
+    }
+
+    files.forEach((f, idx) => {
+      const item = document.createElement('div');
+      item.className = 'vector-file-item';
+      item.innerHTML = `
+        <div style="display:flex; align-items:center; gap:0.75rem; min-width:0; flex:1;">
+          <div class="vector-badge ${escapeHtml(f.type || 'dxf')}">${(f.type || 'DXF').toUpperCase()}</div>
+          <div class="vector-info">
+            <span class="vector-name">${escapeHtml(f.name)}</span>
+            <div class="vector-meta">
+              <span>${escapeHtml(f.size || '1.0 MB')}</span>
+              <span>•</span>
+              <span>${escapeHtml(f.machine || 'Router CNC')}</span>
+            </div>
+            <span class="vector-valid-badge">
+              <i class="fa-solid fa-circle-check"></i> ${escapeHtml(f.validStatus || 'Validado')}
+            </span>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.25rem;">
+          <button type="button" class="btn btn-xs btn-outline btn-del-vector" data-idx="${idx}" title="Eliminar Plano">
+            <i class="fa-solid fa-trash text-error"></i>
+          </button>
+        </div>
+      `;
+      container.appendChild(item);
+    });
+
+    container.querySelectorAll('.btn-del-vector').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const i = parseInt(btn.dataset.idx);
+        state.activeQuote.vectorFiles.splice(i, 1);
+        renderVectorFilesList();
+        showToast('Archivo vectorial removido.', 'info');
+      });
+    });
+  }
+
+  function renderFacadeSurveyGrid() {
+    const grid = document.getElementById('facade-survey-grid');
+    if (!grid || !state.activeQuote) return;
+    grid.innerHTML = '';
+
+    const photos = (state.activeQuote.facadeSurvey && state.activeQuote.facadeSurvey.photos) || [];
+    photos.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'facade-card';
+      card.innerHTML = `
+        <img src="${p.url}" alt="${escapeHtml(p.title)}">
+        <div class="facade-card-overlay">
+          <span class="facade-cota-tag">${escapeHtml(p.cota)}</span>
+          <strong style="font-size:0.8rem; text-shadow:0 1px 3px rgba(0,0,0,0.8);">${escapeHtml(p.title)}</strong>
+          <span style="font-size:0.7rem; opacity:0.9; text-shadow:0 1px 2px rgba(0,0,0,0.8);">${escapeHtml(p.note)}</span>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function updateQuoteKPIs() {
+    let pipelineTotal = 0;
+    let activeQuotes = 0;
+    let approvedQuotes = 0;
+
+    state.cotizaciones.forEach(q => {
+      if (q.status !== 'Rechazado') {
+        pipelineTotal += (q.totalClient || 0);
+        activeQuotes++;
+      }
+      if (q.status === 'Aprobado') {
+        approvedQuotes++;
+      }
+    });
+
+    const closeRate = state.cotizaciones.length > 0 ? Math.round((approvedQuotes / state.cotizaciones.length) * 100) : 0;
+
+    const elTotal = document.getElementById('kpi-quote-pipeline-total');
+    const elActives = document.getElementById('kpi-quote-active-count');
+    const elRate = document.getElementById('kpi-quote-close-rate');
+    const elApproved = document.getElementById('kpi-quote-approved-count');
+    const elRateLbl = document.getElementById('kpi-quote-rate-label');
+
+    if (elTotal) elTotal.textContent = `$${pipelineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (elActives) elActives.textContent = `${activeQuotes} activas en USD`;
+    if (elRate) elRate.textContent = `${closeRate}%`;
+    if (elApproved) elApproved.textContent = `${approvedQuotes} aprobadas este mes`;
+    if (elRateLbl) elRateLbl.textContent = closeRate >= 50 ? 'Excelente tasa de cierre' : 'Efectividad comercial';
+
+    const countAll = document.getElementById('quote-count-all');
+    const countAp = document.getElementById('quote-count-aprobadas');
+    const countEnv = document.getElementById('quote-count-enviadas');
+    const countBorr = document.getElementById('quote-count-borradores');
+
+    if (countAll) countAll.textContent = state.cotizaciones.length;
+    if (countAp) countAp.textContent = state.cotizaciones.filter(q => q.status === 'Aprobado').length;
+    if (countEnv) countEnv.textContent = state.cotizaciones.filter(q => q.status === 'Enviada').length;
+    if (countBorr) countBorr.textContent = state.cotizaciones.filter(q => q.status === 'Borrador').length;
+  }
+
+  function loadCotizacionesFromStorage() {
+    try {
+      const saved = localStorage.getItem('martk_quotes');
+      if (saved) {
+        state.cotizaciones = JSON.parse(saved);
+      } else {
+        state.cotizaciones = [
+          {
+            id: 1001,
+            folio: 'COT-001',
+            title: 'Aviso Corpóreo Acrílico 3D con Luz Neón Flex + 2 Pendones Frontlight',
+            clientName: 'Boutique Velvet & Co.',
+            clientPhone: '584141234567',
+            date: new Date().toISOString().split('T')[0],
+            validityDays: 15,
+            items: [
+              { type: 'material', desc: 'Acrílico Espejo Dorado 3mm + Base MDF 12mm', cant: 1, unitCost: 45.00, unitPrice: 110.00 },
+              { type: 'material', desc: 'Módulos Neón Flex LED 12V Siliconado IP67 (metros)', cant: 12, unitCost: 4.50, unitPrice: 10.00 },
+              { type: 'corte', desc: 'Corte CNC Router y grabado de contornos 1:1', cant: 3, unitCost: 10.00, unitPrice: 25.00 },
+              { type: 'material', desc: 'Pendón Frontlight 13oz 3x2m con ojetes y refuerzo', cant: 2, unitCost: 20.00, unitPrice: 45.00 },
+              { type: 'instalacion', desc: 'Montaje Técnico en Altura (Andamio + Eléctrico 220V)', cant: 1, unitCost: 35.00, unitPrice: 85.00 }
+            ],
+            totalClient: 485.00,
+            totalCost: 184.00,
+            gain: 301.00,
+            marginPct: 62.0,
+            status: 'Aprobado'
+          }
+        ];
+        localStorage.setItem('martk_quotes', JSON.stringify(state.cotizaciones));
+      }
+      renderQuotesHistory();
+      updateQuoteKPIs();
+    } catch (e) {
+      state.cotizaciones = [];
+    }
+  }
+
+  function saveCotizacionesToStorage() {
+    localStorage.setItem('martk_quotes', JSON.stringify(state.cotizaciones));
+    updateQuoteKPIs();
+  }
+
+  function renderQuoteItemsTable() {
+    const tbody = document.getElementById('quote-items-body');
+    if (!tbody || !state.activeQuote) return;
+    tbody.innerHTML = '';
+
+    state.activeQuote.items.forEach((item, idx) => {
+      const subCost = (item.cant || 0) * (item.unitCost || 0);
+      const subPrice = (item.cant || 0) * (item.unitPrice || 0);
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <select class="q-row-type" data-idx="${idx}" style="padding:0.35rem; font-size:0.75rem; border:none; border-bottom:1px solid #CBD5E1; background:transparent;">
+            <option value="material" ${item.type === 'material' ? 'selected' : ''}>Material</option>
+            <option value="corte" ${item.type === 'corte' ? 'selected' : ''}>Corte CNC</option>
+            <option value="instalacion" ${item.type === 'instalacion' ? 'selected' : ''}>Instalación</option>
+            <option value="diseno" ${item.type === 'diseno' ? 'selected' : ''}>Diseño / CAD</option>
+            <option value="otro" ${item.type === 'otro' ? 'selected' : ''}>Otro</option>
+          </select>
+        </td>
+        <td>
+          <input type="text" class="q-row-desc" data-idx="${idx}" value="${escapeHtml(item.desc)}" style="width:100%; padding:0.35rem; font-size:0.85rem; border:none; border-bottom:1px solid #CBD5E1; background:transparent;">
+        </td>
+        <td>
+          <input type="number" class="q-row-cant" data-idx="${idx}" min="1" step="0.5" value="${item.cant}" style="width:100%; padding:0.35rem; font-size:0.85rem; text-align:center; border:none; border-bottom:1px solid #CBD5E1; background:transparent;">
+        </td>
+        <td class="td-cost">
+          <input type="number" class="q-row-cost" data-idx="${idx}" min="0" step="0.5" value="${item.unitCost}" style="width:100%; padding:0.35rem; font-size:0.85rem; color:#991B1B; border:none; border-bottom:1px solid #CBD5E1; background:transparent;">
+        </td>
+        <td class="td-cost" style="font-weight:700; color:#991B1B;">
+          $${subCost.toFixed(2)}
+        </td>
+        <td>
+          <input type="number" class="q-row-price" data-idx="${idx}" min="0" step="0.5" value="${item.unitPrice}" style="width:100%; padding:0.35rem; font-size:0.85rem; font-weight:700; color:#2563EB; border:none; border-bottom:1px solid #CBD5E1; background:transparent;">
+        </td>
+        <td style="font-weight:800; color:#0F172A;">
+          $${subPrice.toFixed(2)}
+        </td>
+        <td style="text-align:center;">
+          <button type="button" class="btn-del-quote-row" data-idx="${idx}" style="background:transparent; border:none; color:#EF4444; cursor:pointer; font-size:1rem;"><i class="fa-solid fa-trash-can"></i></button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.q-row-type').forEach(el => {
+      el.addEventListener('change', e => {
+        const i = parseInt(e.target.dataset.idx);
+        state.activeQuote.items[i].type = e.target.value;
+      });
+    });
+    tbody.querySelectorAll('.q-row-desc').forEach(el => {
+      el.addEventListener('input', e => {
+        const i = parseInt(e.target.dataset.idx);
+        state.activeQuote.items[i].desc = e.target.value;
+      });
+    });
+    tbody.querySelectorAll('.q-row-cant').forEach(el => {
+      el.addEventListener('input', e => {
+        const i = parseInt(e.target.dataset.idx);
+        state.activeQuote.items[i].cant = parseFloat(e.target.value) || 0;
+        recalcQuoteTotals();
+        renderQuoteItemsTable();
+      });
+    });
+    tbody.querySelectorAll('.q-row-cost').forEach(el => {
+      el.addEventListener('input', e => {
+        const i = parseInt(e.target.dataset.idx);
+        state.activeQuote.items[i].unitCost = parseFloat(e.target.value) || 0;
+        recalcQuoteTotals();
+      });
+    });
+    tbody.querySelectorAll('.q-row-price').forEach(el => {
+      el.addEventListener('input', e => {
+        const i = parseInt(e.target.dataset.idx);
+        state.activeQuote.items[i].unitPrice = parseFloat(e.target.value) || 0;
+        recalcQuoteTotals();
+      });
+    });
+    tbody.querySelectorAll('.btn-del-quote-row').forEach(el => {
+      el.addEventListener('click', e => {
+        const i = parseInt(el.dataset.idx);
+        state.activeQuote.items.splice(i, 1);
+        renderQuoteItemsTable();
+        recalcQuoteTotals();
+      });
+    });
+
+    applyQuoteProfitModeVisibility();
+  }
+
+  function recalcQuoteTotals() {
+    if (!state.activeQuote) return;
+    let totalClient = 0;
+    let totalCost = 0;
+
+    state.activeQuote.items.forEach(it => {
+      totalClient += (it.cant || 0) * (it.unitPrice || 0);
+      totalCost += (it.cant || 0) * (it.unitCost || 0);
+    });
+
+    const gain = totalClient - totalCost;
+    const marginPct = totalClient > 0 ? (gain / totalClient) * 100 : 0;
+    const rate = state.exchange.rate || 1;
+    const totalBcv = totalClient * rate;
+    const anticipo = totalClient * 0.50;
+
+    state.activeQuote.totalClient = totalClient;
+    state.activeQuote.totalCost = totalCost;
+    state.activeQuote.gain = gain;
+    state.activeQuote.marginPct = marginPct;
+    state.activeQuote.anticipo = anticipo;
+
+    const elClient = document.getElementById('quote-view-total-client');
+    const elBcv = document.getElementById('quote-view-total-bcv');
+    const elCost = document.getElementById('quote-view-total-cost');
+    const elGain = document.getElementById('quote-view-gain');
+    const elMargin = document.getElementById('quote-view-margin');
+    const elAnticipo = document.getElementById('quote-anticipo-val');
+
+    if (elClient) elClient.textContent = `$${totalClient.toFixed(2)} USD`;
+    if (elBcv) elBcv.textContent = `Bs. ${totalBcv.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (elCost) elCost.textContent = `$${totalCost.toFixed(2)} USD`;
+    if (elGain) elGain.textContent = `$${gain.toFixed(2)} USD`;
+    if (elMargin) elMargin.textContent = `${marginPct.toFixed(1)}%`;
+    if (elAnticipo) elAnticipo.textContent = `$${anticipo.toFixed(2)} USD`;
+  }
+
+  function applyQuoteProfitModeVisibility() {
+    const show = state.quoteProfitMode;
+    document.querySelectorAll('.quote-profit-block').forEach(el => {
+      if (show) el.classList.remove('hidden');
+      else el.classList.add('hidden');
+    });
+    document.querySelectorAll('.th-cost, .td-cost').forEach(el => {
+      if (show) el.style.display = '';
+      else el.style.display = 'none';
+    });
+  }
+
+  function saveCurrentQuote() {
+    if (!state.activeQuote) return;
+    const titleInput = document.getElementById('quote-title');
+    const cName = document.getElementById('quote-client-name');
+    const cPhone = document.getElementById('quote-client-phone');
+    const qDate = document.getElementById('quote-date');
+    const qVal = document.getElementById('quote-validity');
+    const sDim = document.getElementById('survey-dim');
+    const sWall = document.getElementById('survey-wall');
+    const sPower = document.getElementById('survey-power');
+
+    state.activeQuote.title = titleInput ? cleanInputText(titleInput.value) : 'Presupuesto de Publicidad';
+    state.activeQuote.clientName = cName ? cleanInputText(cName.value) : 'Cliente Mostrador';
+    state.activeQuote.clientPhone = cPhone ? cleanPhoneInput(cPhone.value) : '';
+    state.activeQuote.date = qDate ? qDate.value : new Date().toISOString().split('T')[0];
+    state.activeQuote.validityDays = qVal ? parseInt(qVal.value) || 15 : 15;
+
+    if (!state.activeQuote.facadeSurvey) state.activeQuote.facadeSurvey = {};
+    if (sDim) state.activeQuote.facadeSurvey.dim = sDim.value;
+    if (sWall) state.activeQuote.facadeSurvey.wall = sWall.value;
+    if (sPower) state.activeQuote.facadeSurvey.power = sPower.value;
+
+    recalcQuoteTotals();
+
+    const existingIdx = state.cotizaciones.findIndex(q => q.id === state.activeQuote.id);
+    if (existingIdx !== -1) {
+      state.cotizaciones[existingIdx] = JSON.parse(JSON.stringify(state.activeQuote));
+    } else {
+      state.cotizaciones.unshift(JSON.parse(JSON.stringify(state.activeQuote)));
+    }
+
+    saveCotizacionesToStorage();
+    renderQuotesHistory();
+    showToast(`Presupuesto ${state.activeQuote.folio} guardado correctamente.`, 'success');
+  }
+
+  function renderQuotesHistory() {
+    const container = document.getElementById('quotes-history-cards');
+    if (!container) return;
+    const search = document.getElementById('search-quotes');
+    const qStr = (search ? search.value : '').toLowerCase().trim();
+    container.innerHTML = '';
+
+    const list = state.cotizaciones.filter(q => {
+      if (state.quoteStatusFilter && state.quoteStatusFilter !== 'all' && q.status !== state.quoteStatusFilter) return false;
+      if (!qStr) return true;
+      return (q.title || '').toLowerCase().includes(qStr) ||
+             (q.clientName || '').toLowerCase().includes(qStr) ||
+             (q.folio || '').toLowerCase().includes(qStr);
+    });
+
+    if (list.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:2.5rem 1rem; color:#94A3B8;"><i class="fa-solid fa-file-circle-question" style="font-size:2rem; margin-bottom:0.5rem; display:block;"></i>No hay cotizaciones registradas en este estado.</div>';
+      return;
+    }
+
+    list.forEach(q => {
+      const card = document.createElement('div');
+      card.className = 'quote-stitch-card';
+
+      // Status Badge Style
+      let statusClass = 'status-presupuesto';
+      let statusIcon = 'fa-pen';
+      let statusLabel = q.status || 'Borrador';
+
+      if (q.status === 'Aprobado') {
+        statusClass = 'status-aprobado';
+        statusIcon = 'fa-circle-check';
+        statusLabel = 'Aprobada';
+      } else if (q.status === 'Enviada') {
+        statusClass = 'status-envio';
+        statusIcon = 'fa-paper-plane';
+        statusLabel = 'Enviada';
+      }
+
+      // Initial Letters for Avatar
+      const initials = (q.clientName || 'Cliente').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+      const totalFormatted = (q.totalClient || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      card.innerHTML = `
+        <div class="quote-stitch-header">
+          <div style="min-width:0; flex:1;">
+            <div class="quote-meta-strip">
+              <span style="color:#2563EB; font-weight:800;">${escapeHtml(q.folio)}</span>
+              <span>•</span>
+              <span>${q.date || 'Hoy'}</span>
+            </div>
+            <h3 class="quote-stitch-title">${escapeHtml(q.title || 'Proyecto')}</h3>
+            <p class="quote-stitch-sub">${escapeHtml(q.items ? q.items.map(it => it.desc).slice(0, 2).join(' • ') : 'Servicios de Publicidad')}</p>
+          </div>
+          <span class="status-badge ${statusClass}" style="flex-shrink:0;">
+            <i class="fa-solid ${statusIcon}"></i> ${statusLabel}
+          </span>
+        </div>
+
+        <div class="quote-client-subbox">
+          <div style="display:flex; align-items:center; gap:0.6rem; min-width:0;">
+            <div class="avatar-initials">${initials}</div>
+            <div style="min-width:0;">
+              <strong style="font-size:0.85rem; color:#0F172A; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${escapeHtml(q.clientName || 'Cliente Mostrador')}
+              </strong>
+              <span style="font-size:0.75rem; color:#64748B;">
+                ${q.status === 'Aprobado' ? '<i class="fa-solid fa-signature" style="color:#059669;"></i> Firma digital registrada' : 'Presupuesto formal'}
+              </span>
+            </div>
+          </div>
+          <div style="text-align:right; flex-shrink:0;">
+            <span style="font-size:0.68rem; text-transform:uppercase; color:#64748B; font-weight:700; display:block;">TOTAL</span>
+            <strong style="font-size:1.15rem; color:#0F172A; font-weight:800;">$${totalFormatted}</strong>
+          </div>
+        </div>
+
+        <div class="quote-stitch-actions">
+          <button type="button" class="btn btn-stitch-primary btn-q-convert" data-id="${q.id}">
+            <i class="fa-solid fa-rocket"></i> A Proyecto
+          </button>
+          <button type="button" class="btn btn-stitch-secondary btn-q-view" data-id="${q.id}">
+            <i class="fa-solid fa-file-pdf"></i> Ver PDF / Firma
+          </button>
+          <button type="button" class="btn btn-outline btn-q-edit" data-id="${q.id}" style="flex:0 0 44px; padding:0;" title="Editar">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button type="button" class="btn btn-outline btn-q-wa" data-id="${q.id}" style="flex:0 0 44px; padding:0; color:#25D366;" title="Enviar WhatsApp">
+            <i class="fa-brands fa-whatsapp"></i>
+          </button>
+          <button type="button" class="btn btn-outline btn-q-del" data-id="${q.id}" style="flex:0 0 44px; padding:0; color:#EF4444;" title="Eliminar">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+
+    container.querySelectorAll('.btn-q-convert').forEach(b => {
+      b.addEventListener('click', () => convertQuoteToProject(b.dataset.id));
+    });
+    container.querySelectorAll('.btn-q-view').forEach(b => {
+      b.addEventListener('click', () => {
+        const q = state.cotizaciones.find(item => item.id == b.dataset.id);
+        if (q) openQuoteSheetModal(q);
+      });
+    });
+    container.querySelectorAll('.btn-q-edit').forEach(b => {
+      b.addEventListener('click', () => {
+        const q = state.cotizaciones.find(item => item.id == b.dataset.id);
+        if (q) {
+          initActiveQuote(q);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          showToast(`Cargada ${q.folio} en editor.`, 'info');
+        }
+      });
+    });
+    container.querySelectorAll('.btn-q-wa').forEach(b => {
+      b.addEventListener('click', () => {
+        const q = state.cotizaciones.find(item => item.id == b.dataset.id);
+        if (q) shareQuoteViaWhatsapp(q);
+      });
+    });
+    container.querySelectorAll('.btn-q-del').forEach(b => {
+      b.addEventListener('click', () => {
+        if (confirm('¿Eliminar esta cotización?')) {
+          state.cotizaciones = state.cotizaciones.filter(item => item.id != b.dataset.id);
+          saveCotizacionesToStorage();
+          renderQuotesHistory();
+          showToast('Cotización eliminada.', 'info');
+        }
+      });
+    });
+  }
+
+  function initSignatureCanvas() {
+    const canvas = document.getElementById('quote-signature-canvas');
+    const placeholder = document.getElementById('signature-placeholder');
+    const btnClear = document.getElementById('btn-clear-signature');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        ctx.strokeStyle = '#0F172A';
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+      }
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    function startDraw(e) {
+      isDrawingSignature = true;
+      if (placeholder) placeholder.style.display = 'none';
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      ctx.beginPath();
+      ctx.moveTo(clientX - rect.left, clientY - rect.top);
+    }
+
+    function draw(e) {
+      if (!isDrawingSignature) return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      ctx.lineTo(clientX - rect.left, clientY - rect.top);
+      ctx.stroke();
+    }
+
+    function stopDraw() {
+      if (!isDrawingSignature) return;
+      isDrawingSignature = false;
+      if (state.activeQuote) {
+        state.activeQuote.signature = canvas.toDataURL('image/png');
+      }
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw);
+    canvas.addEventListener('mouseleave', stopDraw);
+
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDraw);
+
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (placeholder) placeholder.style.display = 'flex';
+        if (state.activeQuote) state.activeQuote.signature = null;
+      });
+    }
+
+    signatureCanvasInited = true;
+  }
+
+  function openQuoteSheetModal(quote) {
+    const modal = document.getElementById('modal-quote-sheet');
+    if (!modal) return;
+
+    // Logo oficial de empresa si existe
+    const logoImg = document.getElementById('qsheet-logo-img');
+    if (logoImg) {
+      if (state.business.logo) {
+        logoImg.src = state.business.logo;
+        logoImg.style.display = 'block';
+      } else {
+        logoImg.style.display = 'none';
+      }
+    }
+
+    const bName = document.getElementById('qsheet-biz-name');
+    const bPhone = document.getElementById('qsheet-biz-phone');
+    const bAddress = document.getElementById('qsheet-biz-address');
+    if (bName) bName.textContent = state.business.name || 'TU NEGOCIO DE PUBLICIDAD';
+    if (bPhone) bPhone.textContent = state.business.phone ? `Tel / WhatsApp: ${state.business.phone}` : '';
+    if (bAddress) bAddress.textContent = state.business.address ? `Dirección: ${state.business.address}` : '';
+
+    document.getElementById('qsheet-folio').textContent = quote.folio;
+    document.getElementById('qsheet-date').textContent = `Emisión: ${quote.date}`;
+    document.getElementById('qsheet-validity-text').textContent = `Vence: ${quote.validityDays || 15} días`;
+    document.getElementById('qsheet-client-name').textContent = quote.clientName || 'Cliente';
+    document.getElementById('qsheet-client-phone').textContent = quote.clientPhone || '-';
+    document.getElementById('qsheet-title').textContent = quote.title || 'Proyecto de Publicidad';
+
+    // Ficha de materiales incluidos en el membrete
+    const materialsRow = document.getElementById('qsheet-materials-row');
+    if (materialsRow) {
+      materialsRow.innerHTML = `
+        <span class="materials-pill"><span class="materials-dot" style="background:#F59E0B;"></span>Acrílico Espejo Dorado</span>
+        <span class="materials-pill"><span class="materials-dot" style="background:#10B981;"></span>Puntera LED Neón IP67</span>
+        <span class="materials-pill"><span class="materials-dot" style="background:#3B82F6;"></span>Lona Front 13oz Sellada</span>
+      `;
+    }
+
+    const tbody = document.getElementById('qsheet-items-body');
+    tbody.innerHTML = '';
+    (quote.items || []).forEach((it, idx) => {
+      const sub = (it.cant || 0) * (it.unitPrice || 0);
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid #E2E8F0';
+      tr.innerHTML = `
+        <td style="padding:0.6rem 0.8rem; font-weight:700; color:#64748B;">${idx + 1}</td>
+        <td style="padding:0.6rem 0.8rem;">
+          <strong style="color:#0F172A;">${escapeHtml(it.desc)}</strong>
+        </td>
+        <td style="padding:0.6rem 0.8rem; text-align:center; font-weight:700;">${it.cant}</td>
+        <td style="padding:0.6rem 0.8rem; text-align:right;">$${(it.unitPrice || 0).toFixed(2)}</td>
+        <td style="padding:0.6rem 0.8rem; text-align:right; font-weight:700; color:#0F172A;">$${sub.toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const rate = state.exchange.rate || 1;
+    const totalClient = quote.totalClient || 0;
+    const anticipo = totalClient * 0.50;
+    const bcvVal = totalClient * rate;
+
+    const elTotalUsd = document.getElementById('qsheet-total-usd');
+    const elAnticipoUsd = document.getElementById('qsheet-anticipo-usd');
+    const elTotalBcv = document.getElementById('qsheet-total-bcv');
+    const elRateNote = document.getElementById('qsheet-rate-note');
+
+    if (elTotalUsd) elTotalUsd.textContent = `$${totalClient.toFixed(2)} USD`;
+    if (elAnticipoUsd) elAnticipoUsd.textContent = `$${anticipo.toFixed(2)} USD`;
+    if (elTotalBcv) elTotalBcv.textContent = `Equivalente: Bs. ${bcvVal.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (elRateNote) elRateNote.textContent = `Tasa Oficial BCV de referencia: ${rate.toFixed(2)} Bs. / USD.`;
+
+    // Cuentas bancarias de anticipos
+    const bankArea = document.getElementById('bank-info-textarea');
+    const qBankInfo = document.getElementById('qsheet-bank-info');
+    if (qBankInfo) {
+      qBankInfo.textContent = bankArea && bankArea.value.trim() ? bankArea.value.trim() : 'Pago Móvil: Banesco (0134) • C.I: 12.345.678 • Tel: 0414-0000000';
+    }
+
+    modal.classList.remove('hidden');
+
+    setTimeout(() => {
+      if (!signatureCanvasInited) initSignatureCanvas();
+    }, 150);
+  }
+
+  function shareQuoteViaWhatsapp(quote) {
+    if (!quote) return;
+    const rate = state.exchange.rate || 1;
+    const totalClient = quote.totalClient || 0;
+    const bcvVal = totalClient * rate;
+    const anticipo = totalClient * 0.50;
+
+    let msg = `*PRESUPUESTO FORMAL: ${quote.folio}*
+`;
+    if (state.business.name) msg += `*${state.business.name}*
+`;
+    msg += `-----------------------------------
+`;
+    msg += `*Proyecto:* ${quote.title}
+`;
+    msg += `*Cliente:* ${quote.clientName}
+`;
+    msg += `*Fecha:* ${quote.date} (Validez: ${quote.validityDays} días)
+`;
+    msg += `-----------------------------------
+*DESGLOSE:* 
+`;
+
+    (quote.items || []).forEach(it => {
+      const sub = (it.cant || 0) * (it.unitPrice || 0);
+      msg += `• *${it.cant}x* ${it.desc} -> $${sub.toFixed(2)}
+`;
+    });
+
+    msg += `-----------------------------------
+`;
+    msg += `*TOTAL DEL PROYECTO: $${totalClient.toFixed(2)} USD*
+`;
+    msg += `*Anticipo 50% Requerido: $${anticipo.toFixed(2)} USD*
+`;
+    msg += `*Equivalente BCV:* Bs. ${bcvVal.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+`;
+    msg += `*Condiciones:* 50% al iniciar para adquisición de materiales y corte CNC • 50% contra entrega e instalación.
+
+`;
+    
+    const bankArea = document.getElementById('bank-info-textarea');
+    if (bankArea && bankArea.value.trim()) {
+      msg += `*Cuentas para Pago de Anticipo:*
+${bankArea.value.trim()}
+
+`;
+    }
+
+    msg += `_Cotizado con MARKT POS & Publicraft Studio_`;
+
+    const encoded = encodeURIComponent(msg);
+    const targetPhone = (quote.clientPhone || '').replace(/[^0-9]/g, '');
+    const waUrl = targetPhone ? `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encoded}` : `https://api.whatsapp.com/send?text=${encoded}`;
+    window.open(waUrl, '_blank');
+  }
+
+  function convertQuoteToProject(quoteId) {
+    const quote = state.cotizaciones.find(q => q.id == quoteId) || state.activeQuote;
+    if (!quote) return;
+
+    const pNum = (state.proyectos.length + 1).toString().padStart(3, '0');
+    const newProj = {
+      id: Date.now(),
+      code: `PRJ-${pNum}`,
+      title: quote.title || 'Trabajo de Publicidad',
+      clientName: quote.clientName || 'Cliente',
+      clientPhone: quote.clientPhone || '',
+      address: (quote.facadeSurvey && quote.facadeSurvey.dim) ? `Fachada: ${quote.facadeSurvey.dim}` : '',
+      dateStart: new Date().toISOString().split('T')[0],
+      dateDeadline: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      total: quote.totalClient || 0,
+      abono: 0,
+      status: 'aprobado',
+      pauseReason: '',
+      notes: [
+        { date: new Date().toLocaleString('es-ES'), text: `Proyecto creado desde cotización ${quote.folio}` }
+      ],
+      photos: (quote.facadeSurvey && quote.facadeSurvey.photos) || []
+    };
+
+    state.proyectos.unshift(newProj);
+    saveProyectosToStorage();
+    showToast(`¡Proyecto ${newProj.code} creado exitosamente!`, 'success');
+
+    const navBtn = document.querySelector('[data-view="view-proyectos"]');
+    if (navBtn) navBtn.click();
+  }
+
+  // ==========================================================================
+  // MÓDULO 7: GESTIÓN DE PROYECTOS, PIPELINE & AGENDA GOOGLE CALENDAR (STITCH)
+  // ==========================================================================
+
+  function updateProjectKPIs() {
+    let activeCount = 0;
+    let pendingMoney = 0;
+    let siteCount = 0;
+
+    state.proyectos.forEach(p => {
+      if (p.status !== 'culminado') {
+        activeCount++;
+        const saldo = Math.max(0, (p.total || 0) - (p.abono || 0));
+        pendingMoney += saldo;
+      }
+      if (p.status === 'instalacion') {
+        siteCount++;
+      }
+    });
+
+    const elActives = document.getElementById('kpi-proj-active-count');
+    const elMoney = document.getElementById('kpi-proj-pending-money');
+    const elSite = document.getElementById('kpi-proj-site-count');
+
+    if (elActives) elActives.textContent = activeCount;
+    if (elMoney) elMoney.textContent = `$${pendingMoney.toFixed(2)}`;
+    if (elSite) elSite.textContent = siteCount;
+  }
+
+  function loadProyectosFromStorage() {
+    try {
+      const saved = localStorage.getItem('martk_projects');
+      if (saved) {
+        state.proyectos = JSON.parse(saved);
+      } else {
+        state.proyectos = [
+          {
+            id: 2001,
+            code: 'PRJ-001',
+            title: 'Aviso Corpóreo Acrílico 3D con Luz Neón Flex',
+            clientName: 'Boutique Velvet & Co.',
+            clientPhone: '584141234567',
+            address: 'Las Mercedes, Calle París, Local 4',
+            dateStart: new Date().toISOString().split('T')[0],
+            dateDeadline: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
+            total: 485.00,
+            abono: 242.50,
+            status: 'produccion',
+            pauseReason: '',
+            notes: [
+              { date: '16/10/2026, 09:30', text: 'Anticipo del 50% recibido por Pago Móvil.' },
+              { date: '17/10/2026, 14:00', text: 'Corte de acrílico terminado. Iniciando armado de mangueras LED.' }
+            ],
+            photos: [
+              {
+                date: '17/10/2026',
+                url: 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?auto=format&fit=crop&w=600&q=80'
+              }
+            ]
+          },
+          {
+            id: 2002,
+            code: 'PRJ-002',
+            title: 'Letras Corpóreas 3D en Acrílico con Luz Frontal',
+            clientName: 'Dra. Mariana Rivas (Clínica Dental)',
+            clientPhone: '584249876543',
+            address: 'Torre Empresarial, Piso 3',
+            dateStart: new Date().toISOString().split('T')[0],
+            dateDeadline: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
+            total: 480.00,
+            abono: 240.00,
+            status: 'detenido',
+            pauseReason: 'Esperando confirmación final del cliente sobre el tono exacto de azul para el logo de la clínica.',
+            notes: [
+              { date: '15/10/2026, 11:20', text: 'Proyecto detenido: Se enviaron muestras de azul al cliente vía WhatsApp. Pendiente respuesta.' }
+            ],
+            photos: []
+          }
+        ];
+        localStorage.setItem('martk_projects', JSON.stringify(state.proyectos));
+      }
+      renderProjectsPipeline();
+      updateProjectKPIs();
+    } catch (e) {
+      state.proyectos = [];
+    }
+  }
+
+  function saveProyectosToStorage() {
+    localStorage.setItem('martk_projects', JSON.stringify(state.proyectos));
+    updateProjectKPIs();
+  }
+
+  function renderProjectsPipeline() {
+    const container = document.getElementById('projects-pipeline-container');
+    if (!container) return;
+    const search = document.getElementById('search-projects');
+    const qStr = (search ? search.value : '').toLowerCase().trim();
+    container.innerHTML = '';
+
+    const badgeCounts = document.getElementById('sidebar-projects-count');
+    const countAll = document.getElementById('count-all-projects');
+    if (countAll) countAll.textContent = state.proyectos.length;
+    if (badgeCounts) badgeCounts.textContent = state.proyectos.filter(p => p.status !== 'culminado').length;
+
+    const filtered = state.proyectos.filter(p => {
+      if (state.projectFilter !== 'all' && p.status !== state.projectFilter) return false;
+      if (!qStr) return true;
+      return (p.title || '').toLowerCase().includes(qStr) ||
+             (p.clientName || '').toLowerCase().includes(qStr) ||
+             (p.code || '').toLowerCase().includes(qStr);
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:3rem; color:#94A3B8; background:#FFFFFF; border-radius:var(--radius-lg); border:1px dashed #CBD5E1;">
+        <i class="fa-solid fa-folder-open" style="font-size:2.5rem; margin-bottom:0.75rem;"></i>
+        <p style="font-size:1rem; font-weight:700;">No se encontraron proyectos en este estado.</p>
+      </div>`;
+      return;
+    }
+
+    filtered.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'project-card';
+
+      const statusLabels = {
+        'presupuesto': { label: '1 · Presupuesto', cls: 'status-presupuesto' },
+        'aprobado': { label: '1 · Aprobado', cls: 'status-aprobado' },
+        'abono': { label: '2 · Anticipo Pendiente', cls: 'status-abono' },
+        'produccion': { label: '3 · Armado Taller CNC', cls: 'status-produccion' },
+        'envio': { label: '4 · Envío / Listo', cls: 'status-envio' },
+        'instalacion': { label: '4 · En Sitio / Montaje', cls: 'status-instalacion' },
+        'culminado': { label: '5 · Liquidado & Culminado', cls: 'status-culminado' },
+        'detenido': { label: 'DETENIDO / EN PAUSA', cls: 'status-detenido' }
+      };
+
+      const st = statusLabels[p.status] || { label: p.status, cls: 'status-presupuesto' };
+      const saldo = Math.max(0, (p.total || 0) - (p.abono || 0));
+      const pctPagado = p.total > 0 ? Math.min(100, Math.round(((p.abono || 0) / p.total) * 100)) : 0;
+
+      let pauseAlertHtml = '';
+      if (p.status === 'detenido') {
+        pauseAlertHtml = `
+          <div class="project-pause-alert">
+            <div class="project-pause-alert-title"><i class="fa-solid fa-circle-exclamation"></i> Proyecto en Pausa / Detenido:</div>
+            <div class="project-pause-alert-text">${escapeHtml(p.pauseReason || 'Sin razón especificada. Toca "Cambiar Estado" para actualizar.')}</div>
+          </div>
+        `;
+      }
+
+      const thumbUrl = (p.photos && p.photos.length > 0) ? p.photos[0].url : (p.id === 2001 ? 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?auto=format&fit=crop&w=200&q=80' : 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=200&q=80');
+
+      card.innerHTML = `
+        <div class="project-card-header">
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <span class="w-2 h-2 rounded-full" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${p.status === 'detenido' ? '#DC2626' : (p.status === 'produccion' ? '#2563EB' : '#059669')};"></span>
+            <span class="project-code-tag">${escapeHtml(p.code)}</span>
+          </div>
+          <span class="status-badge ${st.cls}">${st.label}</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.75rem;">
+          <div style="min-width:0; flex:1;">
+            <h3 class="project-title">${escapeHtml(p.title)}</h3>
+            <div class="project-client-line">
+              <i class="fa-solid fa-user"></i> <strong>${escapeHtml(p.clientName || 'Cliente')}</strong>
+              ${p.clientPhone ? `<a href="https://api.whatsapp.com/send?phone=${p.clientPhone.replace(/[^0-9]/g, '')}" target="_blank" style="color:#25D366; margin-left:0.25rem;"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
+            </div>
+            ${p.address ? `<div style="font-size:0.75rem; color:#64748B; margin-top:0.2rem;"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(p.address)}</div>` : ''}
+          </div>
+          <div class="project-thumb-box">
+            <img src="${thumbUrl}" alt="Preview">
+          </div>
+        </div>
+
+        ${pauseAlertHtml}
+
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#475569; background:#F8FAFC; padding:0.4rem 0.6rem; border-radius:var(--radius-sm);">
+          <span><strong>Inicio:</strong> ${p.dateStart || '-'}</span>
+          <span><strong>Entrega:</strong> <span style="color:#E11D48; font-weight:800;">${p.dateDeadline || '-'}</span></span>
+        </div>
+
+        <div class="project-financials">
+          <div class="project-financials-row">
+            <span>Anticipo pactado (50%): <strong>$${(p.abono || 0).toFixed(2)}</strong></span>
+            <span>Total: <strong>$${(p.total || 0).toFixed(2)}</strong> (${pctPagado}%)</span>
+          </div>
+          <div class="financial-progress-track">
+            <div class="financial-progress-bar" style="width:${pctPagado}%; background:${pctPagado < 50 ? '#DC2626' : (pctPagado < 100 ? '#2563EB' : '#059669')};"></div>
+          </div>
+          <div style="font-size:0.75rem; color:#64748B; text-align:right; margin-top:0.15rem;">
+            Saldo Pendiente: <strong style="color:${saldo > 0 ? '#DC2626' : '#059669'};">$${saldo.toFixed(2)} USD</strong>
+          </div>
+        </div>
+
+        ${p.status === 'abono' && saldo > 0 ? `
+          <div style="display:flex; align-items:center; gap:0.5rem; background:#EFF6FF; color:#1E40AF; padding:0.5rem 0.75rem; border-radius:var(--radius-sm); font-size:0.75rem;">
+            <i class="fa-solid fa-receipt"></i>
+            <span>Esperando comprobante de transferencia bancaria</span>
+          </div>
+        ` : ''}
+
+        <div class="project-card-actions">
+          <button type="button" class="btn btn-sm btn-outline btn-p-status" data-id="${p.id}"><i class="fa-solid fa-arrows-spin"></i> Estado</button>
+          <button type="button" class="btn btn-sm btn-outline btn-p-notes" data-id="${p.id}"><i class="fa-solid fa-clipboard-list"></i> Notas (${(p.notes || []).length})</button>
+          <button type="button" class="btn btn-sm btn-outline btn-p-photos" data-id="${p.id}"><i class="fa-solid fa-camera"></i> Fotos (${(p.photos || []).length})</button>
+          <button type="button" class="btn btn-sm btn-calendar btn-p-calendar" data-id="${p.id}"><i class="fa-solid fa-calendar-days"></i> Agendar</button>
+        </div>
+
+        ${saldo > 0 ? `
+          <button type="button" class="btn btn-sm btn-stitch-primary btn-p-charge mt-1" data-id="${p.id}">
+            <i class="fa-solid fa-credit-card"></i> Cobrar Saldo ($${saldo.toFixed(2)}) en POS
+          </button>
+        ` : ''}
+      `;
+
+      container.appendChild(card);
+    });
+
+    container.querySelectorAll('.btn-q-convert').forEach(b => {
+      b.addEventListener('click', () => convertQuoteToProject(b.dataset.id));
+    });
+    container.querySelectorAll('.btn-q-view').forEach(b => {
+      b.addEventListener('click', () => {
+        const q = state.cotizaciones.find(item => item.id == b.dataset.id);
+        if (q) openQuoteSheetModal(q);
+      });
+    });
+    container.querySelectorAll('.btn-q-edit').forEach(b => {
+      b.addEventListener('click', () => {
+        const q = state.cotizaciones.find(item => item.id == b.dataset.id);
+        if (q) {
+          initActiveQuote(q);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          showToast(`Cargada ${q.folio} en editor.`, 'info');
+        }
+      });
+    });
+    container.querySelectorAll('.btn-q-wa').forEach(b => {
+      b.addEventListener('click', () => {
+        const q = state.cotizaciones.find(item => item.id == b.dataset.id);
+        if (q) shareQuoteViaWhatsapp(q);
+      });
+    });
+    container.querySelectorAll('.btn-q-del').forEach(b => {
+      b.addEventListener('click', () => {
+        if (confirm('¿Eliminar esta cotización?')) {
+          state.cotizaciones = state.cotizaciones.filter(item => item.id != b.dataset.id);
+          saveCotizacionesToStorage();
+          renderQuotesHistory();
+          showToast('Cotización eliminada.', 'info');
+        }
+      });
+    });
+  }
+
+  function initSignatureCanvas() {
+    const canvas = document.getElementById('quote-signature-canvas');
+    const placeholder = document.getElementById('signature-placeholder');
+    const btnClear = document.getElementById('btn-clear-signature');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        ctx.strokeStyle = '#0F172A';
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+      }
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    function startDraw(e) {
+      isDrawingSignature = true;
+      if (placeholder) placeholder.style.display = 'none';
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      ctx.beginPath();
+      ctx.moveTo(clientX - rect.left, clientY - rect.top);
+    }
+
+    function draw(e) {
+      if (!isDrawingSignature) return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      ctx.lineTo(clientX - rect.left, clientY - rect.top);
+      ctx.stroke();
+    }
+
+    function stopDraw() {
+      if (!isDrawingSignature) return;
+      isDrawingSignature = false;
+      if (state.activeQuote) {
+        state.activeQuote.signature = canvas.toDataURL('image/png');
+      }
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw);
+    canvas.addEventListener('mouseleave', stopDraw);
+
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDraw);
+
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (placeholder) placeholder.style.display = 'flex';
+        if (state.activeQuote) state.activeQuote.signature = null;
+      });
+    }
+
+    signatureCanvasInited = true;
+  }
+
+  function openQuoteSheetModal(quote) {
+    const modal = document.getElementById('modal-quote-sheet');
+    if (!modal) return;
+
+    // Logo oficial de empresa si existe
+    const logoImg = document.getElementById('qsheet-logo-img');
+    if (logoImg) {
+      if (state.business.logo) {
+        logoImg.src = state.business.logo;
+        logoImg.style.display = 'block';
+      } else {
+        logoImg.style.display = 'none';
+      }
+    }
+
+    const bName = document.getElementById('qsheet-biz-name');
+    const bPhone = document.getElementById('qsheet-biz-phone');
+    const bAddress = document.getElementById('qsheet-biz-address');
+    if (bName) bName.textContent = state.business.name || 'TU NEGOCIO DE PUBLICIDAD';
+    if (bPhone) bPhone.textContent = state.business.phone ? `Tel / WhatsApp: ${state.business.phone}` : '';
+    if (bAddress) bAddress.textContent = state.business.address ? `Dirección: ${state.business.address}` : '';
+
+    document.getElementById('qsheet-folio').textContent = quote.folio;
+    document.getElementById('qsheet-date').textContent = `Emisión: ${quote.date}`;
+    document.getElementById('qsheet-validity-text').textContent = `Vence: ${quote.validityDays || 15} días`;
+    document.getElementById('qsheet-client-name').textContent = quote.clientName || 'Cliente';
+    document.getElementById('qsheet-client-phone').textContent = quote.clientPhone || '-';
+    document.getElementById('qsheet-title').textContent = quote.title || 'Proyecto de Publicidad';
+
+    // Ficha de materiales incluidos en el membrete
+    const materialsRow = document.getElementById('qsheet-materials-row');
+    if (materialsRow) {
+      materialsRow.innerHTML = `
+        <span class="materials-pill"><span class="materials-dot" style="background:#F59E0B;"></span>Acrílico Espejo Dorado</span>
+        <span class="materials-pill"><span class="materials-dot" style="background:#10B981;"></span>Puntera LED Neón IP67</span>
+        <span class="materials-pill"><span class="materials-dot" style="background:#3B82F6;"></span>Lona Front 13oz Sellada</span>
+      `;
+    }
+
+    const tbody = document.getElementById('qsheet-items-body');
+    tbody.innerHTML = '';
+    (quote.items || []).forEach((it, idx) => {
+      const sub = (it.cant || 0) * (it.unitPrice || 0);
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid #E2E8F0';
+      tr.innerHTML = `
+        <td style="padding:0.6rem 0.8rem; font-weight:700; color:#64748B;">${idx + 1}</td>
+        <td style="padding:0.6rem 0.8rem;">
+          <strong style="color:#0F172A;">${escapeHtml(it.desc)}</strong>
+        </td>
+        <td style="padding:0.6rem 0.8rem; text-align:center; font-weight:700;">${it.cant}</td>
+        <td style="padding:0.6rem 0.8rem; text-align:right;">$${(it.unitPrice || 0).toFixed(2)}</td>
+        <td style="padding:0.6rem 0.8rem; text-align:right; font-weight:700; color:#0F172A;">$${sub.toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const rate = state.exchange.rate || 1;
+    const totalClient = quote.totalClient || 0;
+    const anticipo = totalClient * 0.50;
+    const bcvVal = totalClient * rate;
+
+    const elTotalUsd = document.getElementById('qsheet-total-usd');
+    const elAnticipoUsd = document.getElementById('qsheet-anticipo-usd');
+    const elTotalBcv = document.getElementById('qsheet-total-bcv');
+    const elRateNote = document.getElementById('qsheet-rate-note');
+
+    if (elTotalUsd) elTotalUsd.textContent = `$${totalClient.toFixed(2)} USD`;
+    if (elAnticipoUsd) elAnticipoUsd.textContent = `$${anticipo.toFixed(2)} USD`;
+    if (elTotalBcv) elTotalBcv.textContent = `Equivalente: Bs. ${bcvVal.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (elRateNote) elRateNote.textContent = `Tasa Oficial BCV de referencia: ${rate.toFixed(2)} Bs. / USD.`;
+
+    // Cuentas bancarias de anticipos
+    const bankArea = document.getElementById('bank-info-textarea');
+    const qBankInfo = document.getElementById('qsheet-bank-info');
+    if (qBankInfo) {
+      qBankInfo.textContent = bankArea && bankArea.value.trim() ? bankArea.value.trim() : 'Pago Móvil: Banesco (0134) • C.I: 12.345.678 • Tel: 0414-0000000';
+    }
+
+    modal.classList.remove('hidden');
+
+    setTimeout(() => {
+      if (!signatureCanvasInited) initSignatureCanvas();
+    }, 150);
+  }
+
+  function shareQuoteViaWhatsapp(quote) {
+    if (!quote) return;
+    const rate = state.exchange.rate || 1;
+    const totalClient = quote.totalClient || 0;
+    const bcvVal = totalClient * rate;
+    const anticipo = totalClient * 0.50;
+
+    let msg = `*PRESUPUESTO FORMAL: ${quote.folio}*
+`;
+    if (state.business.name) msg += `*${state.business.name}*
+`;
+    msg += `-----------------------------------
+`;
+    msg += `*Proyecto:* ${quote.title}
+`;
+    msg += `*Cliente:* ${quote.clientName}
+`;
+    msg += `*Fecha:* ${quote.date} (Validez: ${quote.validityDays} días)
+`;
+    msg += `-----------------------------------
+*DESGLOSE:* 
+`;
+
+    (quote.items || []).forEach(it => {
+      const sub = (it.cant || 0) * (it.unitPrice || 0);
+      msg += `• *${it.cant}x* ${it.desc} -> $${sub.toFixed(2)}
+`;
+    });
+
+    msg += `-----------------------------------
+`;
+    msg += `*TOTAL DEL PROYECTO: $${totalClient.toFixed(2)} USD*
+`;
+    msg += `*Anticipo 50% Requerido: $${anticipo.toFixed(2)} USD*
+`;
+    msg += `*Equivalente BCV:* Bs. ${bcvVal.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+`;
+    msg += `*Condiciones:* 50% al iniciar para adquisición de materiales y corte CNC • 50% contra entrega e instalación.
+
+`;
+    
+    const bankArea = document.getElementById('bank-info-textarea');
+    if (bankArea && bankArea.value.trim()) {
+      msg += `*Cuentas para Pago de Anticipo:*
+${bankArea.value.trim()}
+
+`;
+    }
+
+    msg += `_Cotizado con MARKT POS & Publicraft Studio_`;
+
+    const encoded = encodeURIComponent(msg);
+    const targetPhone = (quote.clientPhone || '').replace(/[^0-9]/g, '');
+    const waUrl = targetPhone ? `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encoded}` : `https://api.whatsapp.com/send?text=${encoded}`;
+    window.open(waUrl, '_blank');
+  }
+
+  function convertQuoteToProject(quoteId) {
+    const quote = state.cotizaciones.find(q => q.id == quoteId) || state.activeQuote;
+    if (!quote) return;
+
+    const pNum = (state.proyectos.length + 1).toString().padStart(3, '0');
+    const newProj = {
+      id: Date.now(),
+      code: `PRJ-${pNum}`,
+      title: quote.title || 'Trabajo de Publicidad',
+      clientName: quote.clientName || 'Cliente',
+      clientPhone: quote.clientPhone || '',
+      address: (quote.facadeSurvey && quote.facadeSurvey.dim) ? `Fachada: ${quote.facadeSurvey.dim}` : '',
+      dateStart: new Date().toISOString().split('T')[0],
+      dateDeadline: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      total: quote.totalClient || 0,
+      abono: 0,
+      status: 'aprobado',
+      pauseReason: '',
+      notes: [
+        { date: new Date().toLocaleString('es-ES'), text: `Proyecto creado desde cotización ${quote.folio}` }
+      ],
+      photos: (quote.facadeSurvey && quote.facadeSurvey.photos) || []
+    };
+
+    state.proyectos.unshift(newProj);
+    saveProyectosToStorage();
+    showToast(`¡Proyecto ${newProj.code} creado exitosamente!`, 'success');
+
+    const navBtn = document.querySelector('[data-view="view-proyectos"]');
+    if (navBtn) navBtn.click();
+  }
+
+  // ==========================================================================
+  // MÓDULO 7: GESTIÓN DE PROYECTOS, PIPELINE & AGENDA GOOGLE CALENDAR (STITCH)
+  // ==========================================================================
+
+  function updateProjectKPIs() {
+    let activeCount = 0;
+    let pendingMoney = 0;
+    let siteCount = 0;
+
+    state.proyectos.forEach(p => {
+      if (p.status !== 'culminado') {
+        activeCount++;
+        const saldo = Math.max(0, (p.total || 0) - (p.abono || 0));
+        pendingMoney += saldo;
+      }
+      if (p.status === 'instalacion') {
+        siteCount++;
+      }
+    });
+
+    const elActives = document.getElementById('kpi-proj-active-count');
+    const elMoney = document.getElementById('kpi-proj-pending-money');
+    const elSite = document.getElementById('kpi-proj-site-count');
+
+    if (elActives) elActives.textContent = activeCount;
+    if (elMoney) elMoney.textContent = `$${pendingMoney.toFixed(2)}`;
+    if (elSite) elSite.textContent = siteCount;
+  }
+
+  function loadProyectosFromStorage() {
+    try {
+      const saved = localStorage.getItem('martk_projects');
+      if (saved) {
+        state.proyectos = JSON.parse(saved);
+      } else {
+        state.proyectos = [
+          {
+            id: 2001,
+            code: 'PRJ-001',
+            title: 'Aviso Corpóreo Acrílico 3D con Luz Neón Flex',
+            clientName: 'Boutique Velvet & Co.',
+            clientPhone: '584141234567',
+            address: 'Las Mercedes, Calle París, Local 4',
+            dateStart: new Date().toISOString().split('T')[0],
+            dateDeadline: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
+            total: 485.00,
+            abono: 242.50,
+            status: 'produccion',
+            pauseReason: '',
+            notes: [
+              { date: '16/10/2026, 09:30', text: 'Anticipo del 50% recibido por Pago Móvil.' },
+              { date: '17/10/2026, 14:00', text: 'Corte de acrílico terminado. Iniciando armado de mangueras LED.' }
+            ],
+            photos: [
+              {
+                date: '17/10/2026',
+                url: 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?auto=format&fit=crop&w=600&q=80'
+              }
+            ]
+          },
+          {
+            id: 2002,
+            code: 'PRJ-002',
+            title: 'Letras Corpóreas 3D en Acrílico con Luz Frontal',
+            clientName: 'Dra. Mariana Rivas (Clínica Dental)',
+            clientPhone: '584249876543',
+            address: 'Torre Empresarial, Piso 3',
+            dateStart: new Date().toISOString().split('T')[0],
+            dateDeadline: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
+            total: 480.00,
+            abono: 240.00,
+            status: 'detenido',
+            pauseReason: 'Esperando confirmación final del cliente sobre el tono exacto de azul para el logo de la clínica.',
+            notes: [
+              { date: '15/10/2026, 11:20', text: 'Proyecto detenido: Se enviaron muestras de azul al cliente vía WhatsApp. Pendiente respuesta.' }
+            ],
+            photos: []
+          }
+        ];
+        localStorage.setItem('martk_projects', JSON.stringify(state.proyectos));
+      }
+      renderProjectsPipeline();
+      updateProjectKPIs();
+    } catch (e) {
+      state.proyectos = [];
+    }
+  }
+
+  function saveProyectosToStorage() {
+    localStorage.setItem('martk_projects', JSON.stringify(state.proyectos));
+    updateProjectKPIs();
+  }
+
+  function renderProjectsPipeline() {
+    const container = document.getElementById('projects-pipeline-container');
+    if (!container) return;
+    const search = document.getElementById('search-projects');
+    const qStr = (search ? search.value : '').toLowerCase().trim();
+    container.innerHTML = '';
+
+    const badgeCounts = document.getElementById('sidebar-projects-count');
+    const countAll = document.getElementById('count-all-projects');
+    if (countAll) countAll.textContent = state.proyectos.length;
+    if (badgeCounts) badgeCounts.textContent = state.proyectos.filter(p => p.status !== 'culminado').length;
+
+    const filtered = state.proyectos.filter(p => {
+      if (state.projectFilter !== 'all' && p.status !== state.projectFilter) return false;
+      if (!qStr) return true;
+      return (p.title || '').toLowerCase().includes(qStr) ||
+             (p.clientName || '').toLowerCase().includes(qStr) ||
+             (p.code || '').toLowerCase().includes(qStr);
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:3rem; color:#94A3B8; background:#FFFFFF; border-radius:var(--radius-lg); border:1px dashed #CBD5E1;">
+        <i class="fa-solid fa-folder-open" style="font-size:2.5rem; margin-bottom:0.75rem;"></i>
+        <p style="font-size:1rem; font-weight:700;">No se encontraron proyectos en este estado.</p>
+      </div>`;
+      return;
+    }
+
+    filtered.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'project-card';
+
+      const statusLabels = {
+        'presupuesto': { label: '1 · Presupuesto', cls: 'status-presupuesto' },
+        'aprobado': { label: '1 · Aprobado', cls: 'status-aprobado' },
+        'abono': { label: '2 · Anticipo Pendiente', cls: 'status-abono' },
+        'produccion': { label: '3 · Armado Taller CNC', cls: 'status-produccion' },
+        'envio': { label: '4 · Envío / Listo', cls: 'status-envio' },
+        'instalacion': { label: '4 · En Sitio / Montaje', cls: 'status-instalacion' },
+        'culminado': { label: '5 · Liquidado & Culminado', cls: 'status-culminado' },
+        'detenido': { label: 'DETENIDO / EN PAUSA', cls: 'status-detenido' }
+      };
+
+      const st = statusLabels[p.status] || { label: p.status, cls: 'status-presupuesto' };
+      const saldo = Math.max(0, (p.total || 0) - (p.abono || 0));
+      const pctPagado = p.total > 0 ? Math.min(100, Math.round(((p.abono || 0) / p.total) * 100)) : 0;
+
+      let pauseAlertHtml = '';
+      if (p.status === 'detenido') {
+        pauseAlertHtml = `
+          <div class="project-pause-alert">
+            <div class="project-pause-alert-title"><i class="fa-solid fa-circle-exclamation"></i> Proyecto en Pausa / Detenido:</div>
+            <div class="project-pause-alert-text">${escapeHtml(p.pauseReason || 'Sin razón especificada. Toca "Cambiar Estado" para actualizar.')}</div>
+          </div>
+        `;
+      }
+
+      card.innerHTML = `
+        <div class="project-card-header">
+          <span class="project-code-tag">${escapeHtml(p.code)}</span>
+          <span class="status-badge ${st.cls}">${st.label}</span>
+        </div>
+
+        <div>
+          <h3 class="project-title">${escapeHtml(p.title)}</h3>
+          <div class="project-client-line">
+            <i class="fa-solid fa-user"></i> <strong>${escapeHtml(p.clientName || 'Cliente')}</strong>
+            ${p.clientPhone ? `<a href="https://api.whatsapp.com/send?phone=${p.clientPhone.replace(/[^0-9]/g, '')}" target="_blank" style="color:#25D366; margin-left:0.25rem;"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
+          </div>
+          ${p.address ? `<div style="font-size:0.75rem; color:#64748B; margin-top:0.2rem;"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(p.address)}</div>` : ''}
+        </div>
+
+        ${pauseAlertHtml}
+
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#475569; background:#F8FAFC; padding:0.4rem 0.6rem; border-radius:var(--radius-sm);">
+          <span><strong>Inicio:</strong> ${p.dateStart || '-'}</span>
+          <span><strong>Entrega:</strong> <span style="color:#E11D48; font-weight:800;">${p.dateDeadline || '-'}</span></span>
+        </div>
+
+        <div class="project-financials">
+          <div class="project-financials-row">
+            <span>Total: <strong>$${(p.total || 0).toFixed(2)}</strong></span>
+            <span>Anticipo: <strong style="color:#059669;">$${(p.abono || 0).toFixed(2)}</strong> (${pctPagado}%)</span>
+          </div>
+          <div class="financial-progress-track">
+            <div class="financial-progress-bar" style="width:${pctPagado}%;"></div>
+          </div>
+          <div style="font-size:0.75rem; color:#64748B; text-align:right; margin-top:0.15rem;">
+            Saldo Pendiente: <strong style="color:${saldo > 0 ? '#DC2626' : '#059669'};">$${saldo.toFixed(2)} USD</strong>
+          </div>
+        </div>
+
+        <div class="project-card-actions">
+          <button type="button" class="btn btn-sm btn-outline btn-p-status" data-id="${p.id}"><i class="fa-solid fa-arrows-spin"></i> Estado</button>
+          <button type="button" class="btn btn-sm btn-outline btn-p-notes" data-id="${p.id}"><i class="fa-solid fa-clipboard-list"></i> Notas (${(p.notes || []).length})</button>
+          <button type="button" class="btn btn-sm btn-outline btn-p-photos" data-id="${p.id}"><i class="fa-solid fa-camera"></i> Fotos (${(p.photos || []).length})</button>
+          <button type="button" class="btn btn-sm btn-calendar btn-p-calendar" data-id="${p.id}"><i class="fa-solid fa-calendar-days"></i> Agendar</button>
+        </div>
+
+        ${saldo > 0 ? `
+          <button type="button" class="btn btn-sm btn-primary btn-p-charge mt-1" data-id="${p.id}">
+            <i class="fa-solid fa-cart-shopping"></i> Cobrar Saldo ($${saldo.toFixed(2)}) en POS
+          </button>
+        ` : ''}
+      `;
+
+      container.appendChild(card);
+    });
+
+    container.querySelectorAll('.btn-p-status').forEach(b => {
+      b.addEventListener('click', () => openProjectStatusModal(b.dataset.id));
+    });
+    container.querySelectorAll('.btn-p-notes').forEach(b => {
+      b.addEventListener('click', () => openProjectNotesModal(b.dataset.id));
+    });
+    container.querySelectorAll('.btn-p-photos').forEach(b => {
+      b.addEventListener('click', () => openProjectPhotosModal(b.dataset.id));
+    });
+    container.querySelectorAll('.btn-p-calendar').forEach(b => {
+      b.addEventListener('click', () => {
+        const p = state.proyectos.find(item => item.id == b.dataset.id);
+        if (p) agendarEnGoogleCalendar(p);
+      });
+    });
+    container.querySelectorAll('.btn-p-charge').forEach(b => {
+      b.addEventListener('click', () => {
+        const p = state.proyectos.find(item => item.id == b.dataset.id);
+        if (p) preloadProjectInPos(p);
+      });
+    });
+  }
+
+  function agendarEnGoogleCalendar(p) {
+    if (!p) return;
+    const title = encodeURIComponent(`Montaje e Instalación: ${p.title} (${p.code})`);
+    const details = encodeURIComponent(`Cliente: ${p.clientName}
+Teléfono: ${p.clientPhone}
+Dirección: ${p.address || 'En sitio'}
+Total: $${p.total} USD
+Saldo restante: $${(p.total - p.abono).toFixed(2)} USD
+Cuadrilla: Técnico CNC + 2 Montajistas
+
+Organizado con MARKT POS`);
+    const location = encodeURIComponent(p.address || 'Taller / Obra en Sitio');
+
+    let startDateStr = p.dateDeadline || new Date().toISOString().split('T')[0];
+    const cleanDate = startDateStr.replace(/-/g, '');
+    const dates = `${cleanDate}T130000Z/${cleanDate}T160000Z`;
+
+    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${dates}`;
+    window.open(gcalUrl, '_blank');
+  }
+
+  function openProjectStatusModal(projId) {
+    const p = state.proyectos.find(item => item.id == projId);
+    if (!p) return;
+
+    document.getElementById('status-modal-project-id').value = p.id;
+    const select = document.getElementById('select-project-pipeline-status');
+    const pauseWrapper = document.getElementById('pause-reason-wrapper');
+    const pauseInput = document.getElementById('input-pause-reason');
+
+    if (select) select.value = p.status;
+    if (pauseInput) pauseInput.value = p.pauseReason || '';
+
+    if (p.status === 'detenido') {
+      pauseWrapper.classList.remove('hidden');
+    } else {
+      pauseWrapper.classList.add('hidden');
+    }
+
+    select.onchange = () => {
+      if (select.value === 'detenido') {
+        pauseWrapper.classList.remove('hidden');
+        pauseInput.focus();
+      } else {
+        pauseWrapper.classList.add('hidden');
+      }
+    };
+
+    document.getElementById('modal-project-status').classList.remove('hidden');
+  }
+
+  function saveProjectStatus() {
+    const projId = document.getElementById('status-modal-project-id').value;
+    const select = document.getElementById('select-project-pipeline-status');
+    const pauseInput = document.getElementById('input-pause-reason');
+    const p = state.proyectos.find(item => item.id == projId);
+    if (!p || !select) return;
+
+    const newStatus = select.value;
+    const pauseReason = cleanInputText(pauseInput ? pauseInput.value : '');
+
+    if (newStatus === 'detenido' && !pauseReason) {
+      showToast('Por favor escribe la razón de por qué está detenido.', 'info');
+      if (pauseInput) pauseInput.focus();
+      return;
+    }
+
+    const prevStatus = p.status;
+    p.status = newStatus;
+    p.pauseReason = newStatus === 'detenido' ? pauseReason : '';
+
+    if (!p.notes) p.notes = [];
+    p.notes.push({
+      date: new Date().toLocaleString('es-ES'),
+      text: `Estado cambiado de "${prevStatus}" a "${newStatus}"${newStatus === 'detenido' ? ': ' + pauseReason : '.'}`
+    });
+
+    saveProyectosToStorage();
+    renderProjectsPipeline();
+    document.getElementById('modal-project-status').classList.add('hidden');
+    showToast(`Estado de ${p.code} actualizado.`, 'success');
+  }
+
+  function openProjectNotesModal(projId) {
+    const p = state.proyectos.find(item => item.id == projId);
+    if (!p) return;
+
+    document.getElementById('notes-modal-project-id').value = p.id;
+    document.getElementById('notes-modal-project-subtitle').textContent = `${p.code} - ${p.title}`;
+
+    const container = document.getElementById('notes-timeline-container');
+    container.innerHTML = '';
+
+    (p.notes || []).forEach(n => {
+      const div = document.createElement('div');
+      div.className = 'note-item';
+      div.innerHTML = `
+        <div class="note-meta">
+          <span><i class="fa-solid fa-clock"></i> ${n.date}</span>
+        </div>
+        <div class="note-content">${escapeHtml(n.text)}</div>
+      `;
+      container.appendChild(div);
+    });
+
+    document.getElementById('input-new-project-note').value = '';
+    document.getElementById('modal-project-notes').classList.remove('hidden');
+  }
+
+  function addProjectNote() {
+    const projId = document.getElementById('notes-modal-project-id').value;
+    const input = document.getElementById('input-new-project-note');
+    const text = cleanInputText(input.value);
+    if (!text) return;
+
+    const p = state.proyectos.find(item => item.id == projId);
+    if (!p) return;
+
+    if (!p.notes) p.notes = [];
+    p.notes.push({
+      date: new Date().toLocaleString('es-ES'),
+      text: text
+    });
+
+    saveProyectosToStorage();
+    renderProjectsPipeline();
+    openProjectNotesModal(projId);
+    showToast('Acotación guardada.', 'success');
+  }
+
+  function openProjectPhotosModal(projId) {
+    const p = state.proyectos.find(item => item.id == projId);
+    if (!p) return;
+
+    document.getElementById('photos-modal-project-id').value = p.id;
+    document.getElementById('photos-modal-project-subtitle').textContent = `${p.code} - ${p.title}`;
+
+    renderProjectPhotosGrid(p);
+    document.getElementById('modal-project-photos').classList.remove('hidden');
+  }
+
+  function renderProjectPhotosGrid(p) {
+    const grid = document.getElementById('project-photos-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (!p.photos || p.photos.length === 0) {
+      grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#94A3B8; padding:1.5rem;">No hay fotos registradas para este proyecto.</p>`;
+      return;
+    }
+
+    p.photos.forEach((photo, idx) => {
+      const card = document.createElement('div');
+      card.className = 'gallery-card';
+      card.innerHTML = `
+        <div class="gallery-img-container" style="height:140px;">
+          <img src="${photo.url}" alt="Foto">
+        </div>
+        <div style="padding:0.5rem; display:flex; justify-content:space-between; align-items:center; background:#FFFFFF;">
+          <small style="color:#64748B;">${photo.date || 'Foto'}</small>
+          <div>
+            <button class="btn btn-sm btn-outline btn-photo-view" data-url="${photo.url}"><i class="fa-solid fa-eye"></i></button>
+            <button class="btn btn-sm btn-danger-outline btn-photo-del" data-idx="${idx}"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+
+    grid.querySelectorAll('.btn-photo-view').forEach(b => {
+      b.addEventListener('click', () => openImageViewerModal(b.dataset.url, p.title));
+    });
+    grid.querySelectorAll('.btn-photo-del').forEach(b => {
+      b.addEventListener('click', () => {
+        p.photos.splice(parseInt(b.dataset.idx), 1);
+        saveProyectosToStorage();
+        renderProjectPhotosGrid(p);
+        renderProjectsPipeline();
+        showToast('Foto eliminada.', 'info');
+      });
+    });
+  }
+
+  // --- GOOGLE CALENDAR & .ICS EXPORTER ---
+  function agendarEnGoogleCalendar(proj) {
+    if (!proj) return;
+    const deadline = proj.dateDeadline ? new Date(proj.dateDeadline) : new Date();
+    const deadlineStr = deadline.toISOString().replace(/-|:|\.\d\d\d/g, '').split('T')[0];
+    const startStr = `${deadlineStr}T130000Z`;
+    const endStr = `${deadlineStr}T170000Z`;
+
+    const gCalTitle = `Entrega/Instalación: ${proj.title}`;
+    const gCalDetails = `Cliente: ${proj.clientName}\nTeléfono: ${proj.clientPhone || 'N/A'}\nSaldo Pendiente: $${Math.max(0, (proj.total || 0) - (proj.abono || 0)).toFixed(2)} USD\nEstado actual: ${proj.status.toUpperCase()}\n\nAgendado desde MARKT POS.`;
+    const gCalLocation = proj.address || 'Ubicación del cliente';
+
+    // 1. Abrir Google Calendar Web
+    const gCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(gCalTitle)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(gCalDetails)}&location=${encodeURIComponent(gCalLocation)}`;
+    window.open(gCalUrl, '_blank');
+
+    // 2. Generar archivo .ics para compatibilidad offline/móvil
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//MARKT POS//ES',
+      'BEGIN:VEVENT',
+      `SUMMARY:${gCalTitle}`,
+      `DESCRIPTION:${gCalDetails.replace(/\n/g, '\\n')}`,
+      `LOCATION:${gCalLocation}`,
+      `DTSTART:${startStr}`,
+      `DTEND:${endStr}`,
+      'STATUS:CONFIRMED',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `MARKT_${proj.code}_Agenda.ics`;
+    link.click();
+
+    showToast('Abriendo Google Calendar y descargando cita...', 'success');
+  }
+
+  function preloadProjectInPos(proj) {
+    const saldo = Math.max(0, (proj.total || 0) - (proj.abono || 0));
+    state.docType = 'venta';
+    state.client.name = proj.clientName || '';
+    state.client.phone = proj.clientPhone || '';
+    state.items = [
+      {
+        id: Date.now().toString(),
+        cant: 1,
+        desc: `Saldo Restante: ${proj.title} (${proj.code})`,
+        subtext: 'Cancelación contra entrega/instalación',
+        taxRate: 0,
+        unitPrice: saldo
+      }
+    ];
+
+    if (inputClientName) inputClientName.value = state.client.name;
+    if (inputClientPhone) inputClientPhone.value = state.client.phone;
+
+    renderItemsList();
+    updateCalculationsAndPreview();
+
+    // Navegar al POS
+    const navPos = document.querySelector('[data-view="view-pos"]');
+    if (navPos) navPos.click();
+    showToast(`Saldo de ${proj.code} cargado en el POS para facturación.`, 'info');
+  }
+
+  // ==========================================================================
+  // MÓDULO 8: GALERÍA DE PORTAFOLIO & VISOR DE IMÁGENES
+  // ==========================================================================
+
+  function loadGaleriaFromStorage() {
+    try {
+      const saved = localStorage.getItem('martk_gallery');
+      if (saved) {
+        state.galeria = JSON.parse(saved);
+      } else {
+        state.galeria = [
+          {
+            id: 3001,
+            title: 'Aviso Neón LED "Burger Gourmet" en Acrílico 3mm',
+            category: 'Aviso LED',
+            client: 'Burger House',
+            date: '10/10/2026',
+            url: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&auto=format&fit=crop&q=80'
+          },
+          {
+            id: 3002,
+            title: 'Letras Corpóreas en MDF y Acrílico Espejo Dorado',
+            category: 'Corpóreo',
+            client: 'Boutique Elegance',
+            date: '08/10/2026',
+            url: 'https://images.unsplash.com/photo-1542744095-fcf48d80b0fd?w=600&auto=format&fit=crop&q=80'
+          }
+        ];
+        localStorage.setItem('martk_gallery', JSON.stringify(state.galeria));
+      }
+      renderGallery();
+    } catch (e) {
+      state.galeria = [];
+    }
+  }
+
+  function saveGaleriaToStorage() {
+    localStorage.setItem('martk_gallery', JSON.stringify(state.galeria));
+  }
+
+  function renderGallery() {
+    const container = document.getElementById('gallery-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const filtered = state.galeria.filter(item => {
+      if (state.galleryCatFilter === 'all') return true;
+      return item.category === state.galleryCatFilter;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:3rem; color:#94A3B8;">
+        <i class="fa-solid fa-images" style="font-size:2.5rem; margin-bottom:0.75rem;"></i>
+        <p>No hay fotos en esta categoría de portafolio.</p>
+      </div>`;
+      return;
+    }
+
+    filtered.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'gallery-card';
+      card.innerHTML = `
+        <div class="gallery-img-container">
+          <span class="gallery-badge">${escapeHtml(item.category)}</span>
+          <img src="${item.url}" alt="${escapeHtml(item.title)}">
+        </div>
+        <div class="gallery-card-info">
+          <div class="gallery-card-title">${escapeHtml(item.title)}</div>
+          <div class="gallery-card-client"><i class="fa-solid fa-user"></i> ${escapeHtml(item.client || 'Cliente')} • <small>${item.date || ''}</small></div>
+          <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:center; padding-top:0.5rem; border-top:1px solid #F1F5F9;">
+            <button class="btn btn-sm btn-outline btn-gal-view" data-url="${item.url}" data-title="${escapeHtml(item.title)}"><i class="fa-solid fa-eye"></i> Ver Grande</button>
+            <button class="btn btn-sm btn-danger-outline btn-gal-del" data-id="${item.id}"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+
+    container.querySelectorAll('.btn-gal-view').forEach(b => {
+      b.addEventListener('click', () => openImageViewerModal(b.dataset.url, b.dataset.title));
+    });
+    container.querySelectorAll('.btn-gal-del').forEach(b => {
+      b.addEventListener('click', () => {
+        if (confirm('¿Eliminar esta foto del portafolio?')) {
+          state.galeria = state.galeria.filter(g => g.id != b.dataset.id);
+          saveGaleriaToStorage();
+          renderGallery();
+          showToast('Foto eliminada.', 'info');
+        }
+      });
+    });
+  }
+
+  function openImageViewerModal(imgSrc, title) {
+    const modal = document.getElementById('modal-image-viewer');
+    const img = document.getElementById('image-viewer-img');
+    const titleEl = document.getElementById('image-viewer-title');
+    const btnDownload = document.getElementById('btn-download-viewer-img');
+    if (!modal || !img) return;
+
+    img.src = imgSrc;
+    if (titleEl) titleEl.textContent = title || 'Visualizador de Imagen';
+    if (btnDownload) {
+      btnDownload.href = imgSrc;
+      btnDownload.download = `MARKT_${(title || 'Foto').replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+    }
+
+    modal.classList.remove('hidden');
+  }
+
+  // ==========================================================================
+  // CONFIGURACIÓN DE EVENT LISTENERS DE LOS NUEVOS MÓDULOS
+  // ==========================================================================
+  function setupNewModulesEventListeners() {
+    // 1. Cotizaciones
+    const btnNewQ = document.getElementById('btn-new-quote');
+    if (btnNewQ) btnNewQ.addEventListener('click', () => initActiveQuote());
+
+    const toggleProfit = document.getElementById('quote-toggle-profit-mode');
+    if (toggleProfit) {
+      toggleProfit.addEventListener('change', e => {
+        state.quoteProfitMode = e.target.checked;
+        applyQuoteProfitModeVisibility();
+      });
+    }
+
+    const btnAddRow = document.getElementById('btn-add-quote-row');
+    if (btnAddRow) {
+      btnAddRow.addEventListener('click', () => {
+        if (!state.activeQuote) initActiveQuote();
+        state.activeQuote.items.push({
+          type: 'material',
+          desc: '',
+          cant: 1,
+          unitCost: 0,
+          unitPrice: 0
+        });
+        renderQuoteItemsTable();
+      });
+    }
+
+    // Plantillas rápidas de costos
+    document.querySelectorAll('.btn-quick-cost').forEach(b => {
+      b.addEventListener('click', () => {
+        if (!state.activeQuote) initActiveQuote();
+        state.activeQuote.items.push({
+          type: b.dataset.type || 'material',
+          desc: b.dataset.desc || 'Ítem',
+          cant: 1,
+          unitCost: parseFloat(b.dataset.cost) || 0,
+          unitPrice: parseFloat(b.dataset.price) || 0
+        });
+        renderQuoteItemsTable();
+        recalcQuoteTotals();
+        showToast(`Agregado: ${b.dataset.desc}`, 'success');
+      });
+    });
+
+    const btnSaveQ = document.getElementById('btn-save-quote');
+    if (btnSaveQ) btnSaveQ.addEventListener('click', saveCurrentQuote);
+
+    const btnPreviewQ = document.getElementById('btn-preview-quote-client');
+    if (btnPreviewQ) {
+      btnPreviewQ.addEventListener('click', () => {
+        if (state.activeQuote) openQuoteSheetModal(state.activeQuote);
+      });
+    }
+
+    const btnQWa = document.getElementById('btn-quote-whatsapp');
+    if (btnQWa) {
+      btnQWa.addEventListener('click', () => {
+        if (state.activeQuote) shareQuoteViaWhatsapp(state.activeQuote);
+      });
+    }
+
+    const btnConvertQ = document.getElementById('btn-convert-quote-to-project');
+    if (btnConvertQ) {
+      btnConvertQ.addEventListener('click', () => {
+        if (state.activeQuote) convertQuoteToProject(state.activeQuote.id);
+      });
+    }
+
+    const searchQ = document.getElementById('search-quotes');
+    if (searchQ) searchQ.addEventListener('input', renderQuotesHistory);
+
+    // Botones modal quote sheet
+    
+    // Listeners Stitch: Filtros de estado en Cotizaciones
+    document.querySelectorAll('.quote-filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.quote-filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        state.quoteStatusFilter = chip.dataset.status;
+        renderQuotesHistory();
+      });
+    });
+
+    // Listeners Stitch: Cargar Archivo Vectorial
+    const btnAddVector = document.getElementById('btn-add-vector-file');
+    if (btnAddVector) {
+      btnAddVector.addEventListener('click', () => {
+        const name = prompt('Nombre del archivo vectorial (ej: logo_letras_3d.dxf):', 'corte_letras_aviso.dxf');
+        if (!name) return;
+        const machine = prompt('Material / Máquina asignada:', 'Router CNC 12mm MDF + Acrílico');
+        const ext = name.split('.').pop().toLowerCase();
+        if (!state.activeQuote.vectorFiles) state.activeQuote.vectorFiles = [];
+        state.activeQuote.vectorFiles.push({
+          id: 'vec-' + Date.now(),
+          name,
+          type: ext,
+          size: '3.5 MB',
+          machine: machine || 'Router CNC',
+          validStatus: 'Vector Validado 1:1'
+        });
+        renderVectorFilesList();
+        showToast('Archivo vectorial registrado.', 'success');
+      });
+    }
+
+    // Listeners Stitch: Agregar Foto Levantamiento Fachada
+    const btnAddSurvey = document.getElementById('btn-add-facade-survey');
+    if (btnAddSurvey) {
+      btnAddSurvey.addEventListener('click', () => {
+        const cota = prompt('Cota / Medida en fachada (ej: 400 x 150 cm):', '380 x 140 cm');
+        if (!cota) return;
+        if (!state.activeQuote.facadeSurvey) state.activeQuote.facadeSurvey = { photos: [] };
+        if (!state.activeQuote.facadeSurvey.photos) state.activeQuote.facadeSurvey.photos = [];
+        state.activeQuote.facadeSurvey.photos.push({
+          title: 'Levantamiento Fachada ' + (state.activeQuote.facadeSurvey.photos.length + 1),
+          cota: cota,
+          note: 'Anclajes y punto 220V verificado',
+          url: 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?auto=format&fit=crop&w=600&q=80'
+        });
+        renderFacadeSurveyGrid();
+        showToast('Foto de levantamiento registrada.', 'success');
+      });
+    }
+
+    // Listener Stitch: Agendar Cotización en Google Calendar
+    const btnQuoteGCal = document.getElementById('btn-quote-gcalendar');
+    if (btnQuoteGCal) {
+      btnQuoteGCal.addEventListener('click', () => {
+        if (!state.activeQuote) return;
+        const q = state.activeQuote;
+        const title = encodeURIComponent(`Instalación y Montaje: ${q.title || 'Aviso Publicitario'}`);
+        const details = encodeURIComponent(`Cliente: ${q.clientName}
+Teléfono: ${q.clientPhone}
+Total: ${q.totalClient} USD
+Anticipo 50%: ${(q.totalClient * 0.5).toFixed(2)} USD
+Cuadrilla: Técnico CNC + 2 Montajistas
+
+Organizado con MARKT POS`);
+        const startDateStr = q.date || new Date().toISOString().split('T')[0];
+        const cleanDate = startDateStr.replace(/-/g, '');
+        const dates = `${cleanDate}T140000Z/${cleanDate}T170000Z`;
+        const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dates}`;
+        window.open(gcalUrl, '_blank');
+      });
+    }
+
+    // Listener Stitch: Stepper horizontal de etapas de proyecto
+    document.querySelectorAll('.stage-step-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.stage-step-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        state.projectFilter = chip.dataset.filter;
+        renderProjectsPipeline();
+      });
+    });
+
+    // Listener Stitch: Copiar datos bancarios al portapapeles
+    document.querySelectorAll('.btn-copy-bank').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const targetEl = document.getElementById(targetId);
+        if (targetEl) {
+          const text = targetEl.textContent.trim();
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(() => {
+              showToast('Datos bancarios copiados al portapapeles.', 'success');
+            });
+          } else {
+            showToast(text, 'info');
+          }
+        }
+      });
+    });
+
+    const btnCloseQSheet = document.getElementById('btn-close-quote-sheet');
+    if (btnCloseQSheet) {
+      btnCloseQSheet.addEventListener('click', () => {
+        document.getElementById('modal-quote-sheet').classList.add('hidden');
+      });
+    }
+
+    const btnDownloadQImg = document.getElementById('btn-download-quote-img');
+    if (btnDownloadQImg) {
+      btnDownloadQImg.addEventListener('click', () => {
+        const target = document.getElementById('quote-printable-card');
+        if (!target || typeof html2canvas === 'undefined') return;
+        showToast('Generando imagen de presupuesto...', 'info');
+        html2canvas(target, { scale: 2.2, backgroundColor: '#FFFFFF' }).then(canvas => {
+          const imgUrl = canvas.toDataURL('image/png');
+          const folio = document.getElementById('qsheet-folio').textContent;
+          openImageViewerModal(imgUrl, `Presupuesto_${folio}`);
+          const a = document.createElement('a');
+          a.href = imgUrl;
+          a.download = `Presupuesto_${folio}.png`;
+          a.click();
+        });
+      });
+    }
+
+    const btnPrintQSheet = document.getElementById('btn-print-quote-sheet');
+    if (btnPrintQSheet) btnPrintQSheet.addEventListener('click', () => window.print());
+
+    const btnShareQWaModal = document.getElementById('btn-share-quote-sheet-wa');
+    if (btnShareQWaModal) {
+      btnShareQWaModal.addEventListener('click', () => {
+        if (state.activeQuote) shareQuoteViaWhatsapp(state.activeQuote);
+      });
+    }
+
+    // 2. Proyectos
+    const filterChips = document.querySelectorAll('.projects-filter-bar .filter-chip');
+    filterChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        filterChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        state.projectFilter = chip.dataset.filter;
+        renderProjectsPipeline();
+      });
+    });
+
+    const searchP = document.getElementById('search-projects');
+    if (searchP) searchP.addEventListener('input', renderProjectsPipeline);
+
+    const btnSavePStatus = document.getElementById('btn-save-project-status');
+    if (btnSavePStatus) btnSavePStatus.addEventListener('click', saveProjectStatus);
+
+    const btnClosePStatus = document.getElementById('btn-close-project-status');
+    const btnCancelPStatus = document.getElementById('btn-cancel-project-status');
+    if (btnClosePStatus) btnClosePStatus.addEventListener('click', () => document.getElementById('modal-project-status').classList.add('hidden'));
+    if (btnCancelPStatus) btnCancelPStatus.addEventListener('click', () => document.getElementById('modal-project-status').classList.add('hidden'));
+
+    // Formulario Nuevo Proyecto
+    const btnShowAddP = document.getElementById('btn-show-add-project');
+    const modalPForm = document.getElementById('modal-project-form');
+    if (btnShowAddP && modalPForm) {
+      btnShowAddP.addEventListener('click', () => {
+        document.getElementById('p-form-title').value = '';
+        document.getElementById('p-form-client-name').value = '';
+        document.getElementById('p-form-client-phone').value = '';
+        document.getElementById('p-form-date-start').value = new Date().toISOString().split('T')[0];
+        document.getElementById('p-form-date-deadline').value = new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0];
+        document.getElementById('p-form-total').value = '';
+        document.getElementById('p-form-abono').value = '0.00';
+        document.getElementById('p-form-address').value = '';
+        modalPForm.classList.remove('hidden');
+      });
+    }
+
+    const btnClosePForm = document.getElementById('btn-close-project-form');
+    const btnCancelPForm = document.getElementById('btn-cancel-project-form');
+    if (btnClosePForm) btnClosePForm.addEventListener('click', () => modalPForm.classList.add('hidden'));
+    if (btnCancelPForm) btnCancelPForm.addEventListener('click', () => modalPForm.classList.add('hidden'));
+
+    const btnSavePForm = document.getElementById('btn-save-project-form');
+    if (btnSavePForm) {
+      btnSavePForm.addEventListener('click', () => {
+        const title = cleanInputText(document.getElementById('p-form-title').value);
+        const clientName = cleanInputText(document.getElementById('p-form-client-name').value);
+        const clientPhone = cleanPhoneInput(document.getElementById('p-form-client-phone').value);
+        const dateStart = document.getElementById('p-form-date-start').value;
+        const dateDeadline = document.getElementById('p-form-date-deadline').value;
+        const total = parseFloat(document.getElementById('p-form-total').value) || 0;
+        const abono = parseFloat(document.getElementById('p-form-abono').value) || 0;
+        const address = cleanInputText(document.getElementById('p-form-address').value);
+        const status = document.getElementById('p-form-initial-status').value;
+
+        if (!title || !clientName) {
+          showToast('Completa el título y nombre del cliente.', 'info');
+          return;
+        }
+
+        const pNum = (state.proyectos.length + 1).toString().padStart(3, '0');
+        const proj = {
+          id: Date.now(),
+          code: `PRJ-${pNum}`,
+          title,
+          clientName,
+          clientPhone,
+          dateStart: dateStart || new Date().toISOString().split('T')[0],
+          dateDeadline: dateDeadline || new Date().toISOString().split('T')[0],
+          total,
+          abono,
+          address,
+          status,
+          pauseReason: '',
+          notes: [{ date: new Date().toLocaleString('es-ES'), text: 'Proyecto creado manualmente.' }],
+          photos: []
+        };
+
+        state.proyectos.unshift(proj);
+        saveProyectosToStorage();
+        renderProjectsPipeline();
+        modalPForm.classList.add('hidden');
+        showToast(`Proyecto ${proj.code} creado exitosamente.`, 'success');
+      });
+    }
+
+    // Modal Notas
+    const btnClosePNotes = document.getElementById('btn-close-project-notes');
+    if (btnClosePNotes) btnClosePNotes.addEventListener('click', () => document.getElementById('modal-project-notes').classList.add('hidden'));
+    const btnAddPNote = document.getElementById('btn-add-project-note');
+    if (btnAddPNote) btnAddPNote.addEventListener('click', addProjectNote);
+
+    // Modal Fotos Proyecto
+    const btnClosePPhotos = document.getElementById('btn-close-project-photos');
+    if (btnClosePPhotos) btnClosePPhotos.addEventListener('click', () => document.getElementById('modal-project-photos').classList.add('hidden'));
+
+    const inputUploadPPhoto = document.getElementById('input-upload-project-photo');
+    if (inputUploadPPhoto) {
+      inputUploadPPhoto.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const projId = document.getElementById('photos-modal-project-id').value;
+        const p = state.proyectos.find(item => item.id == projId);
+        if (!p) return;
+
+        showToast('Comprimiendo y guardando foto del proyecto...', 'info');
+        compressImageFile(file, 900, 900, 0.75, function(dataUrl) {
+          if (!p.photos) p.photos = [];
+          p.photos.push({
+            date: new Date().toLocaleString('es-ES'),
+            url: dataUrl
+          });
+          saveProyectosToStorage();
+          renderProjectPhotosGrid(p);
+          renderProjectsPipeline();
+          showToast('Foto agregada al proyecto exitosamente.', 'success');
+        });
+      });
+    }
+
+    // 3. Galería de Portafolio
+    const btnShowUploadGal = document.getElementById('btn-show-upload-gallery');
+    const modalGalUpload = document.getElementById('modal-gallery-upload');
+    if (btnShowUploadGal && modalGalUpload) {
+      btnShowUploadGal.addEventListener('click', () => {
+        document.getElementById('gal-input-title').value = '';
+        document.getElementById('gal-input-client').value = '';
+        document.getElementById('gal-preview-box').style.display = 'none';
+        modalGalUpload.classList.remove('hidden');
+      });
+    }
+
+    const btnCloseGalUpload = document.getElementById('btn-close-gallery-upload');
+    const btnCancelGalUpload = document.getElementById('btn-cancel-gallery-photo');
+    if (btnCloseGalUpload) btnCloseGalUpload.addEventListener('click', () => modalGalUpload.classList.add('hidden'));
+    if (btnCancelGalUpload) btnCancelGalUpload.addEventListener('click', () => modalGalUpload.classList.add('hidden'));
+
+    let tempGalPhotoUrl = '';
+    const galFileInput = document.getElementById('gal-input-file');
+    if (galFileInput) {
+      galFileInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        compressImageFile(file, 1000, 1000, 0.8, function(dataUrl) {
+          tempGalPhotoUrl = dataUrl;
+          document.getElementById('gal-preview-img').src = dataUrl;
+          document.getElementById('gal-preview-box').style.display = 'block';
+        });
+      });
+    }
+
+    const btnSaveGalPhoto = document.getElementById('btn-save-gallery-photo');
+    if (btnSaveGalPhoto) {
+      btnSaveGalPhoto.addEventListener('click', () => {
+        const title = cleanInputText(document.getElementById('gal-input-title').value);
+        const category = document.getElementById('gal-select-cat').value;
+        const client = cleanInputText(document.getElementById('gal-input-client').value);
+
+        if (!title || !tempGalPhotoUrl) {
+          showToast('Por favor escribe un título y selecciona una imagen.', 'info');
+          return;
+        }
+
+        const newGalItem = {
+          id: Date.now(),
+          title,
+          category,
+          client: client || 'Cliente',
+          date: new Date().toLocaleDateString('es-ES'),
+          url: tempGalPhotoUrl
+        };
+
+        state.galeria.unshift(newGalItem);
+        saveGaleriaToStorage();
+        renderGallery();
+        tempGalPhotoUrl = '';
+        modalGalUpload.classList.add('hidden');
+        showToast('Foto publicada en el portafolio exitosamente.', 'success');
+      });
+    }
+
+    // Filtros de categoría de galería
+    document.querySelectorAll('#view-galeria .filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#view-galeria .filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        state.galleryCatFilter = chip.dataset.cat;
+        renderGallery();
+      });
+    });
+
+    // 4. Visor de Imagen Full
+    const btnCloseViewer = document.getElementById('btn-close-image-viewer');
+    const btnCloseViewerAlt = document.getElementById('btn-close-viewer-alt');
+    if (btnCloseViewer) btnCloseViewer.addEventListener('click', () => document.getElementById('modal-image-viewer').classList.add('hidden'));
+    if (btnCloseViewerAlt) btnCloseViewerAlt.addEventListener('click', () => document.getElementById('modal-image-viewer').classList.add('hidden'));
+  }
+
+  function resetToFactoryDefaults() {
+    if (confirm(' ¿Estás seguro de restablecer toda la aplicación a los valores iniciales? Se borrarán los productos, clientes, historial y configuración guardada localmente.')) {
+      localStorage.clear();
+      showToast('Restableciendo aplicación...', 'info');
+      setTimeout(() => location.reload(), 600);
+    }
   }
 
   // Launch App

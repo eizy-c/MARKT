@@ -1,7 +1,7 @@
 {
-  "name": "facturaexpress-mysql",
-  "version": "1.0.0",
-  "description": "Servidor backend REST API Node.js + MySQL para FacturaExpress",
+  "name": "markt-pos-web",
+  "version": "2.1.0",
+  "description": "MARTK POS - Sistema de Facturación y POS Web Standalone & Móvil (100% Sin Base de Datos)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
