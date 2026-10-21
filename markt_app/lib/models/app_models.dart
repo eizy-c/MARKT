@@ -3,7 +3,9 @@ class Product {
   final String name;
   final String category;
   final double priceUsd;
+  final double costUsd;
   final int stock;
+  final int minStock;
   final String? code;
 
   Product({
@@ -11,16 +13,26 @@ class Product {
     required this.name,
     required this.category,
     required this.priceUsd,
+    this.costUsd = 0.0,
     this.stock = 0,
+    this.minStock = 2,
     this.code,
   });
+
+  double get marginPercentage {
+    if (priceUsd <= 0) return 0.0;
+    if (costUsd <= 0) return 100.0;
+    return ((priceUsd - costUsd) / priceUsd) * 100;
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
     'category': category,
     'priceUsd': priceUsd,
+    'costUsd': costUsd,
     'stock': stock,
+    'minStock': minStock,
     'code': code,
   };
 
@@ -29,7 +41,9 @@ class Product {
     name: json['name'] ?? '',
     category: json['category'] ?? 'General',
     priceUsd: (json['priceUsd'] as num?)?.toDouble() ?? (json['price'] as num?)?.toDouble() ?? 0.0,
+    costUsd: (json['costUsd'] as num?)?.toDouble() ?? (json['cost'] as num?)?.toDouble() ?? 0.0,
     stock: (json['stock'] as num?)?.toInt() ?? 0,
+    minStock: (json['minStock'] as num?)?.toInt() ?? 2,
     code: json['code']?.toString(),
   );
 }

@@ -161,6 +161,8 @@ class _CashScreenState extends State<CashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       children: [
         // Balance Header
@@ -168,9 +170,18 @@ class _CashScreenState extends State<CashScreen> {
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFF0F172A),
+            color: isDark ? const Color(0xFF0F172A) : Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF1E293B)),
+            border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+            boxShadow: isDark
+                ? []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -178,7 +189,13 @@ class _CashScreenState extends State<CashScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Saldo Actual en Caja', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
+                  Text(
+                    'Saldo Actual en Caja',
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      fontSize: 13,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     '\$${_totalBalance.toStringAsFixed(2)}',
@@ -209,10 +226,13 @@ class _CashScreenState extends State<CashScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)))
               : _movements.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
                         'No hay movimientos registrados en caja.',
-                        style: TextStyle(color: Color(0xFF64748B), fontStyle: FontStyle.italic),
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     )
                   : ListView.separated(
@@ -226,9 +246,9 @@ class _CashScreenState extends State<CashScreen> {
                         return Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
+                            color: isDark ? const Color(0xFF0F172A) : Colors.white,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFF1E293B)),
+                            border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
                           ),
                           child: Row(
                             children: [
@@ -251,11 +271,18 @@ class _CashScreenState extends State<CashScreen> {
                                   children: [
                                     Text(
                                       m.description,
-                                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                     Text(
-                                      '${m.date.day}/${m.date.month}/${m.date.year} - ${m.category}',
-                                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                                      '${m.date.day}/${m.date.month}/${m.date.year} • ${m.category} • ${m.method.replaceAll('_', ' ').toUpperCase()}',
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ],
                                 ),

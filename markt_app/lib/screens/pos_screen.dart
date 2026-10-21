@@ -266,6 +266,19 @@ class _PosScreenState extends State<PosScreen> {
     // Guardar folio actualizado
     StorageService.instance.save('business_profile', _businessProfile.toJson());
 
+    // FASE 2: Alimentación automática al Libro de Caja
+    final cashMovement = CashMovement(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      type: 'income',
+      category: 'Venta POS ($folioStr)',
+      amountUsd: totalUsd,
+      amountBs: totalBs,
+      method: _selectedPaymentMethod,
+      description: 'Factura $folioStr - Cliente: ${invoice.client.fullName}',
+      date: DateTime.now(),
+    );
+    _recordCashIncome(cashMovement);
+
     // Limpiar carrito
     setState(() => _cart.clear());
 
@@ -280,7 +293,23 @@ class _PosScreenState extends State<PosScreen> {
       ),
     );
 
-    DebugLogger.instance.info('Factura generada: $folioStr por \$${totalUsd.toStringAsFixed(2)}');
+    DebugLogger.instance.info('Factura generada y registrada en caja: $folioStr por \$${totalUsd.toStringAsFixed(2)}');
+  }
+
+  Future<void> _recordCashIncome(CashMovement movement) async {
+    try {
+      final raw = await StorageService.instance.load('cash_movements');
+      final List<Map<String, dynamic>> movements = [];
+      if (raw != null && raw is List) {
+        for (final m in raw) {
+          movements.add(Map<String, dynamic>.from(m));
+        }
+      }
+      movements.insert(0, movement.toJson());
+      await StorageService.instance.save('cash_movements', movements);
+    } catch (e) {
+      DebugLogger.instance.error('Error al sincronizar con libro de caja: $e');
+    }
   }
 
   @override
