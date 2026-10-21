@@ -32,7 +32,28 @@ class _ClientsScreenState extends State<ClientsScreen> {
           _loading = false;
         });
       } else {
-        setState(() => _loading = false);
+        final defaults = [
+          Client(
+            id: '1',
+            docId: 'V-24190824',
+            firstName: 'Roberto',
+            lastName: 'Gómez',
+            phone: '0414-5551234',
+            address: 'Urb. El Parral, Valencia',
+          ),
+          Client(
+            id: '2',
+            docId: 'J-40918290-1',
+            firstName: 'Inversiones',
+            lastName: 'París C.A.',
+            phone: '0424-9876543',
+            address: 'Av. Las Delicias, Maracay',
+          ),
+        ];
+        setState(() {
+          _clients.addAll(defaults);
+          _loading = false;
+        });
       }
     } catch (e, stack) {
       DebugLogger.instance.error('Error cargando clientes: $e', stack);
@@ -40,10 +61,14 @@ class _ClientsScreenState extends State<ClientsScreen> {
     }
   }
 
-  void _showAddClientDialog() {
-    final nameCtrl = TextEditingController();
-    final docCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
+  void _showAddClientDialog({Client? existingClient, int? index}) {
+    final docIdCtrl = TextEditingController(text: existingClient?.docId ?? '');
+    final firstNameCtrl = TextEditingController(text: existingClient?.firstName ?? '');
+    final lastNameCtrl = TextEditingController(text: existingClient?.lastName ?? '');
+    final phoneCtrl = TextEditingController(text: existingClient?.phone ?? '');
+    final addressCtrl = TextEditingController(text: existingClient?.address ?? '');
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
       context: context,
@@ -54,85 +79,157 @@ class _ClientsScreenState extends State<ClientsScreen> {
           left: 20,
           right: 20,
           top: 20,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
         ),
-        decoration: const BoxDecoration(
-          color: Color(0xFF0F172A),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Registrar Nuevo Cliente',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: nameCtrl,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'Nombre / Razón Social',
-                labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
-                filled: true,
-                fillColor: const Color(0xFF1E293B),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    existingClient == null ? 'Ficha de Nuevo Cliente' : 'Editar Cliente',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, color: isDark ? Colors.white70 : const Color(0xFF64748B)),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: docCtrl,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'RIF / Cédula / DNI',
-                labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
-                filled: true,
-                fillColor: const Color(0xFF1E293B),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: phoneCtrl,
-              keyboardType: TextInputType.phone,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'Teléfono / WhatsApp',
-                labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
-                filled: true,
-                fillColor: const Color(0xFF1E293B),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton(
-                onPressed: () async {
-                  if (nameCtrl.text.trim().isEmpty) return;
-                  final c = Client(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    name: nameCtrl.text.trim(),
-                    docId: docCtrl.text.trim(),
-                    phone: phoneCtrl.text.trim(),
-                    address: '',
-                  );
+              const SizedBox(height: 14),
 
-                  setState(() => _clients.insert(0, c));
-                  await StorageService.instance.save('clients', _clients.map((item) => item.toJson()).toList());
-                  DebugLogger.instance.info('Cliente registrado: ${c.name}');
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366F1),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              // Cédula / RIF
+              TextField(
+                controller: docIdCtrl,
+                style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                decoration: InputDecoration(
+                  labelText: 'C.I. / RIF / NIT *',
+                  labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                  prefixIcon: const Icon(Icons.badge_outlined, size: 20),
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 ),
-                child: const Text('Guardar Cliente', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
-            ),
-          ],
+              const SizedBox(height: 10),
+
+              // Nombres y Apellidos
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: firstNameCtrl,
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                      decoration: InputDecoration(
+                        labelText: 'Nombre *',
+                        labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                        prefixIcon: const Icon(Icons.person_outline, size: 20),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: lastNameCtrl,
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                      decoration: InputDecoration(
+                        labelText: 'Apellido',
+                        labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // WhatsApp / Teléfono
+              TextField(
+                controller: phoneCtrl,
+                keyboardType: TextInputType.phone,
+                style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                decoration: InputDecoration(
+                  labelText: 'WhatsApp / Teléfono *',
+                  labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                  prefixIcon: const Icon(Icons.phone_iphone, size: 20, color: Color(0xFF10B981)),
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Dirección
+              TextField(
+                controller: addressCtrl,
+                maxLines: 2,
+                style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                decoration: InputDecoration(
+                  labelText: 'Dirección Fiscal o Residencia',
+                  labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                  prefixIcon: const Icon(Icons.location_on_outlined, size: 20),
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    if (firstNameCtrl.text.trim().isEmpty) return;
+
+                    final client = Client(
+                      id: existingClient?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                      docId: docIdCtrl.text.trim(),
+                      firstName: firstNameCtrl.text.trim(),
+                      lastName: lastNameCtrl.text.trim(),
+                      phone: phoneCtrl.text.trim(),
+                      address: addressCtrl.text.trim(),
+                    );
+
+                    setState(() {
+                      if (existingClient != null && index != null) {
+                        _clients[index] = client;
+                      } else {
+                        _clients.insert(0, client);
+                      }
+                    });
+
+                    await StorageService.instance.save('clients', _clients.map((c) => c.toJson()).toList());
+                    DebugLogger.instance.info('Cliente guardado: ${client.fullName}');
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  icon: const Icon(Icons.save_outlined),
+                  label: Text(existingClient == null ? 'Registrar Cliente' : 'Actualizar Cliente'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6366F1),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -140,6 +237,8 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       children: [
         Padding(
@@ -149,10 +248,14 @@ class _ClientsScreenState extends State<ClientsScreen> {
             children: [
               Text(
                 '${_clients.length} Clientes Registrados',
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               ElevatedButton.icon(
-                onPressed: _showAddClientDialog,
+                onPressed: () => _showAddClientDialog(),
                 icon: const Icon(Icons.person_add, size: 18),
                 label: const Text('Nuevo'),
                 style: ElevatedButton.styleFrom(
@@ -168,30 +271,43 @@ class _ClientsScreenState extends State<ClientsScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)))
               : _clients.isEmpty
-                  ? const Center(
-                      child: Text('Sin clientes registrados.', style: TextStyle(color: Color(0xFF64748B))),
+                  ? Center(
+                      child: Text(
+                        'Sin clientes registrados.',
+                        style: TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                      ),
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: _clients.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, i) {
                         final c = _clients[i];
                         return Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
+                            color: isDark ? const Color(0xFF0F172A) : Colors.white,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFF1E293B)),
+                            border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+                            boxShadow: isDark
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.04),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                           ),
                           child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               CircleAvatar(
-                                radius: 20,
-                                backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.2),
+                                radius: 22,
+                                backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.15),
                                 child: Text(
-                                  c.name.isNotEmpty ? c.name[0].toUpperCase() : 'C',
-                                  style: const TextStyle(color: Color(0xFF818CF8), fontWeight: FontWeight.bold),
+                                  c.firstName.isNotEmpty ? c.firstName[0].toUpperCase() : 'C',
+                                  style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold, fontSize: 16),
                                 ),
                               ),
                               const SizedBox(width: 14),
@@ -200,15 +316,56 @@ class _ClientsScreenState extends State<ClientsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      c.name,
-                                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                                      c.fullName,
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
+                                    const SizedBox(height: 3),
                                     Text(
-                                      'ID: ${c.docId.isNotEmpty ? c.docId : 'N/A'} • Tel: ${c.phone.isNotEmpty ? c.phone : 'N/A'}',
-                                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                                      'C.I./RIF: ${c.docId.isNotEmpty ? c.docId : 'Sin documento'}',
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
+                                    if (c.phone.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.phone, size: 12, color: Color(0xFF10B981)),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            c.phone,
+                                            style: TextStyle(
+                                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                    if (c.address.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        c.address,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF6366F1)),
+                                onPressed: () => _showAddClientDialog(existingClient: c, index: i),
                               ),
                             ],
                           ),

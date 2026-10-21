@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../services/debug_logger.dart';
 import '../services/storage_service.dart';
+import '../services/bcv_service.dart';
+import '../widgets/invoice_detail_modal.dart';
 
 class PosScreen extends StatefulWidget {
   const PosScreen({super.key});
@@ -13,12 +15,80 @@ class PosScreen extends StatefulWidget {
 class _PosScreenState extends State<PosScreen> {
   final List<Product> _products = [];
   final List<CartItem> _cart = [];
+  final List<Client> _clients = [];
+  final List<Seller> _sellers = [
+    Seller(id: '1', name: 'Eizy Vendedor Principal', code: 'VEND-01'),
+    Seller(id: '2', name: 'Caja Mostrador', code: 'CAJA-01'),
+    Seller(id: '3', name: 'Ventas Online', code: 'ONL-01'),
+  ];
+
+  Client? _selectedClient;
+  late Seller _selectedSeller;
+  BusinessProfile _businessProfile = BusinessProfile();
+  String _selectedPaymentMethod = 'Efectivo USD (\$)';
   bool _loading = true;
+
+  final List<String> _paymentMethods = [
+    'Efectivo USD (\$)',
+    'Pago Móvil (Bs.)',
+    'Punto de Venta / Débito',
+    'Transferencia Bancaria',
+    'Zelle (USD)',
+    'Efectivo Bs.',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    _selectedSeller = _sellers.first;
+    _initPosData();
+  }
+
+  Future<void> _initPosData() async {
+    await _loadProducts();
+    await _loadClients();
+    await _loadBusinessProfile();
+  }
+
+  Future<void> _loadBusinessProfile() async {
+    try {
+      final raw = await StorageService.instance.load('business_profile');
+      if (raw != null && raw is Map<String, dynamic>) {
+        setState(() {
+          _businessProfile = BusinessProfile.fromJson(raw);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadClients() async {
+    try {
+      final raw = await StorageService.instance.load('clients');
+      if (raw != null && raw is List) {
+        setState(() {
+          _clients.clear();
+          for (final c in raw) {
+            _clients.add(Client.fromJson(Map<String, dynamic>.from(c)));
+          }
+          if (_clients.isNotEmpty) {
+            _selectedClient = _clients.first;
+          }
+        });
+      } else {
+        final defaultClient = Client(
+          id: '1',
+          docId: 'V-28425010',
+          firstName: 'Cliente',
+          lastName: 'Mostrador',
+          phone: '0414-5803945',
+          address: 'Barquisimeto',
+        );
+        setState(() {
+          _clients.add(defaultClient);
+          _selectedClient = defaultClient;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadProducts() async {
@@ -33,7 +103,6 @@ class _PosScreenState extends State<PosScreen> {
           _loading = false;
         });
       } else {
-        // Inicial con productos base de demostración si está vacío
         final defaults = [
           Product(id: '1', name: 'Acrílico 3mm Cristal', category: 'Materiales', priceUsd: 15.0, stock: 25),
           Product(id: '2', name: 'Corte Láser CNC (Hora)', category: 'Servicios', priceUsd: 25.0, stock: 99),
@@ -76,10 +145,14 @@ class _PosScreenState extends State<PosScreen> {
     });
   }
 
+  double get _totalUsd => _cart.fold(0.0, (acc, item) => acc + item.totalUsd);
+
   void _showCartDetails() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -89,16 +162,30 @@ class _PosScreenState extends State<PosScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Detalle de la Orden', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+                'Detalle de la Orden',
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const Divider(color: Color(0xFF1E293B)),
               ..._cart.map((item) => ListTile(
-                title: Text(item.product.name, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                subtitle: Text('Cant: ${item.quantity} x \$${item.product.priceUsd.toStringAsFixed(2)}', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+                title: Text(
+                  item.product.name,
+                  style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 14),
+                ),
+                subtitle: Text(
+                  'Cant: ${item.quantity} x \$${item.product.priceUsd.toStringAsFixed(2)}',
+                  style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12),
+                ),
                 trailing: IconButton(
                   icon: const Icon(Icons.remove_circle_outline, color: Color(0xFFEF4444)),
                   onPressed: () {
                     _removeFromCart(item.product);
                     setModalState(() {});
+                    setState(() {});
                   },
                 ),
               )),
@@ -109,66 +196,212 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
-  double get _totalUsd => _cart.fold(0.0, (acc, item) => acc + item.totalUsd);
+  void _showSelectClientModal() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  void _completeSale() {
-    if (_cart.isEmpty) return;
-
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0F172A),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Color(0xFF1E293B)),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Color(0xFF10B981)),
-            SizedBox(width: 8),
-            Text('Cobro Exitoso', style: TextStyle(color: Colors.white, fontSize: 18)),
-          ],
-        ),
-        content: Column(
+      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Total cobrado: \$${_totalUsd.toStringAsFixed(2)}',
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              'Seleccionar Cliente para Facturación',
+              style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Venta registrada en el sistema nativo de Flutter.',
-              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView.separated(
+                itemCount: _clients.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (ctx, i) {
+                  final c = _clients[i];
+                  return ListTile(
+                    leading: const CircleAvatar(child: Icon(Icons.person, size: 20)),
+                    title: Text(c.fullName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('CI: ${c.docId} • WA: ${c.phone}'),
+                    onTap: () {
+                      setState(() => _selectedClient = c);
+                      Navigator.pop(ctx);
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() => _cart.clear());
-              DebugLogger.instance.info('Venta finalizada con éxito.');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6366F1),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Aceptar'),
-          ),
-        ],
       ),
     );
   }
 
+  void _completeSaleAndShowInvoice() {
+    if (_cart.isEmpty) return;
+
+    final rateBcv = BcvService.instance.currentRates.usd;
+    final totalUsd = _totalUsd;
+    final totalBs = totalUsd * rateBcv;
+
+    _businessProfile.folioCounter++;
+    final folioStr = 'FES-${_businessProfile.folioCounter.toString().padLeft(4, '0')}';
+
+    final invoice = Invoice(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      folio: folioStr,
+      date: DateTime.now(), // Fecha automática
+      client: _selectedClient ?? Client(id: '0', docId: 'V-000000', firstName: 'Cliente', lastName: 'General', phone: '', address: ''),
+      seller: _selectedSeller,
+      items: List.from(_cart),
+      rateBcv: rateBcv,
+      currencyMode: 'USD',
+      totalUsd: totalUsd,
+      totalBs: totalBs,
+      paymentMethod: _selectedPaymentMethod,
+      business: _businessProfile,
+    );
+
+    // Guardar folio actualizado
+    StorageService.instance.save('business_profile', _businessProfile.toJson());
+
+    // Limpiar carrito
+    setState(() => _cart.clear());
+
+    // Mostrar el ticket / factura en pantalla completa
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => SizedBox(
+        height: MediaQuery.of(ctx).size.height * 0.9,
+        child: InvoiceDetailModal(invoice: invoice),
+      ),
+    );
+
+    DebugLogger.instance.info('Factura generada: $folioStr por \$${totalUsd.toStringAsFixed(2)}');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final rateBcv = BcvService.instance.currentRates.usd;
+
     return Column(
       children: [
-        // Grid de Productos
+        // 1. Selector de Cliente & Vendedor (Stitch POS)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0F172A) : Colors.white,
+            border: Border(bottom: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0))),
+          ),
+          child: Column(
+            children: [
+              // Cliente Badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  InkWell(
+                    onTap: _showSelectClientModal,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.person, color: Color(0xFF6366F1), size: 18),
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _selectedClient?.fullName ?? 'Seleccionar Cliente',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              'CI: ${_selectedClient?.docId ?? "N/A"} • ${_selectedClient?.phone ?? ""}',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  OutlinedButton(
+                    onPressed: _showSelectClientModal,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      minimumSize: Size.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Cambiar', style: TextStyle(fontSize: 11)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Vendedor & Tasa Selector
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<Seller>(
+                          isExpanded: true,
+                          value: _selectedSeller,
+                          dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          items: _sellers.map((s) => DropdownMenuItem(value: s, child: Text(s.name))).toList(),
+                          onChanged: (val) {
+                            if (val != null) setState(() => _selectedSeller = val);
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      'Tasa: Bs. ${rateBcv.toStringAsFixed(2)}',
+                      style: const TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // 2. Grid de Productos del Catálogo
         Expanded(
-          flex: 6,
           child: _loading
               ? const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)))
               : GridView.builder(
@@ -188,9 +421,9 @@ class _PosScreenState extends State<PosScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0F172A),
+                          color: isDark ? const Color(0xFF0F172A) : Colors.white,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFF1E293B)),
+                          border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,7 +440,7 @@ class _PosScreenState extends State<PosScreen> {
                                   ),
                                   child: Text(
                                     p.category,
-                                    style: const TextStyle(color: Color(0xFF818CF8), fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(color: Color(0xFF6366F1), fontSize: 10, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                                 const Icon(Icons.add_circle_outline, color: Color(0xFF6366F1), size: 18),
@@ -217,11 +450,24 @@ class _PosScreenState extends State<PosScreen> {
                               p.name,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            Text(
-                              '\$${p.priceUsd.toStringAsFixed(2)}',
-                              style: const TextStyle(color: Color(0xFF10B981), fontSize: 16, fontWeight: FontWeight.w800),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '\$${p.priceUsd.toStringAsFixed(2)}',
+                                  style: const TextStyle(color: Color(0xFF10B981), fontSize: 16, fontWeight: FontWeight.w800),
+                                ),
+                                Text(
+                                  'Bs. ${(p.priceUsd * rateBcv).toStringAsFixed(2)}',
+                                  style: TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8), fontSize: 10),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -231,18 +477,19 @@ class _PosScreenState extends State<PosScreen> {
                 ),
         ),
 
-        // Barra Inferior del Carrito
+        // 3. Barra Inferior de Cobro & Método de Pago
         Container(
           padding: const EdgeInsets.all(14),
-          decoration: const BoxDecoration(
-            color: Color(0xFF020617),
-            border: Border(top: BorderSide(color: Color(0xFF1E293B))),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF020617) : Colors.white,
+            border: Border(top: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0))),
           ),
           child: SafeArea(
             top: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Carrito Resumen
                 InkWell(
                   onTap: _cart.isEmpty ? null : _showCartDetails,
                   borderRadius: BorderRadius.circular(8),
@@ -251,37 +498,79 @@ class _PosScreenState extends State<PosScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.shopping_cart_outlined, color: Color(0xFF94A3B8), size: 18),
+                          const Icon(Icons.shopping_cart_outlined, color: Color(0xFF6366F1), size: 18),
                           const SizedBox(width: 6),
                           Text(
-                            '${_cart.length} productos en orden (toca para ver)',
-                            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                            '${_cart.length} ítems (ver detalle)',
+                            style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 13),
                           ),
                         ],
                       ),
-                      Text(
-                        'Total: \$${_totalUsd.toStringAsFixed(2)}',
-                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Total: \$${_totalUsd.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Text(
+                            'Bs. ${(_totalUsd * rateBcv).toStringAsFixed(2)}',
+                            style: const TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  height: 46,
-                  child: ElevatedButton(
-                    onPressed: _cart.isEmpty ? null : _completeSale,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF10B981),
-                      disabledBackgroundColor: const Color(0xFF1E293B),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                const SizedBox(height: 8),
+
+                // Selector de Forma de Pago
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            value: _selectedPaymentMethod,
+                            dropdownColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontSize: 12,
+                            ),
+                            items: _paymentMethods.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                            onChanged: (val) {
+                              if (val != null) setState(() => _selectedPaymentMethod = val);
+                            },
+                          ),
+                        ),
+                      ),
                     ),
-                    child: const Text(
-                      'Cobrar / Facturar Ticket',
-                      style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _cart.isEmpty ? null : _completeSaleAndShowInvoice,
+                        icon: const Icon(Icons.receipt, size: 16),
+                        label: const Text('Facturar Ticket'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),

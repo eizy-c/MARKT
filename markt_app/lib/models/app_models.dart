@@ -43,13 +43,157 @@ class CartItem {
   double get totalUsd => product.priceUsd * quantity;
 }
 
+class Client {
+  final String id;
+  final String docId; // CI / RIF / DNI
+  final String firstName;
+  final String lastName;
+  final String phone; // WhatsApp número
+  final String address;
+
+  Client({
+    required this.id,
+    required this.docId,
+    required this.firstName,
+    required this.lastName,
+    required this.phone,
+    required this.address,
+  });
+
+  String get fullName => '$firstName $lastName'.trim();
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'docId': docId,
+    'firstName': firstName,
+    'lastName': lastName,
+    'phone': phone,
+    'address': address,
+  };
+
+  factory Client.fromJson(Map<String, dynamic> json) => Client(
+    id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    docId: json['docId'] ?? json['rif'] ?? json['ci'] ?? '',
+    firstName: json['firstName'] ?? json['name'] ?? '',
+    lastName: json['lastName'] ?? '',
+    phone: json['phone'] ?? json['whatsapp'] ?? '',
+    address: json['address'] ?? '',
+  );
+}
+
+class Seller {
+  final String id;
+  final String name;
+  final String code;
+
+  Seller({required this.id, required this.name, required this.code});
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'code': code,
+  };
+
+  factory Seller.fromJson(Map<String, dynamic> json) => Seller(
+    id: json['id']?.toString() ?? '',
+    name: json['name'] ?? '',
+    code: json['code'] ?? '',
+  );
+}
+
+class BusinessProfile {
+  String name;
+  String rif;
+  String phone;
+  String address;
+  String warrantyNote;
+  bool showQrPagoMovil;
+  bool showBarcode;
+  bool showSignatureLine;
+  bool showIvaBreakdown;
+  String ticketTheme; // 'pos_termico', 'indigo_moderno', 'esmeralda_eco'
+  int folioCounter;
+
+  BusinessProfile({
+    this.name = 'EIZY STORE',
+    this.rif = 'V-28425010',
+    this.phone = '0414-5803945',
+    this.address = 'Lara - Barquisimeto',
+    this.warrantyNote = 'Montos calculados según tasa oficial de referencia BCV.\nGracias por su compra.',
+    this.showQrPagoMovil = true,
+    this.showBarcode = true,
+    this.showSignatureLine = true,
+    this.showIvaBreakdown = false,
+    this.ticketTheme = 'pos_termico',
+    this.folioCounter = 90,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'rif': rif,
+    'phone': phone,
+    'address': address,
+    'warrantyNote': warrantyNote,
+    'showQrPagoMovil': showQrPagoMovil,
+    'showBarcode': showBarcode,
+    'showSignatureLine': showSignatureLine,
+    'showIvaBreakdown': showIvaBreakdown,
+    'ticketTheme': ticketTheme,
+    'folioCounter': folioCounter,
+  };
+
+  factory BusinessProfile.fromJson(Map<String, dynamic> json) => BusinessProfile(
+    name: json['name'] ?? 'EIZY STORE',
+    rif: json['rif'] ?? 'V-28425010',
+    phone: json['phone'] ?? '0414-5803945',
+    address: json['address'] ?? 'Lara - Barquisimeto',
+    warrantyNote: json['warrantyNote'] ?? 'Montos calculados según tasa oficial de referencia BCV.\nGracias por su compra.',
+    showQrPagoMovil: json['showQrPagoMovil'] ?? true,
+    showBarcode: json['showBarcode'] ?? true,
+    showSignatureLine: json['showSignatureLine'] ?? true,
+    showIvaBreakdown: json['showIvaBreakdown'] ?? false,
+    ticketTheme: json['ticketTheme'] ?? 'pos_termico',
+    folioCounter: (json['folioCounter'] as num?)?.toInt() ?? 90,
+  );
+}
+
+class Invoice {
+  final String id;
+  final String folio;
+  final DateTime date;
+  final Client client;
+  final Seller seller;
+  final List<CartItem> items;
+  final double rateBcv;
+  final String currencyMode; // 'USD' | 'Bs'
+  final double totalUsd;
+  final double totalBs;
+  final String paymentMethod;
+  final BusinessProfile business;
+
+  Invoice({
+    required this.id,
+    required this.folio,
+    required this.date,
+    required this.client,
+    required this.seller,
+    required this.items,
+    required this.rateBcv,
+    required this.currencyMode,
+    required this.totalUsd,
+    required this.totalBs,
+    required this.paymentMethod,
+    required this.business,
+  });
+}
+
 class CashMovement {
   final String id;
-  final String type; // 'income' | 'expense'
+  final String type;
   final String category;
   final double amountUsd;
   final double amountBs;
-  final String method; // 'efectivo_usd', 'pago_movil', etc.
+  final String method;
   final String description;
   final DateTime date;
 
@@ -87,44 +231,12 @@ class CashMovement {
   );
 }
 
-class Client {
-  final String id;
-  final String name;
-  final String docId;
-  final String phone;
-  final String address;
-
-  Client({
-    required this.id,
-    required this.name,
-    required this.docId,
-    required this.phone,
-    required this.address,
-  });
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'docId': docId,
-    'phone': phone,
-    'address': address,
-  };
-
-  factory Client.fromJson(Map<String, dynamic> json) => Client(
-    id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    name: json['name'] ?? '',
-    docId: json['docId'] ?? json['rif'] ?? '',
-    phone: json['phone'] ?? '',
-    address: json['address'] ?? '',
-  );
-}
-
 class ProjectItem {
   final String id;
   final String title;
   final String clientName;
   final double totalUsd;
-  final String status; // 'pending', 'in_progress', 'completed'
+  final String status;
   final DateTime date;
 
   ProjectItem({

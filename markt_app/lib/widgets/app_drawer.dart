@@ -166,43 +166,36 @@ class AppDrawer extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.of(context).pop(); // Close drawer smoothly
-          onDestinationSelected(index);
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF6366F1).withValues(alpha: 0.15) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: isSelected
-                ? Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.4))
-                : Border.all(color: Colors.transparent),
+      child: Material(
+        color: isSelected ? const Color(0xFF6366F1).withValues(alpha: 0.15) : Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: isSelected
+              ? const BorderSide(color: Color(0xFF6366F1), width: 1)
+              : BorderSide.none,
+        ),
+        child: ListTile(
+          dense: true,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          leading: Icon(
+            isSelected ? activeIcon : icon,
+            color: isSelected ? const Color(0xFF818CF8) : const Color(0xFF94A3B8),
+            size: 20,
           ),
-          child: Row(
-            children: [
-              Icon(
-                isSelected ? activeIcon : icon,
-                color: isSelected ? const Color(0xFF818CF8) : const Color(0xFF94A3B8),
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : const Color(0xFFCBD5E1),
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
+          title: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isSelected ? Colors.white : const Color(0xFFCBD5E1),
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 14,
+            ),
           ),
+          onTap: () {
+            Navigator.of(context).pop();
+            onDestinationSelected(index);
+          },
         ),
       ),
     );
