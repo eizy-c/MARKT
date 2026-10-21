@@ -266,6 +266,9 @@ class _PosScreenState extends State<PosScreen> {
     // Guardar folio actualizado
     StorageService.instance.save('business_profile', _businessProfile.toJson());
 
+    // FASE 5: Persistencia de Facturas para Analítica Financiera
+    _saveInvoiceHistory(invoice);
+
     // FASE 2: Alimentación automática al Libro de Caja
     final cashMovement = CashMovement(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -309,6 +312,22 @@ class _PosScreenState extends State<PosScreen> {
       await StorageService.instance.save('cash_movements', movements);
     } catch (e) {
       DebugLogger.instance.error('Error al sincronizar con libro de caja: $e');
+    }
+  }
+
+  Future<void> _saveInvoiceHistory(Invoice invoice) async {
+    try {
+      final raw = await StorageService.instance.load('invoices');
+      final List<Map<String, dynamic>> list = [];
+      if (raw != null && raw is List) {
+        for (final item in raw) {
+          list.add(Map<String, dynamic>.from(item));
+        }
+      }
+      list.insert(0, invoice.toJson());
+      await StorageService.instance.save('invoices', list);
+    } catch (e) {
+      DebugLogger.instance.error('Error al guardar historial de factura: $e');
     }
   }
 

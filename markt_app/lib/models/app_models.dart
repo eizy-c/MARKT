@@ -99,19 +99,27 @@ class Seller {
   final String id;
   final String name;
   final String code;
+  final double commissionPercent;
 
-  Seller({required this.id, required this.name, required this.code});
+  Seller({
+    required this.id,
+    required this.name,
+    required this.code,
+    this.commissionPercent = 5.0,
+  });
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
     'code': code,
+    'commissionPercent': commissionPercent,
   };
 
   factory Seller.fromJson(Map<String, dynamic> json) => Seller(
     id: json['id']?.toString() ?? '',
     name: json['name'] ?? '',
     code: json['code'] ?? '',
+    commissionPercent: (json['commissionPercent'] as num?)?.toDouble() ?? 5.0,
   );
 }
 
@@ -199,6 +207,49 @@ class Invoice {
     required this.paymentMethod,
     required this.business,
   });
+
+  double get totalCostUsd => items.fold(0.0, (acc, item) => acc + (item.product.costUsd * item.quantity));
+  double get netProfitUsd => totalUsd - totalCostUsd;
+  double get sellerCommissionUsd => totalUsd * (seller.commissionPercent / 100);
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'folio': folio,
+    'date': date.toIso8601String(),
+    'client': client.toJson(),
+    'seller': seller.toJson(),
+    'items': items.map((i) => {
+      'product': i.product.toJson(),
+      'quantity': i.quantity,
+    }).toList(),
+    'rateBcv': rateBcv,
+    'currencyMode': currencyMode,
+    'totalUsd': totalUsd,
+    'totalBs': totalBs,
+    'paymentMethod': paymentMethod,
+    'business': business.toJson(),
+  };
+
+  factory Invoice.fromJson(Map<String, dynamic> json) => Invoice(
+    id: json['id']?.toString() ?? '',
+    folio: json['folio'] ?? '',
+    date: DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
+    client: Client.fromJson(Map<String, dynamic>.from(json['client'] ?? {})),
+    seller: Seller.fromJson(Map<String, dynamic>.from(json['seller'] ?? {})),
+    items: (json['items'] as List?)
+            ?.map((i) => CartItem(
+                  product: Product.fromJson(Map<String, dynamic>.from(i['product'] ?? {})),
+                  quantity: (i['quantity'] as num?)?.toInt() ?? 1,
+                ))
+            .toList() ??
+        [],
+    rateBcv: (json['rateBcv'] as num?)?.toDouble() ?? 0.0,
+    currencyMode: json['currencyMode'] ?? 'USD',
+    totalUsd: (json['totalUsd'] as num?)?.toDouble() ?? 0.0,
+    totalBs: (json['totalBs'] as num?)?.toDouble() ?? 0.0,
+    paymentMethod: json['paymentMethod'] ?? 'efectivo_usd',
+    business: BusinessProfile.fromJson(Map<String, dynamic>.from(json['business'] ?? {})),
+  );
 }
 
 class CashMovement {

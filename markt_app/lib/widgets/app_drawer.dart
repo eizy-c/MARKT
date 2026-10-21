@@ -106,20 +106,27 @@ class AppDrawer extends StatelessWidget {
                 _buildDrawerItem(
                   context,
                   index: 4,
+                  icon: Icons.insights_outlined,
+                  activeIcon: Icons.insights,
+                  title: 'Analítica Financiera',
+                ),
+                _buildDrawerItem(
+                  context,
+                  index: 5,
                   icon: Icons.folder_outlined,
                   activeIcon: Icons.folder,
                   title: 'Proyectos & Pedidos',
                 ),
                 _buildDrawerItem(
                   context,
-                  index: 5,
+                  index: 6,
                   icon: Icons.inventory_2_outlined,
                   activeIcon: Icons.inventory_2,
                   title: 'Inventario de Productos',
                 ),
                 _buildDrawerItem(
                   context,
-                  index: 6,
+                  index: 7,
                   icon: Icons.people_outline,
                   activeIcon: Icons.people,
                   title: 'Clientes',
@@ -127,7 +134,7 @@ class AppDrawer extends StatelessWidget {
                 const Divider(color: Color(0xFF1E293B), height: 24),
                 _buildDrawerItem(
                   context,
-                  index: 7,
+                  index: 8,
                   icon: Icons.settings_outlined,
                   activeIcon: Icons.settings,
                   title: 'Configuración & Tasas',

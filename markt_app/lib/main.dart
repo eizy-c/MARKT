@@ -9,6 +9,7 @@ import 'screens/dashboard_screen.dart';
 import 'screens/pos_screen.dart';
 import 'screens/cash_screen.dart';
 import 'screens/receivables_screen.dart';
+import 'screens/analytics_screen.dart';
 import 'screens/projects_screen.dart';
 import 'screens/products_screen.dart';
 import 'screens/clients_screen.dart';
@@ -131,6 +132,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     'Terminal POS (Ventas)',
     'Libro de Caja',
     'Cuentas por Cobrar',
+    'Analítica Financiera',
     'Proyectos & Pedidos',
     'Inventario',
     'Clientes',
@@ -147,6 +149,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       const PosScreen(),
       const CashScreen(),
       const ReceivablesScreen(),
+      const AnalyticsScreen(),
       const ProjectsScreen(),
       const ProductsScreen(),
       const ClientsScreen(),
