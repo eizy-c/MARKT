@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'services/debug_logger.dart';
 import 'services/bcv_service.dart';
+import 'services/theme_service.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/pos_screen.dart';
 import 'screens/cash_screen.dart';
@@ -36,6 +37,8 @@ void main() {
       ),
     );
 
+    ThemeService.instance.init();
+
     runApp(const MarktApp());
   }, (error, stack) {
     // Capturar cualquier error no capturado en la zona
@@ -48,33 +51,66 @@ class MarktApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'MARTK POS',
-      debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.dark,
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF020617), // Dark AMOLED
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF6366F1), // Indigo
-          secondary: Color(0xFF10B981), // Emerald
-          surface: Color(0xFF0F172A),
-          onSurface: Colors.white,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF020617),
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          titleTextStyle: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeService.instance.themeModeNotifier,
+      builder: (context, themeMode, _) {
+        return MaterialApp(
+          title: 'MARTK POS',
+          debugShowCheckedModeBanner: false,
+          themeMode: themeMode,
+          // Tema Claro (Light)
+          theme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.light,
+            scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+            cardColor: Colors.white,
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF6366F1),
+              secondary: Color(0xFF10B981),
+              surface: Colors.white,
+              onSurface: Color(0xFF0F172A),
+            ),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.white,
+              foregroundColor: Color(0xFF0F172A),
+              elevation: 0,
+              scrolledUnderElevation: 0.5,
+              titleTextStyle: TextStyle(
+                color: Color(0xFF0F172A),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              iconTheme: IconThemeData(color: Color(0xFF0F172A)),
+            ),
           ),
-          iconTheme: IconThemeData(color: Colors.white),
-        ),
-      ),
-      home: const MainNavigationScreen(),
+          // Tema Oscuro (Dark AMOLED)
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            scaffoldBackgroundColor: const Color(0xFF020617),
+            cardColor: const Color(0xFF0F172A),
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF6366F1),
+              secondary: Color(0xFF10B981),
+              surface: Color(0xFF0F172A),
+              onSurface: Colors.white,
+            ),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF020617),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              titleTextStyle: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              iconTheme: IconThemeData(color: Colors.white),
+            ),
+          ),
+          home: const MainNavigationScreen(),
+        );
+      },
     );
   }
 }

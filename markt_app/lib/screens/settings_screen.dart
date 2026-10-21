@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/debug_logger.dart';
 import '../services/storage_service.dart';
 import '../services/bcv_service.dart';
+import '../services/theme_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -42,16 +43,123 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Ajustes del Negocio',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            'Ajustes del Sistema & Negocio',
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 14),
+
+          // Selector de Tema Visual (Claro / Oscuro / Sistema)
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: ThemeService.instance.themeModeNotifier,
+            builder: (context, currentMode, _) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          currentMode == ThemeMode.dark ? Icons.dark_mode : Icons.light_mode,
+                          color: const Color(0xFF6366F1),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Tema Visual Adaptable',
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ChoiceChip(
+                            avatar: Icon(
+                              Icons.dark_mode,
+                              size: 16,
+                              color: currentMode == ThemeMode.dark ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+                            ),
+                            label: const Center(child: Text('Oscuro')),
+                            selected: currentMode == ThemeMode.dark,
+                            selectedColor: const Color(0xFF6366F1),
+                            labelStyle: TextStyle(
+                              color: currentMode == ThemeMode.dark ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                            onSelected: (_) => ThemeService.instance.setThemeMode(ThemeMode.dark),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ChoiceChip(
+                            avatar: Icon(
+                              Icons.light_mode,
+                              size: 16,
+                              color: currentMode == ThemeMode.light ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+                            ),
+                            label: const Center(child: Text('Claro')),
+                            selected: currentMode == ThemeMode.light,
+                            selectedColor: const Color(0xFF6366F1),
+                            labelStyle: TextStyle(
+                              color: currentMode == ThemeMode.light ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                            onSelected: (_) => ThemeService.instance.setThemeMode(ThemeMode.light),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ChoiceChip(
+                            avatar: Icon(
+                              Icons.brightness_auto,
+                              size: 16,
+                              color: currentMode == ThemeMode.system ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+                            ),
+                            label: const Center(child: Text('Auto')),
+                            selected: currentMode == ThemeMode.system,
+                            selectedColor: const Color(0xFF6366F1),
+                            labelStyle: TextStyle(
+                              color: currentMode == ThemeMode.system ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                            onSelected: (_) => ThemeService.instance.setThemeMode(ThemeMode.system),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
 
           // Tarjeta Negocio
           Container(
