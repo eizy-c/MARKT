@@ -33,6 +33,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool showIvaBreakdown = false;
   String ticketTheme = 'pos_termico';
 
+  // Cuentas Bancarias del Negocio
+  final List<BankAccount> _bankAccounts = [];
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +45,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     BcvService.instance.ratesNotifier.addListener(_onRatesUpdated);
     _loadSavedBusinessProfile();
+    _loadBankAccounts();
+  }
+
+  Future<void> _loadBankAccounts() async {
+    try {
+      final raw = await StorageService.instance.load('bank_accounts');
+      if (raw != null && raw is List) {
+        setState(() {
+          _bankAccounts.clear();
+          for (final b in raw) {
+            _bankAccounts.add(BankAccount.fromJson(Map<String, dynamic>.from(b)));
+          }
+        });
+      } else {
+        final defaultAccounts = [
+          BankAccount(
+            id: '1',
+            bankName: 'Banesco Banco Universal',
+            accountNumber: '0134-0000-00-0000000000',
+            accountHolder: 'EIZY STORE C.A.',
+            docId: 'J-28425010-0',
+            phone: '0414-5803945',
+            accountType: 'Corriente',
+          ),
+          BankAccount(
+            id: '2',
+            bankName: 'Banco de Venezuela',
+            accountNumber: '0102-0000-00-0000000000',
+            accountHolder: 'EIZY STORE C.A.',
+            docId: 'J-28425010-0',
+            phone: '0414-5803945',
+            accountType: 'Corriente',
+          ),
+        ];
+        setState(() => _bankAccounts.addAll(defaultAccounts));
+        await StorageService.instance.save('bank_accounts', defaultAccounts.map((a) => a.toJson()).toList());
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadSavedBusinessProfile() async {
@@ -489,7 +530,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          // 4. Cuentas Bancarias & Pago Móvil del Negocio (CRUD)
+          _buildBankAccountsCrud(isDark),
+          const SizedBox(height: 16),
 
           // Botón Guardar Preferencias
           SizedBox(
@@ -831,6 +874,280 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               )),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBankAccountsCrud(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.account_balance, color: Color(0xFF10B981), size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Cuentas Bancarias & Pago Móvil',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _showAddEditBankModal(null, isDark),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Añadir Banco', style: TextStyle(fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF10B981),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Bancos destino para Pago Móvil, Transferencias y Punto de Venta.',
+            style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
+          ),
+          const SizedBox(height: 12),
+          if (_bankAccounts.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No hay bancos registrados aún.',
+                style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _bankAccounts.length,
+              separatorBuilder: (_, __) => const Divider(height: 12),
+              itemBuilder: (ctx, i) {
+                final b = _bankAccounts[i];
+                return Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.account_balance_wallet, color: Color(0xFF10B981), size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            b.bankName,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Text(
+                            'Telf: ${b.phone} • CI/RIF: ${b.docId}',
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                              fontSize: 11,
+                            ),
+                          ),
+                          Text(
+                            'Cuenta: ${b.accountNumber} (${b.accountHolder})',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF6366F1)),
+                      onPressed: () => _showAddEditBankModal(b, isDark),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFEF4444)),
+                      onPressed: () async {
+                        setState(() => _bankAccounts.removeAt(i));
+                        await StorageService.instance.save('bank_accounts', _bankAccounts.map((a) => a.toJson()).toList());
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddEditBankModal(BankAccount? account, bool isDark) {
+    final bankNameCtrl = TextEditingController(text: account?.bankName ?? '');
+    final phoneCtrl = TextEditingController(text: account?.phone ?? '');
+    final docIdCtrl = TextEditingController(text: account?.docId ?? '');
+    final holderCtrl = TextEditingController(text: account?.accountHolder ?? '');
+    final accNumCtrl = TextEditingController(text: account?.accountNumber ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0F172A) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      account == null ? 'Añadir Cuenta / Banco' : 'Editar Cuenta Bancaria',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: bankNameCtrl,
+                  style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                  decoration: InputDecoration(
+                    labelText: 'Nombre del Banco (ej. Banesco, Venezuela, Mercantil)',
+                    filled: true,
+                    fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: phoneCtrl,
+                        keyboardType: TextInputType.phone,
+                        style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                        decoration: InputDecoration(
+                          labelText: 'Teléfono Pago Móvil',
+                          filled: true,
+                          fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: docIdCtrl,
+                        style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                        decoration: InputDecoration(
+                          labelText: 'C.I. / RIF del Titular',
+                          filled: true,
+                          fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: holderCtrl,
+                  style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                  decoration: InputDecoration(
+                    labelText: 'Nombre o Razón Social del Titular',
+                    filled: true,
+                    fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: accNumCtrl,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                  decoration: InputDecoration(
+                    labelText: 'Número de Cuenta (20 dígitos)',
+                    filled: true,
+                    fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (bankNameCtrl.text.trim().isEmpty) return;
+                      final updated = BankAccount(
+                        id: account?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                        bankName: bankNameCtrl.text.trim(),
+                        phone: phoneCtrl.text.trim(),
+                        docId: docIdCtrl.text.trim(),
+                        accountHolder: holderCtrl.text.trim(),
+                        accountNumber: accNumCtrl.text.trim(),
+                      );
+                      setState(() {
+                        if (account != null) {
+                          final idx = _bankAccounts.indexWhere((a) => a.id == account.id);
+                          if (idx >= 0) _bankAccounts[idx] = updated;
+                        } else {
+                          _bankAccounts.add(updated);
+                        }
+                      });
+                      await StorageService.instance.save('bank_accounts', _bankAccounts.map((a) => a.toJson()).toList());
+                      if (mounted) Navigator.pop(ctx);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: Text(account == null ? 'Guardar Banco' : 'Actualizar Banco'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

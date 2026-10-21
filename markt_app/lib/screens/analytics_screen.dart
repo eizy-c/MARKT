@@ -154,6 +154,29 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return res;
   }
 
+  Map<String, double> get _paymentMethodBreakdown {
+    final Map<String, double> res = {};
+    for (final inv in _filteredInvoices) {
+      String m = inv.paymentMethod;
+      // Normalizar nombres
+      if (m.toLowerCase().contains('movil') || m.toLowerCase().contains('móvil')) {
+        m = 'Pago Móvil';
+      } else if (m.toLowerCase().contains('punto') || m.toLowerCase().contains('debito') || m.toLowerCase().contains('débito')) {
+        m = 'Punto de Venta / Débito';
+      } else if (m.toLowerCase().contains('transferencia')) {
+        m = 'Transferencia Bancaria';
+      } else if (m.toLowerCase().contains('zelle')) {
+        m = 'Zelle (USD)';
+      } else if (m.toLowerCase().contains('efectivo') && m.toLowerCase().contains('bs')) {
+        m = 'Efectivo Bs.';
+      } else if (m.toLowerCase().contains('efectivo') || m.toLowerCase().contains('usd')) {
+        m = 'Efectivo USD (\$)';
+      }
+      res[m] = (res[m] ?? 0.0) + inv.totalUsd;
+    }
+    return res;
+  }
+
   void _shareFinancialReportWhatsApp() {
     final rate = BcvService.instance.currentRates.usd;
     final totalBs = _totalBilledUsd * rate;
@@ -419,6 +442,123 @@ _Generado automáticamente por MARKT POS._
               ],
             ),
           ),
+          const SizedBox(height: 16),
+
+          // Analítica por Método de Pago (Pago Móvil, Punto de Venta, Efectivo, etc.)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.account_balance_wallet, color: Color(0xFF10B981), size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Ventas por Método de Pago',
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      'Tasa: Bs. ${rate.toStringAsFixed(2)}',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF10B981), fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (_paymentMethodBreakdown.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        'Sin ventas registradas en este período.',
+                        style: TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                      ),
+                    ),
+                  )
+                else
+                  ..._paymentMethodBreakdown.entries.map((entry) {
+                    final percent = _totalBilledUsd > 0 ? (entry.value / _totalBilledUsd) * 100 : 0.0;
+                    final amountBs = entry.value * rate;
+                    IconData mIcon = Icons.payments_outlined;
+                    Color mColor = const Color(0xFF10B981);
+                    if (entry.key.contains('Móvil')) {
+                      mIcon = Icons.phone_android;
+                      mColor = const Color(0xFF38BDF8);
+                    } else if (entry.key.contains('Punto')) {
+                      mIcon = Icons.credit_card;
+                      mColor = const Color(0xFF6366F1);
+                    } else if (entry.key.contains('Transferencia')) {
+                      mIcon = Icons.account_balance;
+                      mColor = const Color(0xFFF59E0B);
+                    } else if (entry.key.contains('Zelle')) {
+                      mIcon = Icons.send_to_mobile;
+                      mColor = const Color(0xFF8B5CF6);
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(mIcon, size: 16, color: mColor),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  entry.key,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '\$${entry.value.toStringAsFixed(2)} (${percent.toStringAsFixed(1)}%)',
+                                    style: TextStyle(color: mColor, fontSize: 13, fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    'Bs. ${amountBs.toStringAsFixed(2)}',
+                                    style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 10),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          LinearProgressIndicator(
+                            value: percent / 100,
+                            backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            color: mColor,
+                            borderRadius: BorderRadius.circular(4),
+                            minHeight: 6,
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );

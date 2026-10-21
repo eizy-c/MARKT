@@ -179,32 +179,82 @@ class BusinessProfile {
   );
 }
 
+class BankAccount {
+  final String id;
+  final String bankName; // e.g., Banesco, Banco de Venezuela, Mercantil, Provincial
+  final String accountNumber;
+  final String accountHolder;
+  final String docId;
+  final String phone; // Para Pago Móvil
+  final String accountType; // Corriente, Ahorros, etc.
+
+  BankAccount({
+    required this.id,
+    required this.bankName,
+    required this.accountNumber,
+    required this.accountHolder,
+    required this.docId,
+    required this.phone,
+    this.accountType = 'Corriente',
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'bankName': bankName,
+    'accountNumber': accountNumber,
+    'accountHolder': accountHolder,
+    'docId': docId,
+    'phone': phone,
+    'accountType': accountType,
+  };
+
+  factory BankAccount.fromJson(Map<String, dynamic> json) => BankAccount(
+    id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    bankName: json['bankName'] ?? '',
+    accountNumber: json['accountNumber'] ?? '',
+    accountHolder: json['accountHolder'] ?? '',
+    docId: json['docId'] ?? '',
+    phone: json['phone'] ?? '',
+    accountType: json['accountType'] ?? 'Corriente',
+  );
+}
+
 class Invoice {
   final String id;
   final String folio;
+  final String voucherType; // 'factura' | 'cotizacion' | 'egreso' | 'abono'
   final DateTime date;
   final Client client;
   final Seller seller;
   final List<CartItem> items;
   final double rateBcv;
+  final String rateCurrency; // 'USD' | 'EUR'
   final String currencyMode; // 'USD' | 'Bs'
   final double totalUsd;
   final double totalBs;
   final String paymentMethod;
+  final String? bankName;
+  final String? paymentReference;
+  final String? notes;
   final BusinessProfile business;
 
   Invoice({
     required this.id,
     required this.folio,
+    this.voucherType = 'factura',
     required this.date,
     required this.client,
     required this.seller,
     required this.items,
     required this.rateBcv,
+    this.rateCurrency = 'USD',
     required this.currencyMode,
     required this.totalUsd,
     required this.totalBs,
     required this.paymentMethod,
+    this.bankName,
+    this.paymentReference,
+    this.notes,
     required this.business,
   });
 
@@ -215,6 +265,7 @@ class Invoice {
   Map<String, dynamic> toJson() => {
     'id': id,
     'folio': folio,
+    'voucherType': voucherType,
     'date': date.toIso8601String(),
     'client': client.toJson(),
     'seller': seller.toJson(),
@@ -223,16 +274,21 @@ class Invoice {
       'quantity': i.quantity,
     }).toList(),
     'rateBcv': rateBcv,
+    'rateCurrency': rateCurrency,
     'currencyMode': currencyMode,
     'totalUsd': totalUsd,
     'totalBs': totalBs,
     'paymentMethod': paymentMethod,
+    'bankName': bankName,
+    'paymentReference': paymentReference,
+    'notes': notes,
     'business': business.toJson(),
   };
 
   factory Invoice.fromJson(Map<String, dynamic> json) => Invoice(
     id: json['id']?.toString() ?? '',
     folio: json['folio'] ?? '',
+    voucherType: json['voucherType'] ?? 'factura',
     date: DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
     client: Client.fromJson(Map<String, dynamic>.from(json['client'] ?? {})),
     seller: Seller.fromJson(Map<String, dynamic>.from(json['seller'] ?? {})),
@@ -244,10 +300,14 @@ class Invoice {
             .toList() ??
         [],
     rateBcv: (json['rateBcv'] as num?)?.toDouble() ?? 0.0,
+    rateCurrency: json['rateCurrency'] ?? 'USD',
     currencyMode: json['currencyMode'] ?? 'USD',
     totalUsd: (json['totalUsd'] as num?)?.toDouble() ?? 0.0,
     totalBs: (json['totalBs'] as num?)?.toDouble() ?? 0.0,
     paymentMethod: json['paymentMethod'] ?? 'efectivo_usd',
+    bankName: json['bankName']?.toString(),
+    paymentReference: json['paymentReference']?.toString(),
+    notes: json['notes']?.toString(),
     business: BusinessProfile.fromJson(Map<String, dynamic>.from(json['business'] ?? {})),
   );
 }

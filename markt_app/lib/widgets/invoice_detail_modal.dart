@@ -91,13 +91,32 @@ class InvoiceDetailModal extends StatelessWidget {
                     const Divider(thickness: 1, height: 1),
                     const SizedBox(height: 10),
 
+                    // Título Dinámico de Comprobante
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getVoucherColor(invoice.voucherType).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _getVoucherTitle(invoice.voucherType),
+                        style: TextStyle(
+                          color: _getVoucherColor(invoice.voucherType),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
                     // Folio y Fecha Automática
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           'FOLIO: ${invoice.folio}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF6366F1)),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: _getVoucherColor(invoice.voucherType)),
                         ),
                         Text(
                           '${invoice.date.day.toString().padLeft(2, '0')}/${invoice.date.month.toString().padLeft(2, '0')}/${invoice.date.year} ${invoice.date.hour.toString().padLeft(2, '0')}:${invoice.date.minute.toString().padLeft(2, '0')}',
@@ -107,7 +126,7 @@ class InvoiceDetailModal extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
 
-                    // Vendedor
+                    // Vendedor y Tasa
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -116,7 +135,7 @@ class InvoiceDetailModal extends StatelessWidget {
                           style: TextStyle(color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155), fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                         Text(
-                          'TASA BCV: Bs. ${invoice.rateBcv.toStringAsFixed(2)}',
+                          'TASA ${invoice.rateCurrency}: Bs. ${invoice.rateBcv.toStringAsFixed(2)}',
                           style: const TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                       ],
@@ -213,6 +232,26 @@ class InvoiceDetailModal extends StatelessWidget {
                         Text(invoice.paymentMethod, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                       ],
                     ),
+                    if (invoice.bankName != null && invoice.bankName!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Banco Destino:', style: TextStyle(fontSize: 12, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                          Text(invoice.bankName!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF6366F1))),
+                        ],
+                      ),
+                    ],
+                    if (invoice.paymentReference != null && invoice.paymentReference!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Referencia / Ref:', style: TextStyle(fontSize: 12, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                          Text(invoice.paymentReference!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
+                        ],
+                      ),
+                    ],
 
                     if (invoice.business.showSignatureLine) ...[
                       const SizedBox(height: 24),
@@ -271,5 +310,33 @@ class InvoiceDetailModal extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getVoucherTitle(String type) {
+    switch (type.toLowerCase()) {
+      case 'cotizacion':
+        return 'PRESUPUESTO / COTIZACIÓN';
+      case 'egreso':
+        return 'COMPROBANTE DE EGRESO DE CAJA';
+      case 'abono':
+        return 'RECIBO DE CAJA / ABONO A CUENTA';
+      case 'factura':
+      default:
+        return 'FACTURA DE VENTA DIRECTA';
+    }
+  }
+
+  Color _getVoucherColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'cotizacion':
+        return const Color(0xFF38BDF8); // Azul celeste
+      case 'egreso':
+        return const Color(0xFFEF4444); // Rojo
+      case 'abono':
+        return const Color(0xFFF59E0B); // Ámbar / Dorado
+      case 'factura':
+      default:
+        return const Color(0xFF10B981); // Verde esmeralda
+    }
   }
 }
