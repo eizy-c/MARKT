@@ -106,7 +106,7 @@
 </head>
 <body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen selection:bg-secondary selection:text-on-secondary">
 
-  <!-- OVERLAY PARA MOBILE DRAWER / MODAL -->
+  <!-- OVERLAY PARA MOBILE DRAWER -->
   <div id="drawer-overlay" class="drawer-overlay hidden"></div>
   <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
 
@@ -114,7 +114,7 @@
   <header class="fixed top-0 inset-x-0 z-50 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-b border-surface-container">
     <div class="h-16 px-4 max-w-7xl mx-auto flex items-center justify-between gap-2 w-full">
       <div class="flex items-center gap-2.5">
-        <button id="btn-toggle-menu" class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 flex-shrink-0" title="Menu de Navegacion" type="button">
+        <button id="btn-toggle-menu" class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 flex-shrink-0" title="Menu del Sistema" type="button">
           <span class="material-symbols-outlined text-[22px]">menu</span>
         </button>
         <div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm flex-shrink-0">
@@ -123,29 +123,29 @@
         <div class="flex flex-col">
           <div class="flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></span>
-            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Caja Abierta</span>
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">PubliCraft CNC</span>
           </div>
-          <span id="current-view-title" class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">Terminal Pos</span>
+          <span id="current-view-title" class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">Terminal POS</span>
         </div>
       </div>
 
       <div class="flex items-center gap-2">
         <!-- Quick BCV Pill -->
-        <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant text-[11px] font-semibold border border-surface-container-high">
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant text-[11px] font-semibold border border-surface-container-high">
           <span>BCV:</span>
           <strong id="sidebar-bcv-usd" class="text-on-surface">798.33</strong>
-          <button id="btn-sidebar-fetch-bcv" type="button" class="text-secondary hover:text-on-surface transition-colors ml-1" title="Actualizar Tasa">
+          <button id="btn-sidebar-fetch-bcv" type="button" class="text-secondary hover:text-on-surface transition-colors ml-0.5" title="Actualizar Tasa">
             <span class="material-symbols-outlined text-[13px]">refresh</span>
           </button>
         </div>
 
-        <!-- Thermal Ticket Action Button in Header -->
-        <button id="btn-open-thermal-modal" class="px-3 py-1.5 rounded-xl bg-surface-container text-secondary hover:bg-surface-container-high transition-all active:scale-95 flex items-center gap-1.5 border border-surface-container font-label-sm text-label-sm font-semibold" title="Ver Comprobante Termico" type="button">
+        <!-- Quick Ticket Direct Button -->
+        <button id="btn-open-thermal-modal" class="px-3 py-1.5 rounded-xl bg-surface-container text-secondary hover:bg-surface-container-high transition-all active:scale-95 flex items-center gap-1.5 border border-surface-container font-label-sm text-label-sm font-semibold" title="Ver Comprobante Actual" type="button">
           <span class="material-symbols-outlined text-[18px]">receipt_long</span>
           <span class="hidden sm:inline">Ticket</span>
         </button>
 
-        <!-- Profile / Business Button -->
+        <!-- Profile Button -->
         <button id="btn-header-profile" class="p-0.5 rounded-full bg-surface-container flex items-center justify-center border border-surface-container-high hover:ring-2 hover:ring-secondary/40 transition-all stitch-nav-item" data-view="view-ajustes" title="Mi Negocio">
           <img id="header-avatar-img" alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcs5Vfz1UVF_eA8cRh3_kvFzWriA1yt7b2hUZfawqwwVyShPYUU1I8HfXklr7pdGU1ZSLW6VM6ffp_oMTUJHbpEYnBkoSGOrjUYp-mRf75NK7lfyGm8oCwnN9hrLk4O40OZRVbgCRiWJOLtHF6ANBtTGrfrioOFAHsFnadQkFifUMHsX4uByZDLG875xUwJyDu3aiNbxUGRtfJCJ2K35SZEQ1jkMoBA-caL0WsiptFiyOlvDKJha55"/>
         </button>
@@ -153,7 +153,7 @@
     </div>
   </header>
 
-  <!-- SLIDE-OVER DRAWER NAVIGATION -->
+  <!-- SLIDE-OVER DRAWER NAVIGATION (Unboxed, Flat) -->
   <aside id="system-drawer" class="system-drawer">
     <div class="p-4 border-b border-surface-container flex items-center justify-between">
       <div class="flex items-center gap-2.5">
@@ -162,7 +162,7 @@
         </div>
         <div>
           <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">PubliCraft POS</h2>
-          <span class="font-label-sm text-label-sm text-secondary font-semibold">Sistema Integral v3.0</span>
+          <span class="font-label-sm text-label-sm text-secondary font-semibold">Sistema MARKT v3.0</span>
         </div>
       </div>
       <button id="btn-close-drawer" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" type="button" title="Cerrar Menu">
@@ -170,7 +170,7 @@
       </button>
     </div>
 
-    <!-- BCV Rates Box in Drawer -->
+    <!-- BCV Rates in Drawer -->
     <div class="p-3 mx-3 my-2 rounded-xl bg-surface-container-low border border-surface-container space-y-1">
       <div class="flex items-center justify-between text-xs text-on-surface-variant font-semibold">
         <span>Tasas Oficiales BCV</span>
@@ -192,9 +192,13 @@
         <span class="material-symbols-outlined">point_of_sale</span>
         <span>Terminal POS</span>
       </button>
+      <button class="drawer-nav-item" data-view="view-ticket" type="button">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <span>Ver Ticket / Comprobante</span>
+      </button>
       <button class="drawer-nav-item" data-view="view-cotizaciones" type="button">
         <span class="material-symbols-outlined">request_quote</span>
-        <span>Cotizaciones y Costos</span>
+        <span>Cotizaciones y Presupuestos</span>
       </button>
       <button class="drawer-nav-item" data-view="view-proyectos" type="button">
         <span class="material-symbols-outlined">pending_actions</span>
@@ -202,7 +206,7 @@
       </button>
       <button class="drawer-nav-item" data-view="view-galeria" type="button">
         <span class="material-symbols-outlined">precision_manufacturing</span>
-        <span>Archivos CNC y Carga</span>
+        <span>Archivos CNC y Taller</span>
       </button>
       <div class="h-px bg-surface-container my-2"></div>
       <button class="drawer-nav-item" data-view="view-productos" type="button">
@@ -235,67 +239,64 @@
           <span>Restaurar</span>
         </button>
       </div>
-      <p class="text-[10px] text-center text-on-surface-variant font-medium">PubliCraft MARKT POS - 100% Standalone</p>
+      <p class="text-[10px] text-center text-on-surface-variant font-medium">MARKT POS - 100% Standalone Sin Servidor</p>
     </div>
   </aside>
 
-  <!-- MAIN VIEWPORT CONTAINER -->
-  <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface px-3 sm:px-4 max-w-7xl mx-auto">
+  <!-- MAIN VIEWPORT CONTAINER (Full Natural Scroll, No Trap) -->
+  <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 px-3 sm:px-6 max-w-7xl mx-auto">
 
     <!-- ==========================================================================
-         VISTA 1: TERMINAL POS / FACTURADOR (Stitch 1:1)
+         VISTA 1: TERMINAL POS (Flujo Rapido, Des-encajonado)
          ========================================================================== -->
-    <section id="view-pos" class="app-view active w-full flex flex-col pb-4">
+    <section id="view-pos" class="app-view active w-full flex flex-col pb-6 space-y-4">
       
-      <!-- Document Type Selector Pills (Venta / Ingreso / Egreso) -->
-      <div class="flex items-center gap-2 mb-3 bg-surface-container-lowest p-1.5 rounded-2xl border border-surface-container shadow-sm">
-        <button class="doc-type-btn active flex-1 py-2 px-3 rounded-xl font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 bg-surface-container-high text-secondary shadow-sm" data-type="venta" type="button">
+      <!-- Selector de Tipo de Comprobante (Pills Planas) -->
+      <div class="flex items-center gap-2 pt-1">
+        <button class="doc-type-btn active flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 bg-surface-container-high text-secondary shadow-sm" data-type="venta" type="button">
           <span class="material-symbols-outlined text-[18px]">receipt_long</span>
           <span>Factura Venta</span>
         </button>
-        <button class="doc-type-btn flex-1 py-2 px-3 rounded-xl font-label-md text-label-md font-semibold text-on-surface-variant transition-all flex items-center justify-center gap-1.5 hover:bg-surface-container-low" data-type="ingreso" type="button">
+        <button class="doc-type-btn flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-semibold text-on-surface-variant transition-all flex items-center justify-center gap-1.5 bg-surface-container-lowest border border-surface-container hover:bg-surface-container-low" data-type="ingreso" type="button">
           <span class="material-symbols-outlined text-[18px]">payments</span>
           <span>Recibo Caja</span>
         </button>
-        <button class="doc-type-btn flex-1 py-2 px-3 rounded-xl font-label-md text-label-md font-semibold text-on-surface-variant transition-all flex items-center justify-center gap-1.5 hover:bg-surface-container-low" data-type="egreso" type="button">
+        <button class="doc-type-btn flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-semibold text-on-surface-variant transition-all flex items-center justify-center gap-1.5 bg-surface-container-lowest border border-surface-container hover:bg-surface-container-low" data-type="egreso" type="button">
           <span class="material-symbols-outlined text-[18px]">output</span>
           <span>Egreso</span>
         </button>
-        <span id="doc-type-title-text" class="hidden">Factura Electronica de Venta</span>
+        <span id="doc-type-title-text" class="hidden">Factura de Venta</span>
       </div>
 
-      <!-- Active Client Floating Badge -->
-      <div class="flex items-center justify-between bg-surface-container p-3 rounded-xl mb-3 shadow-sm border border-surface-container-high">
+      <!-- Barra de Cliente Asignado y Acciones (Plana, 1 sola capa) -->
+      <div class="flex items-center justify-between p-3 rounded-xl bg-surface-container border border-surface-container-high">
         <div class="flex items-center gap-3 min-w-0">
-          <div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-secondary shrink-0">
-            <span class="material-symbols-outlined text-[20px]">person</span>
+          <div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-secondary shrink-0">
+            <span class="material-symbols-outlined text-[22px]">person</span>
           </div>
           <div class="flex flex-col min-w-0">
-            <div class="flex items-center gap-1.5">
-              <span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Cliente Asignado</span>
-              <span class="inline-block w-1.5 h-1.5 rounded-full bg-on-tertiary-container"></span>
-            </div>
+            <span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Cliente Asignado:</span>
             <p id="pos-active-client-name" class="font-label-md text-label-md text-on-surface truncate font-bold">Cliente Mostrador</p>
             <p id="pos-active-client-phone" class="font-body-sm text-body-sm text-on-surface-variant truncate">Mostrador General</p>
           </div>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
-          <button id="btn-open-select-client-modal" class="px-3 py-1.5 bg-surface-container-lowest rounded-lg text-on-surface font-label-sm text-label-sm shadow-sm hover:bg-surface-container-low active:scale-95 transition-transform flex items-center gap-1 border border-surface-container font-semibold" type="button">
+          <button id="btn-open-select-client-modal" class="px-3 py-2 bg-surface-container-lowest rounded-xl text-on-surface font-label-sm text-label-sm shadow-sm hover:bg-surface-container-low active:scale-95 transition-transform flex items-center gap-1 border border-surface-container font-semibold" type="button">
             <span class="material-symbols-outlined text-[16px]">swap_horiz</span>
             <span>Cambiar</span>
           </button>
-          <button id="btn-show-add-client-form" class="w-8 h-8 rounded-lg bg-secondary text-on-secondary flex items-center justify-center shadow-sm hover:bg-secondary-container active:scale-95 transition-transform" type="button" title="Anadir Cliente">
-            <span class="material-symbols-outlined text-[18px]">add</span>
+          <button id="btn-show-add-client-form" class="w-9 h-9 rounded-xl bg-secondary text-on-secondary flex items-center justify-center shadow-sm hover:bg-secondary-container active:scale-95 transition-transform" type="button" title="Nuevo Cliente">
+            <span class="material-symbols-outlined text-[18px]">person_add</span>
           </button>
         </div>
       </div>
 
-      <!-- Collapsible Client / Fiscal Data Panel -->
-      <details class="mb-3 rounded-xl bg-surface-container-lowest border border-surface-container overflow-hidden group">
+      <!-- Panel Expandible de Datos Fiscales del Cliente (Plano) -->
+      <details id="pos-client-details" class="rounded-xl bg-surface-container-lowest border border-surface-container overflow-hidden group">
         <summary class="p-3 font-label-md text-label-md text-on-surface font-semibold flex items-center justify-between cursor-pointer hover:bg-surface-container-low transition-colors select-none">
           <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-secondary text-[18px]">badge</span>
-            <span id="section-person-title">Datos del Cliente y Facturacion</span>
+            <span class="material-symbols-outlined text-secondary text-[18px]">edit_note</span>
+            <span id="section-person-title">Editar Datos del Cliente / Receptor</span>
           </div>
           <span class="material-symbols-outlined text-on-surface-variant transition-transform group-open:rotate-180 text-[20px]">expand_more</span>
         </summary>
@@ -349,7 +350,7 @@
           </div>
           <div class="sm:col-span-2 grid grid-cols-3 gap-2">
             <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Vendedor / Cajero</label>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Cajero / Vendedor</label>
               <input type="text" id="salesperson" class="w-full px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-surface-container text-xs text-on-surface outline-none" value="Caja 1"/>
             </div>
             <div>
@@ -364,8 +365,8 @@
         </div>
       </details>
 
-      <!-- Section Payment Details (Only for Ingreso & Egreso) -->
-      <div id="section-payment-details" class="hidden rounded-xl bg-surface-container-lowest p-3 border border-surface-container shadow-sm mb-3 space-y-2">
+      <!-- Detalle de Movimiento para Ingreso/Egreso -->
+      <div id="section-payment-details" class="hidden rounded-xl bg-surface-container-lowest p-4 border border-surface-container shadow-sm space-y-2">
         <span class="font-headline-sm text-headline-sm text-on-surface font-bold block">Detalle del Movimiento de Caja</span>
         <div>
           <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Concepto / Descripcion *</label>
@@ -393,210 +394,174 @@
         </div>
       </div>
 
-      <!-- Search & Barcode Scan Bar -->
-      <div class="flex items-center gap-2 mb-3">
+      <!-- Buscador Directo del Catalogo POS -->
+      <div class="flex items-center gap-2">
         <div class="relative flex-1">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
-          <input id="stitch-pos-search" class="w-full h-11 pl-10 pr-4 bg-surface-container-lowest rounded-xl font-body-md text-body-md text-on-surface placeholder:text-outline shadow-sm border border-surface-container focus:outline-none focus:bg-surface-container-low focus:border-secondary transition-colors" placeholder="Buscar codigo, serie o producto..." type="text"/>
+          <input id="stitch-pos-search" class="w-full h-11 pl-10 pr-4 bg-surface-container-lowest rounded-xl font-body-md text-body-md text-on-surface placeholder:text-outline shadow-sm border border-surface-container focus:outline-none focus:border-secondary transition-colors" placeholder="Buscar producto en catalogo..." type="text"/>
         </div>
-        <button id="btn-open-catalog-picker" class="h-11 w-11 rounded-xl bg-surface-container-lowest text-on-surface flex items-center justify-center shadow-sm border border-surface-container active:scale-95 transition-transform relative group" type="button" title="Escanear o ver catalogo">
-          <span class="material-symbols-outlined text-[22px] text-secondary">barcode_scanner</span>
+        <button id="btn-open-catalog-picker" class="h-11 px-3.5 rounded-xl bg-surface-container-lowest text-secondary font-label-sm text-label-sm font-semibold flex items-center gap-1.5 border border-surface-container shadow-sm active:scale-95 transition-transform" type="button" title="Ver todo el catalogo">
+          <span class="material-symbols-outlined text-[20px]">inventory_2</span>
+          <span class="hidden sm:inline">Catalogo</span>
         </button>
       </div>
 
-      <!-- Quick Category Filter Pills -->
-      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-4 py-0.5" id="pos-cat-filter-pills">
-        <button class="pos-cat-btn active px-4 py-1.5 rounded-full bg-primary text-on-primary font-label-md text-label-md shrink-0 shadow-sm active:scale-95 transition-all font-semibold" data-cat="all" type="button">
-          Todos
-        </button>
-        <button class="pos-cat-btn px-4 py-1.5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md shrink-0 shadow-sm border border-surface-container hover:text-on-surface active:scale-95 transition-all" data-cat="instalacion" type="button">
-          Avisos LED
-        </button>
-        <button class="pos-cat-btn px-4 py-1.5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md shrink-0 shadow-sm border border-surface-container hover:text-on-surface active:scale-95 transition-all" data-cat="materiales" type="button">
-          Acrilicos & MDF
-        </button>
-        <button class="pos-cat-btn px-4 py-1.5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md shrink-0 shadow-sm border border-surface-container hover:text-on-surface active:scale-95 transition-all" data-cat="equipos" type="button">
-          Corte CNC
-        </button>
-        <button class="pos-cat-btn px-4 py-1.5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md shrink-0 shadow-sm border border-surface-container hover:text-on-surface active:scale-95 transition-all" data-cat="mano-de-obra" type="button">
-          Instalacion
-        </button>
+      <!-- Filtros Rapidos de Categoria -->
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="pos-cat-filter-pills">
+        <button class="pos-cat-btn active px-3.5 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm shrink-0 shadow-sm font-semibold" data-cat="all" type="button">Todos</button>
+        <button class="pos-cat-btn px-3.5 py-1.5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm shrink-0 border border-surface-container font-semibold" data-cat="Aviso LED" type="button">Avisos LED</button>
+        <button class="pos-cat-btn px-3.5 py-1.5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm shrink-0 border border-surface-container font-semibold" data-cat="Corpóreo" type="button">Corporeos</button>
+        <button class="pos-cat-btn px-3.5 py-1.5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm shrink-0 border border-surface-container font-semibold" data-cat="Material" type="button">Acrilicos & MDF</button>
+        <button class="pos-cat-btn px-3.5 py-1.5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm shrink-0 border border-surface-container font-semibold" data-cat="Servicio" type="button">Instalacion</button>
       </div>
 
-      <!-- Split Layout (Grid on Desktop: Catalog 7 cols + Ticket 5 cols) -->
+      <!-- Grid de 2 Columnas: Catalogo (Izquierda) y Ticket en Construccion (Derecha) -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
         
-        <!-- LEFT: Quick Sale Catalog -->
+        <!-- Catalogo de Venta Rapida (7 cols) -->
         <div id="section-venta-items" class="lg:col-span-7 flex flex-col gap-3">
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-1.5">
+            <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold flex items-center gap-1.5">
               <span class="material-symbols-outlined text-secondary text-[18px]">bolt</span>
-              <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Venta Rapida</h2>
-            </div>
-            <span class="font-label-sm text-label-sm text-on-surface-variant">Catalogo de Publicidad</span>
+              <span>Productos Disponibles</span>
+            </h3>
+            <button id="btn-add-item" type="button" class="text-xs font-semibold text-secondary hover:underline flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px]">add_circle</span>
+              <span>Partida Manual</span>
+            </button>
           </div>
 
-          <!-- Catalog Grid -->
-          <div class="grid grid-cols-2 gap-3" id="pos-quick-catalog-grid">
-            <!-- Item 1: Aviso Neon Flex -->
-            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between active:scale-[0.98] transition-transform relative overflow-hidden group hover:border-secondary/40">
-              <div class="w-full h-24 rounded-lg overflow-hidden mb-2 relative bg-surface-container">
-                <img class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&auto=format&fit=crop&q=80" alt="Aviso Neon Flex 60x40cm"/>
-                <span class="absolute top-1.5 left-1.5 bg-surface-container-lowest/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-semibold text-secondary">
-                  Taller CNC
-                </span>
-              </div>
+          <!-- Grid de Productos Planos -->
+          <div class="grid grid-cols-2 gap-2.5" id="pos-quick-catalog-grid">
+            <!-- Producto 1 -->
+            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between hover:border-secondary/50 transition-colors">
               <div>
-                <p class="font-label-md text-label-md text-on-surface font-bold line-clamp-1">Aviso Neon Flex 60x40cm</p>
-                <p class="font-body-sm text-body-sm text-on-surface-variant mb-1">Base acrilico 4mm cristal</p>
+                <span class="px-2 py-0.5 rounded bg-surface-container font-label-sm text-label-sm font-semibold text-secondary">Aviso LED</span>
+                <p class="font-label-md text-label-md text-on-surface font-bold mt-1 line-clamp-1">Aviso Neon Flex 60x40cm</p>
+                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">Base acrilico cristal 4mm</p>
               </div>
-              <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center justify-between pt-2 mt-2 border-t border-surface-container">
                 <span class="font-headline-sm text-headline-sm text-on-surface font-bold">$65.00</span>
-                <button class="btn-stitch-quick-add w-8 h-8 rounded-lg bg-surface-container-high text-secondary flex items-center justify-center active:bg-secondary active:text-on-secondary transition-colors" data-desc="Aviso Neon Flex 60x40cm" data-sub="Base acrilico 4mm cristal" data-price="65.00" type="button" title="Anadir al ticket">
-                  <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+                <button class="btn-stitch-quick-add w-8 h-8 rounded-lg bg-surface-container text-secondary flex items-center justify-center active:bg-secondary active:text-on-secondary transition-colors" data-desc="Aviso Neon Flex 60x40cm" data-sub="Base acrilico cristal 4mm" data-price="65.00" type="button" title="Anadir al ticket">
+                  <span class="material-symbols-outlined text-[18px]">add</span>
                 </button>
               </div>
             </div>
 
-            <!-- Item 2: Letras Corporeas -->
-            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between active:scale-[0.98] transition-transform relative overflow-hidden group hover:border-secondary/40">
-              <div class="w-full h-24 rounded-lg overflow-hidden mb-2 relative bg-surface-container">
-                <img class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1542744095-fcf48d80b0fd?w=600&auto=format&fit=crop&q=80" alt="Letras Corporeas 3D Acrilico"/>
-                <span class="absolute top-1.5 left-1.5 bg-surface-container-lowest/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-semibold text-secondary">
-                  Corte Laser
-                </span>
-              </div>
+            <!-- Producto 2 -->
+            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between hover:border-secondary/50 transition-colors">
               <div>
-                <p class="font-label-md text-label-md text-on-surface font-bold line-clamp-1">Letras Corporeas 3D</p>
-                <p class="font-body-sm text-body-sm text-on-surface-variant mb-1">Acrilico dorado espejo</p>
+                <span class="px-2 py-0.5 rounded bg-surface-container font-label-sm text-label-sm font-semibold text-secondary">Corporeo</span>
+                <p class="font-label-md text-label-md text-on-surface font-bold mt-1 line-clamp-1">Letras Corporeas 3D Acrilico</p>
+                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">Acrilico dorado espejo</p>
               </div>
-              <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center justify-between pt-2 mt-2 border-t border-surface-container">
                 <span class="font-headline-sm text-headline-sm text-on-surface font-bold">$120.00</span>
-                <button class="btn-stitch-quick-add w-8 h-8 rounded-lg bg-surface-container-high text-secondary flex items-center justify-center active:bg-secondary active:text-on-secondary transition-colors" data-desc="Letras Corporeas 3D Acrilico" data-sub="Acrilico dorado espejo" data-price="120.00" type="button" title="Anadir al ticket">
-                  <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+                <button class="btn-stitch-quick-add w-8 h-8 rounded-lg bg-surface-container text-secondary flex items-center justify-center active:bg-secondary active:text-on-secondary transition-colors" data-desc="Letras Corporeas 3D Acrilico" data-sub="Acrilico dorado espejo" data-price="120.00" type="button" title="Anadir al ticket">
+                  <span class="material-symbols-outlined text-[18px]">add</span>
                 </button>
               </div>
             </div>
 
-            <!-- Item 3: Plancha Acrilico -->
-            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between active:scale-[0.98] transition-transform relative overflow-hidden group hover:border-secondary/40">
-              <div class="w-full h-24 rounded-lg bg-surface-container flex items-center justify-center mb-2 relative">
-                <span class="material-symbols-outlined text-[36px] text-secondary">layers</span>
-                <span class="absolute top-1.5 left-1.5 bg-surface-container-lowest/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-semibold text-secondary">
-                  Material
-                </span>
-              </div>
+            <!-- Producto 3 -->
+            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between hover:border-secondary/50 transition-colors">
               <div>
-                <p class="font-label-md text-label-md text-on-surface font-bold line-clamp-1">Plancha Acrilico Cast 3mm</p>
-                <p class="font-body-sm text-body-sm text-on-surface-variant mb-1">Medida 2.44 x 1.22 m</p>
+                <span class="px-2 py-0.5 rounded bg-surface-container font-label-sm text-label-sm font-semibold text-secondary">Material</span>
+                <p class="font-label-md text-label-md text-on-surface font-bold mt-1 line-clamp-1">Plancha Acrilico Cast 3mm</p>
+                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">Medida 2.44 x 1.22 m</p>
               </div>
-              <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center justify-between pt-2 mt-2 border-t border-surface-container">
                 <span class="font-headline-sm text-headline-sm text-on-surface font-bold">$78.00</span>
-                <button class="btn-stitch-quick-add w-8 h-8 rounded-lg bg-surface-container-high text-secondary flex items-center justify-center active:bg-secondary active:text-on-secondary transition-colors" data-desc="Plancha Acrilico Cast 3mm" data-sub="Medida 2.44 x 1.22 m" data-price="78.00" type="button" title="Anadir al ticket">
-                  <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+                <button class="btn-stitch-quick-add w-8 h-8 rounded-lg bg-surface-container text-secondary flex items-center justify-center active:bg-secondary active:text-on-secondary transition-colors" data-desc="Plancha Acrilico Cast 3mm" data-sub="Medida 2.44 x 1.22 m" data-price="78.00" type="button" title="Anadir al ticket">
+                  <span class="material-symbols-outlined text-[18px]">add</span>
                 </button>
               </div>
             </div>
 
-            <!-- Item 4: Instalacion Fachada -->
-            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between active:scale-[0.98] transition-transform relative overflow-hidden group hover:border-secondary/40">
-              <div class="w-full h-24 rounded-lg bg-surface-container flex items-center justify-center mb-2 relative">
-                <span class="material-symbols-outlined text-[36px] text-secondary">engineering</span>
-                <span class="absolute top-1.5 left-1.5 bg-surface-container-lowest/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-semibold text-on-tertiary-container">
-                  Servicio
-                </span>
-              </div>
+            <!-- Producto 4 -->
+            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between hover:border-secondary/50 transition-colors">
               <div>
-                <p class="font-label-md text-label-md text-on-surface font-bold line-clamp-1">Instalacion en Fachada</p>
-                <p class="font-body-sm text-body-sm text-on-surface-variant mb-1">Cuadrilla con andamio</p>
+                <span class="px-2 py-0.5 rounded bg-surface-container font-label-sm text-label-sm font-semibold text-on-tertiary-container">Servicio</span>
+                <p class="font-label-md text-label-md text-on-surface font-bold mt-1 line-clamp-1">Instalacion en Fachada</p>
+                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">Cuadrilla con andamios</p>
               </div>
-              <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center justify-between pt-2 mt-2 border-t border-surface-container">
                 <span class="font-headline-sm text-headline-sm text-on-surface font-bold">$90.00</span>
-                <button class="btn-stitch-quick-add w-8 h-8 rounded-lg bg-surface-container-high text-secondary flex items-center justify-center active:bg-secondary active:text-on-secondary transition-colors" data-desc="Instalacion en Fachada" data-sub="Cuadrilla con andamio" data-price="90.00" type="button" title="Anadir al ticket">
-                  <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+                <button class="btn-stitch-quick-add w-8 h-8 rounded-lg bg-surface-container text-secondary flex items-center justify-center active:bg-secondary active:text-on-secondary transition-colors" data-desc="Instalacion en Fachada" data-sub="Cuadrilla con andamios" data-price="90.00" type="button" title="Anadir al ticket">
+                  <span class="material-symbols-outlined text-[18px]">add</span>
                 </button>
               </div>
             </div>
           </div>
-
-          <!-- Boton Anadir Partida Personalizada -->
-          <button id="btn-add-item" type="button" class="w-full py-2.5 px-3 rounded-xl bg-surface-container text-on-surface font-label-md text-label-md font-semibold flex items-center justify-center gap-1.5 hover:bg-surface-container-high transition-colors border border-surface-container-high">
-            <span class="material-symbols-outlined text-[18px]">add_circle</span>
-            <span>Anadir Partida Manual al Ticket</span>
-          </button>
         </div>
 
-        <!-- RIGHT: Live Ticket / Current Order Sheet Card (Factura en Construccion) -->
+        <!-- Ticket Actual / Resumen de Orden (5 cols) -->
         <div class="lg:col-span-5 flex flex-col gap-3">
-          <div class="bg-surface-container-lowest rounded-2xl shadow-md border border-surface-container p-4 flex flex-col gap-3 sticky top-20">
+          <div class="bg-surface-container-lowest rounded-2xl shadow-sm border border-surface-container p-4 flex flex-col gap-3">
             
-            <!-- Ticket Ribbon Header -->
             <div class="flex items-center justify-between pb-2 border-b border-surface-container">
               <div class="flex items-center gap-2">
                 <div class="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse"></div>
-                <span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">Orden POS en Proceso</span>
+                <span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">Orden en Proceso</span>
               </div>
-              <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-high text-on-primary-fixed-variant">
-                <span class="material-symbols-outlined text-[14px]">receipt_long</span>
-                <span id="pos-doc-number" class="font-label-sm text-label-sm font-bold font-mono">No. FES-001</span>
-              </div>
+              <span id="pos-doc-number" class="font-label-sm text-label-sm font-bold font-mono px-2 py-0.5 rounded bg-surface-container text-secondary">No. FES-001</span>
             </div>
 
-            <!-- Dynamic Ticket Items List -->
-            <div class="flex flex-col gap-2 max-h-[280px] overflow-y-auto pr-1" id="items-list-container">
+            <!-- Lista de Partidas del Ticket (Planas con botones +/-) -->
+            <div class="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1" id="items-list-container">
               <!-- Rendered dynamically by app.js -->
             </div>
 
-            <!-- Quick Voucher / Notes Section -->
-            <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-surface-container text-on-surface-variant">
-              <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-[18px]">loyalty</span>
-                <span class="font-body-sm text-body-sm font-semibold">Descuento ($):</span>
+            <!-- Descuento e Impuesto (Planos) -->
+            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-surface-container">
+              <div>
+                <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Descuento ($)</label>
+                <input type="number" id="discount-amount" value="0" min="0" step="any" class="w-full px-2.5 py-1.5 bg-surface-container-low rounded-lg border border-surface-container text-right font-label-numeric text-label-numeric font-bold text-on-surface focus:outline-none font-mono"/>
               </div>
-              <input type="number" id="discount-amount" value="0" min="0" step="any" class="w-20 px-2 py-1 bg-surface-container-lowest rounded-lg border border-surface-container-high text-right font-label-numeric text-label-numeric font-bold text-on-surface focus:outline-none"/>
+              <div>
+                <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">IVA (%)</label>
+                <select id="tax-rate" class="w-full px-2.5 py-1.5 bg-surface-container-low rounded-lg border border-surface-container text-sm font-semibold text-secondary focus:outline-none">
+                  <option value="0" selected>0% (Exento)</option>
+                  <option value="16">16%</option>
+                  <option value="8">8%</option>
+                </select>
+              </div>
             </div>
 
-            <!-- Calculation Ledger -->
-            <div class="p-3 rounded-xl bg-surface-container-low flex flex-col gap-1.5 border border-surface-container">
-              <div class="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm">
-                <span id="view-items-count-lbl">Subtotal</span>
-                <span id="view-subtotal" class="font-label-numeric text-label-numeric font-bold">$0.00</span>
+            <!-- Totales (Subtotal, Total USD, Total Bs BCV) -->
+            <div class="p-3 rounded-xl bg-surface-container-low flex flex-col gap-1 border border-surface-container">
+              <div class="flex justify-between text-xs text-on-surface-variant font-medium">
+                <span id="view-items-count-lbl">Subtotal:</span>
+                <span id="view-subtotal" class="font-mono font-bold text-on-surface">$0.00</span>
               </div>
-              <div class="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm">
-                <div class="flex items-center gap-1">
-                  <span>IVA</span>
-                  <select id="tax-rate" class="px-1 py-0.5 bg-surface-container-high rounded text-[11px] font-semibold text-secondary border-none focus:outline-none">
-                    <option value="0" selected>0%</option>
-                    <option value="16">16%</option>
-                    <option value="8">8%</option>
-                  </select>
-                </div>
-                <span id="view-tax" class="font-label-numeric text-label-numeric font-bold">$0.00</span>
+              <div class="flex justify-between text-xs text-on-surface-variant font-medium">
+                <span>IVA:</span>
+                <span id="view-tax" class="font-mono font-bold text-on-surface">$0.00</span>
               </div>
               <div class="h-px bg-surface-container my-1"></div>
               <div class="flex items-center justify-between pt-0.5">
-                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Total a Cobrar</span>
+                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Total a Cobrar:</span>
                 <div class="text-right">
                   <span id="view-usd-total" class="font-headline-lg-mobile text-headline-lg-mobile text-secondary tracking-tight font-extrabold block">$0.00</span>
-                  <span id="view-total" class="font-label-sm text-label-sm text-on-tertiary-container block font-bold">Equivalente: Bs. 0,00</span>
+                  <span id="view-total" class="font-label-sm text-label-sm text-on-tertiary-container block font-bold font-mono">Equivalente: Bs. 0,00</span>
                 </div>
               </div>
             </div>
 
-            <!-- Primary Dual Actions -->
+            <!-- Botones Gigantes de Accion -->
             <div class="flex flex-col gap-2 pt-1">
               <button id="btn-stitch-charge" class="w-full h-14 bg-secondary text-on-secondary rounded-xl font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform font-bold" type="button">
                 <span class="material-symbols-outlined text-[24px]">payments</span>
                 <span id="stitch-charge-btn-text">Cobrar $0.00</span>
               </button>
               <div class="grid grid-cols-2 gap-2">
+                <button id="btn-open-ticket-view" onclick="document.querySelector('[data-view=\'view-ticket\']').click()" class="h-11 bg-surface-container text-secondary rounded-xl font-label-md text-label-md flex items-center justify-center gap-1.5 active:bg-surface-container-high transition-colors font-semibold" type="button">
+                  <span class="material-symbols-outlined text-[18px]">receipt_long</span>
+                  <span>Ver Ticket</span>
+                </button>
                 <button id="btn-stitch-save-quote" class="h-11 bg-surface-container text-on-surface rounded-xl font-label-md text-label-md flex items-center justify-center gap-1.5 active:bg-surface-container-high transition-colors font-semibold" type="button">
                   <span class="material-symbols-outlined text-[18px] text-on-surface-variant">request_quote</span>
                   <span>A Cotizacion</span>
-                </button>
-                <button onclick="document.getElementById('modal-thermal-ticket').classList.remove('hidden')" class="h-11 bg-surface-container text-secondary rounded-xl font-label-md text-label-md flex items-center justify-center gap-1.5 active:bg-surface-container-high transition-colors font-semibold border border-surface-container" type="button">
-                  <span class="material-symbols-outlined text-[18px]">receipt_long</span>
-                  <span>Ver Ticket</span>
                 </button>
               </div>
             </div>
@@ -609,15 +574,191 @@
 
 
     <!-- ==========================================================================
-         VISTA 2: PANEL DE COTIZACIONES Y COSTOS (Stitch 1:1)
+         VISTA 2: VISTA DE COMPROBANTE / TICKET (Pantalla Completa, Sin Modales)
+         ========================================================================== -->
+    <section id="view-ticket" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
+      
+      <!-- Top Bar: Back to POS & Actions -->
+      <div class="flex items-center justify-between pb-2 border-b border-surface-container">
+        <button id="btn-back-to-pos" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors font-label-md text-label-md font-semibold" type="button">
+          <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+          <span>Volver al POS</span>
+        </button>
+        <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Comprobante Oficial</span>
+      </div>
+
+      <!-- Ticket Termico Plano Des-encajonado (No boxes inside boxes) -->
+      <div id="ticket-container" class="thermal-receipt-paper text-on-surface space-y-2 select-all mx-auto w-full max-w-md bg-white p-5 rounded-2xl shadow-sm border border-surface-container">
+        <!-- Logo y Datos Empresa -->
+        <div class="text-center">
+          <img id="ticket-logo-img" alt="Logo" class="mx-auto hidden max-h-16 object-contain mb-1"/>
+          <h3 id="view-biz-name" class="font-headline-sm font-bold text-on-surface uppercase leading-tight">PubliCraft CNC</h3>
+          <p id="view-biz-id" class="text-xs font-mono text-on-surface-variant">RIF: J-40918290-1</p>
+          <p id="view-biz-address" class="text-[11px] text-on-surface-variant">Caracas, Venezuela</p>
+          <p id="view-biz-phone" class="text-[11px] text-on-surface-variant">Tel: +58 412 8421990</p>
+        </div>
+
+        <hr/>
+
+        <!-- Titulo y Folio -->
+        <div class="flex justify-between items-center text-xs">
+          <div>
+            <span id="view-doc-badge" class="px-2 py-0.5 rounded bg-surface-container font-bold text-[10px] text-secondary">VENTA POS</span>
+            <p id="view-doc-title" class="font-bold mt-0.5 text-on-surface">FACTURA DE VENTA</p>
+          </div>
+          <div class="text-right">
+            <span id="view-doc-number" class="font-mono font-bold text-sm text-secondary">No. FES-001</span>
+            <div class="text-[10px] text-on-surface-variant mt-0.5">
+              <span id="view-doc-date">12/10/2026</span> <span id="view-doc-time">10:30 AM</span>
+            </div>
+          </div>
+        </div>
+
+        <hr/>
+
+        <!-- Datos del Cliente -->
+        <div class="text-xs space-y-0.5">
+          <div class="flex justify-between">
+            <span id="view-lbl-person" class="text-on-surface-variant">Cliente:</span>
+            <strong id="view-client-name" class="text-on-surface">Cliente Mostrador</strong>
+          </div>
+          <div id="view-client-id-row" class="flex justify-between hidden">
+            <span class="text-on-surface-variant">Doc:</span>
+            <span id="view-client-id" class="font-mono text-on-surface"></span>
+          </div>
+          <div id="view-client-city-row" class="flex justify-between hidden">
+            <span class="text-on-surface-variant">Direccion:</span>
+            <span id="view-client-city" class="text-on-surface"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-on-surface-variant">Metodo de Pago:</span>
+            <span id="view-payment-form" class="font-semibold text-on-surface">Pago Movil</span>
+          </div>
+          <div class="flex justify-between text-[11px] text-on-surface-variant">
+            <span id="view-lbl-salesperson">Caja:</span>
+            <span id="view-salesperson">Caja 1</span>
+          </div>
+        </div>
+
+        <hr/>
+
+        <!-- Detalle de Productos -->
+        <div id="ticket-items-block" class="space-y-1 text-xs">
+          <div class="flex justify-between font-bold text-on-surface-variant border-b border-surface-container pb-1 text-[11px]">
+            <span class="w-8">Cant</span>
+            <span class="flex-1 px-1">Descripcion</span>
+            <span class="w-16 text-right">Total</span>
+          </div>
+          <div id="view-items-body" class="space-y-1 pt-1">
+            <!-- Dynamic Items -->
+          </div>
+        </div>
+
+        <!-- Detalle de Recibo de Caja (Ingreso / Egreso) -->
+        <div id="ticket-payment-receipt-block" class="hidden text-xs space-y-1">
+          <div class="text-on-surface-variant font-semibold">Concepto del Movimiento:</div>
+          <div id="view-payment-concept" class="font-semibold text-on-surface p-2 rounded bg-surface-container-low"></div>
+          <div id="view-payment-ref-row" class="flex justify-between hidden">
+            <span class="text-on-surface-variant">Referencia:</span>
+            <span id="view-payment-ref" class="font-mono text-on-surface"></span>
+          </div>
+          <div id="view-prev-balance-row" class="flex justify-between hidden">
+            <span class="text-on-surface-variant">Saldo Anterior:</span>
+            <span id="view-prev-balance" class="font-mono"></span>
+          </div>
+          <div id="view-new-balance-row" class="flex justify-between hidden">
+            <span class="text-on-surface-variant">Nuevo Saldo:</span>
+            <span id="view-new-balance" class="font-mono"></span>
+          </div>
+        </div>
+
+        <hr/>
+
+        <!-- Resumen de Totales y Equivalencia BCV -->
+        <div class="space-y-1 text-xs">
+          <div id="view-subtotal-row" class="flex justify-between">
+            <span class="text-on-surface-variant">Subtotal:</span>
+            <span id="view-subtotal" class="font-mono font-semibold">$0.00</span>
+          </div>
+          <div id="view-discount-row" class="flex justify-between text-error hidden">
+            <span>Descuento:</span>
+            <span id="view-discount" class="font-mono font-semibold">-$0.00</span>
+          </div>
+          <div id="view-tax-row" class="flex justify-between hidden">
+            <span class="text-on-surface-variant">IVA Trasladado:</span>
+            <span id="view-tax" class="font-mono font-semibold">$0.00</span>
+          </div>
+          <div class="flex justify-between text-sm font-bold pt-1 border-t border-surface-container">
+            <span id="view-total-lbl">TOTAL ($ USD):</span>
+            <span id="view-total" class="text-secondary font-mono text-base font-extrabold">$0.00 USD</span>
+          </div>
+          <div id="view-dual-currency-wrapper" class="p-2.5 rounded-xl bg-surface-container-low text-center space-y-0.5 mt-1 border border-surface-container">
+            <span id="view-dual-title" class="text-[11px] text-on-surface-variant font-semibold block">Equivalente Oficial BCV:</span>
+            <strong id="view-usd-total" class="text-base text-on-tertiary-container font-mono block">Bs. 0,00</strong>
+            <span id="view-exchange-rate-lbl" class="text-[10px] text-on-surface-variant block font-mono">Tasa BCV: 798.33 Bs./$</span>
+          </div>
+          <div id="view-items-count-row" class="hidden"><span id="view-items-count"></span></div>
+        </div>
+
+        <!-- Codigo QR Suiche 7B Interoperable -->
+        <div id="view-qr-wrapper" class="text-center pt-2 hidden">
+          <div class="inline-block p-2 bg-white rounded-xl shadow-sm border border-surface-container">
+            <div id="qrcode" class="mx-auto flex justify-center"></div>
+          </div>
+          <p id="view-qr-caption" class="text-[10px] text-on-surface-variant mt-1 font-semibold">Escanea con tu banco para Pago Movil Suiche 7B</p>
+          <div id="suiche-payload-text" class="hidden"></div>
+        </div>
+
+        <!-- Codigo de Barras -->
+        <div id="barcode-wrapper" class="text-center hidden pt-1">
+          <canvas id="barcode-canvas" class="mx-auto"></canvas>
+        </div>
+
+        <!-- Linea de Firma -->
+        <div id="view-signature-wrapper" class="pt-4 text-center">
+          <div class="border-t border-dashed border-outline-variant w-40 mx-auto mb-1"></div>
+          <span id="view-signature-text" class="text-[10px] text-on-surface-variant font-semibold">Firma Conforme</span>
+        </div>
+
+        <!-- Pie de Pagina -->
+        <div id="view-notes-wrapper" class="text-center text-[10px] text-on-surface-variant pt-1 border-t border-surface-container">
+          <p id="view-notes-text">Gracias por su confianza.</p>
+        </div>
+      </div>
+
+      <!-- Barra de Acciones del Ticket (Botones Grandes) -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 max-w-md mx-auto w-full">
+        <button id="btn-save-to-history" class="py-3 rounded-xl bg-surface-container text-on-surface font-label-md text-label-md font-semibold flex items-center justify-center gap-1 hover:bg-surface-container-high transition-colors shadow-sm" type="button">
+          <span class="material-symbols-outlined text-[18px]">save</span>
+          <span>Guardar</span>
+        </button>
+        <button id="btn-download-img" class="py-3 rounded-xl bg-surface-container text-secondary font-label-md text-label-md font-bold flex items-center justify-center gap-1 hover:bg-surface-container-high transition-colors shadow-sm" type="button">
+          <span class="material-symbols-outlined text-[18px]">download</span>
+          <span>Descargar PNG</span>
+        </button>
+        <button id="btn-share-whatsapp" class="py-3 rounded-xl bg-surface-container text-on-tertiary-container font-label-md text-label-md font-bold flex items-center justify-center gap-1 hover:bg-surface-container-high transition-colors shadow-sm" type="button">
+          <i class="fa-brands fa-whatsapp text-[16px]"></i>
+          <span>WhatsApp</span>
+        </button>
+        <button id="btn-print" class="py-3 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-bold flex items-center justify-center gap-1 shadow-sm active:scale-95 transition-all" type="button">
+          <span class="material-symbols-outlined text-[18px]">print</span>
+          <span>Imprimir</span>
+        </button>
+      </div>
+
+    </section>
+
+
+    <!-- ==========================================================================
+         VISTA 3: COTIZACIONES & PRESUPUESTOS (Listado Plano)
          ========================================================================== -->
     <section id="view-cotizaciones" class="app-view hidden w-full flex flex-col pb-6 space-y-4">
       
-      <!-- Search & Primary Action Header -->
+      <!-- Search & New Quote Button -->
       <div class="flex items-center gap-2 pt-1">
         <div class="relative flex-1">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
-          <input id="search-quotes" class="w-full h-12 pl-10 pr-4 bg-surface-container-lowest text-on-surface placeholder:text-outline rounded-xl text-body-md font-body-md focus:outline-none shadow-sm border border-surface-container transition-all focus:bg-surface-container-low" placeholder="Buscar cliente o folio..." type="text"/>
+          <input id="search-quotes" class="w-full h-12 pl-10 pr-4 bg-surface-container-lowest text-on-surface placeholder:text-outline rounded-xl text-body-md font-body-md focus:outline-none shadow-sm border border-surface-container transition-all" placeholder="Buscar presupuesto o cliente..." type="text"/>
         </div>
         <button id="btn-new-quote" class="h-12 px-4 bg-primary text-on-primary rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform flex-shrink-0 font-bold" type="button">
           <span class="material-symbols-outlined text-[20px]">add</span>
@@ -625,28 +766,22 @@
         </button>
       </div>
 
-      <!-- Summary KPI Bento -->
+      <!-- Bento KPIs Planos -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <!-- Bento 1 -->
-        <div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container relative overflow-hidden flex flex-col justify-between">
+        <div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container flex flex-col justify-between">
           <div class="flex items-center justify-between mb-2">
-            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase font-semibold">Pipeline de Cotizaciones</span>
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase font-semibold">Total Presupuestado</span>
             <div class="w-7 h-7 rounded-lg bg-surface-container-high flex items-center justify-center">
               <span class="material-symbols-outlined text-secondary text-[16px]">account_balance_wallet</span>
             </div>
           </div>
           <div>
             <span id="kpi-quote-pipeline-total" class="font-display-currency-mobile text-display-currency-mobile text-on-surface tracking-tight leading-none block font-extrabold">$18,450</span>
-            <span id="kpi-quote-active-count" class="font-body-sm text-body-sm text-on-surface-variant mt-1 inline-block">Cotizaciones activas</span>
-          </div>
-          <div class="mt-2 pt-2 border-t border-surface-container flex items-center gap-1 text-on-tertiary-container">
-            <span class="material-symbols-outlined text-[14px]">trending_up</span>
-            <span class="font-label-sm text-label-sm font-semibold">Tasa Oficial BCV Integrada</span>
+            <span id="kpi-quote-active-count" class="font-body-sm text-body-sm text-on-surface-variant mt-1 inline-block">Presupuestos activos</span>
           </div>
         </div>
 
-        <!-- Bento 2 -->
-        <div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container relative overflow-hidden flex flex-col justify-between">
+        <div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container flex flex-col justify-between">
           <div class="flex items-center justify-between mb-2">
             <span class="font-label-sm text-label-sm text-on-surface-variant uppercase font-semibold">Tasa de Aprobacion</span>
             <div class="w-7 h-7 rounded-lg bg-surface-container-high flex items-center justify-center">
@@ -655,26 +790,56 @@
           </div>
           <div class="flex items-baseline gap-2">
             <span id="kpi-quote-close-rate" class="font-display-currency-mobile text-display-currency-mobile text-on-surface tracking-tight leading-none block font-extrabold">68%</span>
-            <span id="kpi-quote-rate-label" class="font-label-sm text-label-sm text-on-tertiary-container font-semibold">Excelente</span>
+            <span id="kpi-quote-rate-label" class="font-label-sm text-label-sm text-on-tertiary-container font-semibold">Efectividad Alta</span>
           </div>
-          <div class="mt-2 w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
-            <div class="bg-on-tertiary-container h-1.5 rounded-full" style="width: 68%"></div>
-          </div>
-          <span id="kpi-quote-approved-count" class="font-body-sm text-body-sm text-on-surface-variant mt-1">Con firma digital y anticipo 50%</span>
         </div>
       </div>
 
-      <!-- Editor de Presupuesto & Desglose de Costos (Modo Ganancia) -->
+      <!-- Filtros de Estado -->
+      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1" id="quote-status-filter-group">
+        <button class="quote-filter-chip active px-4 py-2 rounded-full bg-primary text-on-primary font-label-md text-label-md shadow-sm whitespace-nowrap active:scale-95 transition-all font-semibold" data-status="todas">
+          Todas <span id="quote-count-all" class="ml-1 opacity-80">(0)</span>
+        </button>
+        <button class="quote-filter-chip px-4 py-2 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md shadow-sm border border-surface-container whitespace-nowrap active:scale-95 transition-all" data-status="aprobada">
+          Aprobadas <span id="quote-count-aprobadas" class="ml-1 text-on-tertiary-container font-semibold">(0)</span>
+        </button>
+        <button class="quote-filter-chip px-4 py-2 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md shadow-sm border border-surface-container whitespace-nowrap active:scale-95 transition-all" data-status="enviada">
+          Enviadas <span id="quote-count-enviadas" class="ml-1 text-secondary font-semibold">(0)</span>
+        </button>
+        <button class="quote-filter-chip px-4 py-2 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md shadow-sm border border-surface-container whitespace-nowrap active:scale-95 transition-all" data-status="borrador">
+          Borradores <span id="quote-count-borradores" class="ml-1 opacity-80">(0)</span>
+        </button>
+      </div>
+
+      <!-- Contenedor Dinamico de Cotizaciones (Tarjetas Planas) -->
+      <div class="flex flex-col gap-3" id="quotes-history-cards">
+        <!-- Rendered by renderQuotesHistory() -->
+      </div>
+
+    </section>
+
+
+    <!-- ==========================================================================
+         VISTA 4: DETALLE & EDITOR DE COTIZACION (Pantalla Completa con Firma)
+         ========================================================================== -->
+    <section id="view-cotizacion-detalle" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
+      
+      <!-- Top Bar: Back to Quotes -->
+      <div class="flex items-center justify-between pb-2 border-b border-surface-container">
+        <button id="btn-back-to-quotes" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors font-label-md text-label-md font-semibold" type="button">
+          <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+          <span>Volver a Cotizaciones</span>
+        </button>
+        <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Hoja Formal de Cotizacion</span>
+      </div>
+
+      <!-- Formulario Plano de Cotizacion -->
       <div class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-surface-container space-y-4">
+        
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-surface-container">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
-              <span class="material-symbols-outlined text-[20px]">calculate</span>
-            </div>
-            <div>
-              <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Desglose de Costos & Analisis de Ganancia</h3>
-              <p class="font-body-sm text-body-sm text-on-surface-variant">Calcula materiales, corte CNC y margen antes de cotizar</p>
-            </div>
+          <div>
+            <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Datos del Presupuesto & Desglose de Costos</h3>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Analisis de materiales, corte CNC y margen de ganancia</p>
           </div>
           <label class="flex items-center gap-2 cursor-pointer select-none">
             <span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Modo Ganancia:</span>
@@ -683,13 +848,13 @@
         </div>
 
         <!-- Info Cabecera Cotizacion -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="sm:col-span-2">
-            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Proyecto / Descripcion</label>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Titulo del Proyecto *</label>
             <input type="text" id="quote-title" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm font-semibold text-on-surface outline-none" value="Aviso Corporeo 3D con Luz Neon Flex"/>
           </div>
           <div>
-            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Dias de Validez</label>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Validez (Dias)</label>
             <input type="number" id="quote-validity" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm text-on-surface outline-none" value="15"/>
           </div>
           <div>
@@ -708,14 +873,14 @@
 
         <!-- Plantillas Rapidas de Costo -->
         <div class="flex flex-wrap gap-1.5 pt-1">
-          <span class="font-label-sm text-label-sm text-on-surface-variant self-center mr-1 font-semibold">Plantillas:</span>
+          <span class="font-label-sm text-label-sm text-on-surface-variant self-center mr-1 font-semibold">Agregar Partida:</span>
           <button type="button" class="btn-quick-cost px-2.5 py-1 rounded-lg bg-surface-container text-xs font-semibold hover:bg-surface-container-high transition-colors" data-type="material" data-desc="Plancha Acrilico Cast 3mm" data-cost="50.00" data-price="95.00">+ Acrilico 3mm</button>
           <button type="button" class="btn-quick-cost px-2.5 py-1 rounded-lg bg-surface-container text-xs font-semibold hover:bg-surface-container-high transition-colors" data-type="material" data-desc="Manguera Neon LED Flex IP67 5m" data-cost="15.00" data-price="38.00">+ Neon Flex</button>
           <button type="button" class="btn-quick-cost px-2.5 py-1 rounded-lg bg-surface-container text-xs font-semibold hover:bg-surface-container-high transition-colors" data-type="maquina" data-desc="Corte Router CNC y Biselado" data-cost="20.00" data-price="45.00">+ Router CNC</button>
           <button type="button" class="btn-quick-cost px-2.5 py-1 rounded-lg bg-surface-container text-xs font-semibold hover:bg-surface-container-high transition-colors" data-type="mano_obra" data-desc="Armado e Instalacion en Sitio" data-cost="35.00" data-price="85.00">+ Instalacion</button>
         </div>
 
-        <!-- Tabla de Costos y Partidas -->
+        <!-- Tabla Plana de Costos y Partidas -->
         <div class="stitch-table-wrapper">
           <table class="stitch-table">
             <thead>
@@ -756,64 +921,58 @@
           </div>
         </div>
 
-        <!-- Botones de Accion de Cotizacion -->
+        <!-- Seccion de Firma Digital (Canvas Táctil Nativo) -->
+        <div class="p-4 rounded-xl bg-surface-container-low border border-surface-container space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-secondary text-[20px]">draw</span>
+              <span class="font-label-md text-label-md text-on-surface font-bold">Firma Digital de Aprobacion</span>
+            </div>
+            <button type="button" id="btn-clear-signature" class="px-2.5 py-1 rounded bg-surface-container text-xs font-semibold text-error hover:bg-surface-container-high transition-colors">
+              Limpiar Firma
+            </button>
+          </div>
+          <div class="h-32 bg-white rounded-xl border border-surface-container relative" id="signature-canvas-box">
+            <canvas id="quote-signature-canvas" class="w-full h-full cursor-crosshair rounded-xl"></canvas>
+            <div class="absolute inset-0 flex items-center justify-center text-xs text-on-surface-variant pointer-events-none" id="signature-placeholder">
+              Dibuja aqui tu firma digital para registrar la aprobacion
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de Accion de Cotizacion (Grandes) -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-surface-container">
-          <button id="btn-save-quote" class="py-2.5 px-3 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" type="button">
+          <button id="btn-save-quote" class="py-3 px-3 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" type="button">
             <span class="material-symbols-outlined text-[18px]">save</span>
             <span>Guardar</span>
           </button>
-          <button id="btn-preview-quote-client" class="py-2.5 px-3 rounded-xl bg-secondary text-on-secondary font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" type="button">
-            <span class="material-symbols-outlined text-[18px]">verified</span>
-            <span>Ver Hoja / Firma</span>
-          </button>
-          <button id="btn-quote-whatsapp" class="py-2.5 px-3 rounded-xl bg-surface-container text-on-tertiary-container hover:bg-surface-container-high font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 transition-all" type="button">
+          <button id="btn-quote-whatsapp" class="py-3 px-3 rounded-xl bg-surface-container text-on-tertiary-container hover:bg-surface-container-high font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 transition-all" type="button">
             <i class="fa-brands fa-whatsapp text-[16px]"></i>
             <span>WhatsApp</span>
           </button>
-          <button id="btn-convert-quote-to-project" class="py-2.5 px-3 rounded-xl bg-surface-container text-secondary hover:bg-surface-container-high font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 transition-all" type="button">
+          <button id="btn-download-quote-img" class="py-3 px-3 rounded-xl bg-surface-container text-secondary hover:bg-surface-container-high font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 transition-all" type="button">
+            <span class="material-symbols-outlined text-[18px]">download</span>
+            <span>Descargar PNG</span>
+          </button>
+          <button id="btn-convert-quote-to-project" class="py-3 px-3 rounded-xl bg-surface-container text-secondary hover:bg-surface-container-high font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 transition-all" type="button">
             <span class="material-symbols-outlined text-[18px]">rocket_launch</span>
             <span>A Proyecto</span>
           </button>
         </div>
-      </div>
 
-      <!-- Status Filter Pills -->
-      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1" id="quote-status-filter-group">
-        <button class="quote-filter-chip active px-4 py-2 rounded-full bg-primary text-on-primary font-label-md text-label-md shadow-sm whitespace-nowrap active:scale-95 transition-all font-semibold" data-status="todas">
-          Todas <span id="quote-count-all" class="ml-1 opacity-80">(0)</span>
-        </button>
-        <button class="quote-filter-chip px-4 py-2 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md shadow-sm border border-surface-container whitespace-nowrap active:scale-95 transition-all" data-status="aprobada">
-          Aprobadas <span id="quote-count-aprobadas" class="ml-1 text-on-tertiary-container font-semibold">(0)</span>
-        </button>
-        <button class="quote-filter-chip px-4 py-2 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md shadow-sm border border-surface-container whitespace-nowrap active:scale-95 transition-all" data-status="enviada">
-          Enviadas <span id="quote-count-enviadas" class="ml-1 text-secondary font-semibold">(0)</span>
-        </button>
-        <button class="quote-filter-chip px-4 py-2 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md shadow-sm border border-surface-container whitespace-nowrap active:scale-95 transition-all" data-status="borrador">
-          Borradores <span id="quote-count-borradores" class="ml-1 opacity-80">(0)</span>
-        </button>
-      </div>
-
-      <!-- Quotes List Section -->
-      <div class="space-y-3">
-        <div class="flex items-center justify-between px-1">
-          <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Presupuestos Guardados</span>
-        </div>
-        <div class="flex flex-col gap-3" id="quotes-history-cards">
-          <!-- Populated by renderQuotesHistory() -->
-        </div>
       </div>
 
     </section>
 
 
     <!-- ==========================================================================
-         VISTA 3: SEGUIMIENTO DE PROYECTOS (Stitch 1:1)
+         VISTA 5: GESTION DE PROYECTOS (Flujo Plano y Simple)
          ========================================================================== -->
-    <section id="view-proyectos" class="app-view hidden w-full flex flex-col gap-4">
+    <section id="view-proyectos" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
       
-      <!-- Overview Metrics Strip -->
-      <div class="grid grid-cols-3 gap-2 bg-surface-container-low p-2 rounded-xl shadow-sm border border-surface-container">
-        <div class="flex flex-col items-center justify-center p-2 bg-surface-container-lowest rounded-lg text-center shadow-sm">
+      <!-- Overview Metrics Strip (Plano) -->
+      <div class="grid grid-cols-3 gap-2 p-2 rounded-xl bg-surface-container border border-surface-container">
+        <div class="flex flex-col items-center justify-center p-2.5 bg-surface-container-lowest rounded-lg text-center shadow-sm">
           <span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 font-semibold">
             <span class="material-symbols-outlined text-[14px] text-secondary">assignment</span>
             Activos
@@ -821,7 +980,7 @@
           <span id="kpi-proj-active-count" class="font-headline-md text-headline-md text-on-surface tracking-tight mt-0.5 font-bold">0</span>
           <span class="font-body-sm text-body-sm text-on-surface-variant">En curso</span>
         </div>
-        <div class="flex flex-col items-center justify-center p-2 bg-surface-container-lowest rounded-lg text-center shadow-sm">
+        <div class="flex flex-col items-center justify-center p-2.5 bg-surface-container-lowest rounded-lg text-center shadow-sm">
           <span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 font-semibold">
             <span class="material-symbols-outlined text-[14px] text-error">payments</span>
             Por Cobrar
@@ -829,7 +988,7 @@
           <span id="kpi-proj-pending-money" class="font-headline-md text-headline-md text-error tracking-tight mt-0.5 font-bold">$0.00</span>
           <span class="font-body-sm text-body-sm text-on-surface-variant">Anticipos</span>
         </div>
-        <div class="flex flex-col items-center justify-center p-2 bg-surface-container-lowest rounded-lg text-center shadow-sm">
+        <div class="flex flex-col items-center justify-center p-2.5 bg-surface-container-lowest rounded-lg text-center shadow-sm">
           <span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 font-semibold">
             <span class="material-symbols-outlined text-[14px] text-on-tertiary-container">engineering</span>
             En Sitio
@@ -839,72 +998,101 @@
         </div>
       </div>
 
-      <!-- Interactive Phase Stepper / Horizontal Filter -->
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center justify-between px-1">
-          <h2 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2 font-bold">
-            <span>Embudo Operativo</span>
-            <span class="px-2 py-0.5 text-label-sm font-label-sm rounded-full bg-secondary text-on-secondary font-semibold">5 Etapas</span>
-          </h2>
-          <button class="font-label-sm text-label-sm text-secondary hover:underline transition-colors flex items-center gap-0.5 py-1 font-semibold" id="reset-filter-btn" type="button">
-            <span>Ver Todos</span>
-            <span class="material-symbols-outlined text-[14px]">replay</span>
-          </button>
-        </div>
-
-        <!-- Stepper Scroll Area -->
-        <div class="flex overflow-x-auto gap-2 py-1 no-scrollbar" id="stage-stepper">
-          <!-- Step 1 -->
-          <button class="phase-chip flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm border border-surface-container active:scale-95 text-left transition-all" data-stage="1" type="button">
-            <div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-numeric text-label-numeric font-bold text-on-surface">1</div>
-            <div class="flex flex-col">
-              <span class="font-label-sm text-label-sm text-on-surface whitespace-nowrap font-bold">Aprobacion</span>
-            </div>
-          </button>
-          <!-- Step 2 -->
-          <button class="phase-chip flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm border border-surface-container active:scale-95 text-left transition-all" data-stage="2" type="button">
-            <div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-numeric text-label-numeric text-secondary font-bold">2</div>
-            <div class="flex flex-col">
-              <span class="font-label-sm text-label-sm font-bold whitespace-nowrap text-on-surface">Pago Anticipo</span>
-            </div>
-          </button>
-          <!-- Step 3 -->
-          <button class="phase-chip flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm border border-surface-container active:scale-95 text-left transition-all" data-stage="3" type="button">
-            <div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-numeric text-label-numeric font-bold text-on-surface">3</div>
-            <div class="flex flex-col">
-              <span class="font-label-sm text-label-sm text-on-surface whitespace-nowrap font-bold">Armado Taller</span>
-            </div>
-          </button>
-          <!-- Step 4 -->
-          <button class="phase-chip flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm border border-surface-container active:scale-95 text-left transition-all" data-stage="4" type="button">
-            <div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-numeric text-label-numeric font-bold text-on-surface">4</div>
-            <div class="flex flex-col">
-              <span class="font-label-sm text-label-sm text-on-surface whitespace-nowrap font-bold">En Sitio</span>
-            </div>
-          </button>
-          <!-- Step 5 -->
-          <button class="phase-chip flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm border border-surface-container active:scale-95 text-left transition-all" data-stage="5" type="button">
-            <div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-numeric text-label-numeric font-bold text-on-surface">5</div>
-            <div class="flex flex-col">
-              <span class="font-label-sm text-label-sm text-on-surface whitespace-nowrap font-bold">Liquidacion</span>
-            </div>
-          </button>
-        </div>
+      <!-- Filtro Stepper de 5 Etapas -->
+      <div class="flex overflow-x-auto gap-2 py-1 no-scrollbar" id="stage-stepper">
+        <button class="phase-chip flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm border border-surface-container font-semibold" data-stage="1" type="button">
+          <div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-numeric text-label-numeric font-bold text-on-surface">1</div>
+          <span>Aprobacion</span>
+        </button>
+        <button class="phase-chip flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm border border-surface-container font-semibold" data-stage="2" type="button">
+          <div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-numeric text-label-numeric text-secondary font-bold">2</div>
+          <span>Anticipo</span>
+        </button>
+        <button class="phase-chip flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm border border-surface-container font-semibold" data-stage="3" type="button">
+          <div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-numeric text-label-numeric font-bold text-on-surface">3</div>
+          <span>Taller CNC</span>
+        </button>
+        <button class="phase-chip flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm border border-surface-container font-semibold" data-stage="4" type="button">
+          <div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-numeric text-label-numeric font-bold text-on-surface">4</div>
+          <span>En Sitio</span>
+        </button>
+        <button class="phase-chip flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm border border-surface-container font-semibold" data-stage="5" type="button">
+          <div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-numeric text-label-numeric font-bold text-on-surface">5</div>
+          <span>Liquidacion</span>
+        </button>
       </div>
 
-      <!-- Action: Nuevo Proyecto -->
-      <div class="flex justify-between items-center px-1">
-        <div class="relative flex-1 mr-2">
+      <!-- Barra de Busqueda y Nuevo Proyecto -->
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
-          <input id="search-projects" class="w-full h-10 pl-9 pr-3 bg-surface-container-lowest text-on-surface rounded-xl text-xs outline-none border border-surface-container" placeholder="Buscar proyecto o cliente..." type="text"/>
+          <input id="search-projects" class="w-full h-11 pl-9 pr-3 bg-surface-container-lowest text-on-surface rounded-xl text-sm outline-none border border-surface-container" placeholder="Buscar proyecto o cliente..." type="text"/>
         </div>
-        <button id="btn-show-add-project" class="h-10 px-3.5 rounded-xl bg-primary text-on-primary font-label-sm text-label-sm font-bold flex items-center gap-1 active:scale-95 shadow-sm flex-shrink-0" type="button">
+        <button id="btn-show-add-project" class="h-11 px-4 rounded-xl bg-primary text-on-primary font-label-sm text-label-sm font-bold flex items-center gap-1 active:scale-95 shadow-sm flex-shrink-0" type="button">
           <span class="material-symbols-outlined text-[18px]">add</span>
           <span>Nuevo Proyecto</span>
         </button>
       </div>
 
-      <!-- Projects Pipeline Cards Container -->
+      <!-- Formulario Inline de Nuevo Proyecto (No modal) -->
+      <div id="project-form-box" class="hidden bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-surface-container space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-surface-container">
+          <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Registrar Orden de Proyecto</h3>
+          <button id="btn-cancel-project-form" class="text-on-surface-variant hover:text-error transition-colors" type="button">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Titulo del Trabajo *</label>
+            <input type="text" id="p-form-title" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm font-semibold" placeholder="Aviso Corporeo Letras 3D"/>
+          </div>
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Cliente *</label>
+            <input type="text" id="p-form-client-name" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm" placeholder="Nombre o Comercio"/>
+          </div>
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Telefono</label>
+            <input type="tel" id="p-form-client-phone" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm" placeholder="0414-1234567"/>
+          </div>
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Etapa Inicial</label>
+            <select id="p-form-initial-status" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm font-semibold">
+              <option value="aprobado">1 - Aprobado</option>
+              <option value="abono">2 - Anticipo Recibido</option>
+              <option value="produccion" selected>3 - Produccion Taller</option>
+              <option value="instalacion">4 - En Sitio / Montaje</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Total ($ USD)</label>
+            <input type="number" id="p-form-total" step="0.01" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm font-bold text-secondary" placeholder="0.00"/>
+          </div>
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Anticipo Pagado ($)</label>
+            <input type="number" id="p-form-abono" step="0.01" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm font-bold text-on-tertiary-container" value="0.00"/>
+          </div>
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Fecha Inicio</label>
+            <input type="date" id="p-form-date-start" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-xs"/>
+          </div>
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Fecha Entrega</label>
+            <input type="date" id="p-form-date-deadline" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-xs"/>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Ubicacion / Medida Fachada</label>
+            <input type="text" id="p-form-address" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm" placeholder="Las Mercedes, Local 2"/>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-surface-container">
+          <button id="btn-save-project-form" class="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-bold shadow-sm" type="button">
+            Guardar Proyecto
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarjetas de Proyectos en Pipeline -->
       <div class="flex flex-col gap-3" id="projects-pipeline-container">
         <!-- Rendered dynamically by app.js -->
       </div>
@@ -913,11 +1101,11 @@
 
 
     <!-- ==========================================================================
-         VISTA 4: ARCHIVOS CNC, TALLER & LEVANTAMIENTO (Stitch 1:1)
+         VISTA 6: ARCHIVOS CNC, TALLER & LEVANTAMIENTO
          ========================================================================== -->
     <section id="view-galeria" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
       
-      <!-- Vector Files for CNC Section -->
+      <!-- Archivos Vectoriales para CNC -->
       <div class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-surface-container space-y-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -939,7 +1127,7 @@
         </div>
       </div>
 
-      <!-- Facade Survey with Cotas Section -->
+      <!-- Levantamiento con Cotas -->
       <div class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-surface-container space-y-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -961,36 +1149,30 @@
         </div>
       </div>
 
-      <!-- Google Calendar Sync Card -->
+      <!-- Google Calendar Sync -->
       <div class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-surface-container flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-secondary">
             <span class="material-symbols-outlined text-[24px]">calendar_month</span>
           </div>
           <div>
-            <h4 class="font-label-md text-label-md text-on-surface font-bold">Agendar Instalacion en Google Calendar</h4>
-            <p class="font-body-sm text-body-sm text-on-surface-variant">Sincroniza cuadrillas tecnicas y montajes con tu calendario</p>
+            <h4 class="font-label-md text-label-md text-on-surface font-bold">Agendar Montaje en Google Calendar</h4>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Sincroniza cuadrillas y montajes directamente con tu calendario</p>
           </div>
         </div>
         <button id="btn-quote-gcalendar" class="h-10 px-4 rounded-xl bg-surface-container text-secondary hover:bg-secondary hover:text-on-secondary font-label-sm text-label-sm font-bold flex items-center justify-center gap-1.5 transition-colors border border-surface-container" type="button">
           <span class="material-symbols-outlined text-[18px]">event</span>
-          <span>Abrir Google Calendar</span>
+          <span>Abrir Calendar</span>
         </button>
       </div>
 
-      <!-- Portfolio Works Section -->
+      <!-- Portafolio de Trabajos -->
       <div class="space-y-3">
         <div class="flex items-center justify-between px-1">
           <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Portafolio de Trabajos Terminados</span>
           <button id="btn-show-upload-gallery" class="px-3 py-1.5 rounded-lg bg-surface-container text-secondary font-label-sm text-label-sm font-semibold hover:bg-surface-container-high transition-colors" type="button">
             + Subir Foto
           </button>
-        </div>
-        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-          <button class="filter-chip active px-3 py-1 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold" data-cat="all">Todas</button>
-          <button class="filter-chip px-3 py-1 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm border border-surface-container" data-cat="Aviso LED">Avisos LED</button>
-          <button class="filter-chip px-3 py-1 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm border border-surface-container" data-cat="Corpóreo">Corporeos</button>
-          <button class="filter-chip px-3 py-1 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm border border-surface-container" data-cat="Router CNC">Router CNC</button>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3" id="gallery-container">
           <!-- Populated by renderGallery() -->
@@ -1001,15 +1183,15 @@
 
 
     <!-- ==========================================================================
-         VISTA 5: CATALOGO DE PRODUCTOS (Stitch 1:1)
+         VISTA 7: CATALOGO DE PRODUCTOS (Tabla Plana Des-encajonada)
          ========================================================================== -->
     <section id="view-productos" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
       
-      <!-- Header Bar: Search & New Product -->
+      <!-- Header Bar -->
       <div class="flex items-center gap-2 pt-1">
         <div class="relative flex-1">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
-          <input id="search-products" class="w-full h-12 pl-10 pr-4 bg-surface-container-lowest text-on-surface placeholder:text-outline rounded-xl text-body-md font-body-md focus:outline-none shadow-sm border border-surface-container transition-all focus:bg-surface-container-low" placeholder="Buscar por codigo o nombre de producto..." type="text"/>
+          <input id="search-products" class="w-full h-12 pl-10 pr-4 bg-surface-container-lowest text-on-surface placeholder:text-outline rounded-xl text-body-md font-body-md focus:outline-none shadow-sm border border-surface-container transition-all" placeholder="Buscar por codigo o nombre de producto..." type="text"/>
         </div>
         <button id="btn-show-add-product-form" class="h-12 px-4 bg-primary text-on-primary rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform flex-shrink-0 font-bold" type="button">
           <span class="material-symbols-outlined text-[20px]">add</span>
@@ -1017,7 +1199,7 @@
         </button>
       </div>
 
-      <!-- Formulario para Anadir/Editar Producto (Collapsible) -->
+      <!-- Formulario Inline Nuevo Producto (No modal) -->
       <div id="product-form-box" class="hidden bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-surface-container space-y-3">
         <div class="flex items-center justify-between pb-2 border-b border-surface-container">
           <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Registrar Nuevo Producto</h3>
@@ -1048,8 +1230,8 @@
             </select>
           </div>
           <div class="sm:col-span-2">
-            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Descripcion / Especificacion Tecnica</label>
-            <input type="text" id="prod-subtext" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm text-on-surface outline-none" placeholder="Medidas, calibre, color o garantia"/>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Descripcion / Detalle Tecnico</label>
+            <input type="text" id="prod-subtext" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm text-on-surface outline-none" placeholder="Calibre, medidas, color o garantia"/>
           </div>
           <div class="sm:col-span-2 flex justify-end gap-2 pt-2">
             <button type="submit" class="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-bold shadow-sm active:scale-95 transition-all">
@@ -1059,7 +1241,7 @@
         </form>
       </div>
 
-      <!-- Tabla de Productos -->
+      <!-- Tabla Plana de Productos -->
       <div class="stitch-table-wrapper">
         <table class="stitch-table">
           <thead>
@@ -1082,15 +1264,15 @@
 
 
     <!-- ==========================================================================
-         VISTA 6: DIRECTORIO DE CLIENTES (Stitch 1:1)
+         VISTA 8: DIRECTORIO DE CLIENTES (Tabla Plana Des-encajonada)
          ========================================================================== -->
     <section id="view-clientes" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
       
-      <!-- Header Bar: Search & New Client -->
+      <!-- Header Bar -->
       <div class="flex items-center gap-2 pt-1">
         <div class="relative flex-1">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
-          <input id="search-clients" class="w-full h-12 pl-10 pr-4 bg-surface-container-lowest text-on-surface placeholder:text-outline rounded-xl text-body-md font-body-md focus:outline-none shadow-sm border border-surface-container transition-all focus:bg-surface-container-low" placeholder="Buscar por documento o nombre de cliente..." type="text"/>
+          <input id="search-clients" class="w-full h-12 pl-10 pr-4 bg-surface-container-lowest text-on-surface placeholder:text-outline rounded-xl text-body-md font-body-md focus:outline-none shadow-sm border border-surface-container transition-all" placeholder="Buscar por documento o nombre de cliente..." type="text"/>
         </div>
         <button id="btn-show-add-client-form" class="h-12 px-4 bg-primary text-on-primary rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform flex-shrink-0 font-bold" type="button">
           <span class="material-symbols-outlined text-[20px]">person_add</span>
@@ -1098,7 +1280,7 @@
         </button>
       </div>
 
-      <!-- Formulario para Anadir Cliente (Collapsible) -->
+      <!-- Formulario Inline Nuevo Cliente (No modal) -->
       <div id="client-form-box" class="hidden bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-surface-container space-y-3">
         <div class="flex items-center justify-between pb-2 border-b border-surface-container">
           <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Registrar Nuevo Cliente</h3>
@@ -1131,7 +1313,7 @@
         </form>
       </div>
 
-      <!-- Tabla de Clientes -->
+      <!-- Tabla Plana de Clientes -->
       <div class="stitch-table-wrapper">
         <table class="stitch-table">
           <thead>
@@ -1153,15 +1335,15 @@
 
 
     <!-- ==========================================================================
-         VISTA 7: HISTORIAL DE COMPROBANTES Y VENTAS (Stitch 1:1)
+         VISTA 9: HISTORIAL DE COMPROBANTES (Tabla Plana Des-encajonada)
          ========================================================================== -->
     <section id="view-historial" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
       
-      <!-- Header Bar: Search & Clear History -->
+      <!-- Header Bar -->
       <div class="flex items-center gap-2 pt-1">
         <div class="relative flex-1">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
-          <input id="search-history" class="w-full h-12 pl-10 pr-4 bg-surface-container-lowest text-on-surface placeholder:text-outline rounded-xl text-body-md font-body-md focus:outline-none shadow-sm border border-surface-container transition-all focus:bg-surface-container-low" placeholder="Buscar por cliente, folio o concepto..." type="text"/>
+          <input id="search-history" class="w-full h-12 pl-10 pr-4 bg-surface-container-lowest text-on-surface placeholder:text-outline rounded-xl text-body-md font-body-md focus:outline-none shadow-sm border border-surface-container transition-all" placeholder="Buscar por cliente, folio o concepto..." type="text"/>
         </div>
         <button id="btn-clear-all-history" class="h-12 px-3.5 bg-surface-container text-error hover:bg-error hover:text-on-error rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all flex-shrink-0 font-semibold" type="button" title="Vaciar Historial">
           <span class="material-symbols-outlined text-[20px]">delete_sweep</span>
@@ -1169,7 +1351,7 @@
         </button>
       </div>
 
-      <!-- Tabla de Historial de Comprobantes -->
+      <!-- Tabla Plana de Historial -->
       <div class="stitch-table-wrapper">
         <table class="stitch-table">
           <thead>
@@ -1194,14 +1376,13 @@
 
 
     <!-- ==========================================================================
-         VISTA 8: MI NEGOCIO, BCV, SUICHE 7B & AJUSTES (Stitch 1:1)
+         VISTA 10: MI NEGOCIO, BCV, SUICHE 7B & AJUSTES (Plana)
          ========================================================================== -->
     <section id="view-ajustes" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
       
-      <!-- Business Identity Card (Stitch 1:1) -->
-      <div class="relative overflow-hidden rounded-xl bg-surface-container-lowest p-4 shadow-sm border border-surface-container">
-        <div class="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-secondary-fixed/30 blur-2xl pointer-events-none"></div>
-        <div class="flex flex-col items-center sm:flex-row sm:items-start gap-4 relative z-10">
+      <!-- Business Identity Card (Plana) -->
+      <div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-surface-container">
+        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4">
           <div class="relative group">
             <div class="w-24 h-24 rounded-xl bg-surface-container-high p-2 flex items-center justify-center shadow-inner overflow-hidden border border-surface-container">
               <img id="logo-preview" alt="Logotipo Empresa" class="w-full h-full object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida/AEtjO1Utq2CG4-qii95mrcgkfS3TVM4NnnPTCM3A2uDfpNurrIZKjUfBv2nUTJpy8sZZovV31L1cJgeFRTD5HUu-VDH5Z4lI35P_xicEf7MKfq3kNVcNk8pkgkhff646SWZVqWUS7Zvry_GnoX1u9beT-jhQZIPpOdyWdhk69HIsiPbh8So6epnhohfd6EVRslr4DMfreD1ME9oSnAyY-SPz81W9s2iVa-AVE9UAJ_LH063Y6R12FRu8Hmez_U8"/>
@@ -1215,7 +1396,7 @@
           <div class="flex-1 text-center sm:text-left min-w-0">
             <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-on-tertiary-container/10 text-on-tertiary-container mb-1.5">
               <span class="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></span>
-              <span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold">Perfil Verificado</span>
+              <span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold">Perfil del Comercio</span>
             </div>
             <h2 id="settings-biz-display-title" class="font-headline-sm text-headline-sm text-on-surface truncate font-bold">PubliCraft CNC & Proyectos Integrales</h2>
             <p id="settings-biz-display-sub" class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-2">Soluciones en corte laser, CNC router, avisos corporeos e instalaciones comerciales</p>
@@ -1237,7 +1418,7 @@
         </div>
       </div>
 
-      <!-- Form Section 1: Datos de la Empresa & Fiscales -->
+      <!-- Datos de la Empresa & Fiscales (Plano) -->
       <div class="rounded-xl bg-surface-container-lowest p-4 shadow-sm border border-surface-container space-y-3">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
@@ -1269,7 +1450,7 @@
         </div>
       </div>
 
-      <!-- Section 2: Cuentas para Pago de Anticipos & Pago Movil -->
+      <!-- Cuentas Bancarias & Pago Movil (Plano) -->
       <div class="rounded-xl bg-surface-container-lowest p-4 shadow-sm border border-surface-container space-y-3">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
@@ -1295,7 +1476,7 @@
 Transferencias: Banco BBVA / Zelle disponible para proyectos industriales.</textarea>
       </div>
 
-      <!-- Section 3: Configuracion Suiche 7B Pago Movil (QR Dinamico) -->
+      <!-- Configuracion Suiche 7B Pago Movil (QR Dinamico) -->
       <div class="rounded-xl bg-surface-container-lowest p-4 shadow-sm border border-surface-container space-y-3">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
@@ -1359,7 +1540,7 @@ Transferencias: Banco BBVA / Zelle disponible para proyectos industriales.</text
         </div>
       </div>
 
-      <!-- Section 4: Formato de Comprobante / Ticket Termico -->
+      <!-- Opciones del Comprobante Termico -->
       <div class="rounded-xl bg-surface-container-lowest p-4 shadow-sm border border-surface-container space-y-3">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
@@ -1404,7 +1585,7 @@ Transferencias: Banco BBVA / Zelle disponible para proyectos industriales.</text
         </div>
       </div>
 
-      <!-- Section 5: Copia de Seguridad & Migracion JSON -->
+      <!-- Respaldo de Datos y Migracion JSON -->
       <div class="rounded-xl bg-surface-container-lowest p-4 shadow-sm border border-surface-container space-y-3">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
@@ -1433,7 +1614,7 @@ Transferencias: Banco BBVA / Zelle disponible para proyectos industriales.</text
         </div>
       </div>
 
-      <!-- Save Button -->
+      <!-- Boton Guardar Cambios -->
       <button id="btn-save-all-settings" class="w-full h-12 bg-primary text-on-primary rounded-xl font-label-md text-label-md font-bold flex items-center justify-center gap-2 shadow-md active:scale-98 transition-all" type="button">
         <span class="material-symbols-outlined text-[20px]">save</span>
         <span>Guardar Cambios de Mi Negocio</span>
@@ -1453,6 +1634,10 @@ Transferencias: Banco BBVA / Zelle disponible para proyectos industriales.</text
         <span class="material-symbols-outlined text-[22px]">point_of_sale</span>
         <span class="font-label-sm text-label-sm mt-0.5 font-bold">POS</span>
       </button>
+      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[60px] min-h-[48px] px-2 py-1 text-on-surface-variant transition-colors hover:text-on-surface" data-view="view-ticket" type="button">
+        <span class="material-symbols-outlined text-[22px]">receipt_long</span>
+        <span class="font-label-sm text-label-sm mt-0.5 font-bold">Ticket</span>
+      </button>
       <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[60px] min-h-[48px] px-2 py-1 text-on-surface-variant transition-colors hover:text-on-surface" data-view="view-cotizaciones" type="button">
         <span class="material-symbols-outlined text-[22px]">request_quote</span>
         <span class="font-label-sm text-label-sm mt-0.5 font-bold">Cotizar</span>
@@ -1461,10 +1646,6 @@ Transferencias: Banco BBVA / Zelle disponible para proyectos industriales.</text
         <span class="material-symbols-outlined text-[22px]">pending_actions</span>
         <span class="font-label-sm text-label-sm mt-0.5 font-bold">Proyectos</span>
       </button>
-      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[60px] min-h-[48px] px-2 py-1 text-on-surface-variant transition-colors hover:text-on-surface" data-view="view-galeria" type="button">
-        <span class="material-symbols-outlined text-[22px]">precision_manufacturing</span>
-        <span class="font-label-sm text-label-sm mt-0.5 font-bold">CNC</span>
-      </button>
       <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[60px] min-h-[48px] px-2 py-1 text-on-surface-variant transition-colors hover:text-on-surface" data-view="view-ajustes" type="button">
         <span class="material-symbols-outlined text-[22px]">storefront</span>
         <span class="font-label-sm text-label-sm mt-0.5 font-bold">Negocio</span>
@@ -1472,503 +1653,10 @@ Transferencias: Banco BBVA / Zelle disponible para proyectos industriales.</text
     </div>
   </nav>
 
-
-  <!-- ==========================================================================
-       MODAL 1: TICKET TERMICO / COMPROBANTE OFICIAL (Flat Stitch Unboxed)
-       ========================================================================== -->
-  <div id="modal-thermal-ticket" class="modal-overlay hidden">
-    <div class="modal-content max-w-md bg-surface-container-lowest rounded-2xl shadow-xl overflow-hidden p-4 flex flex-col gap-3 border border-surface-container">
-      
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between pb-2 border-b border-surface-container">
-        <div class="flex items-center gap-1.5">
-          <span class="material-symbols-outlined text-secondary text-[20px]">receipt</span>
-          <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Comprobante Termico</span>
-        </div>
-        <button id="btn-close-thermal-modal" onclick="document.getElementById('modal-thermal-ticket').classList.add('hidden')" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" type="button">
-          <span class="material-symbols-outlined text-[18px]">close</span>
-        </button>
-      </div>
-
-      <!-- Thermal Receipt Printable Card (Flat unboxed format) -->
-      <div id="ticket-container" class="thermal-receipt-paper text-on-surface space-y-2 select-all">
-        <!-- Logo -->
-        <div class="text-center">
-          <img id="ticket-logo-img" alt="Logo" class="mx-auto hidden max-h-16 object-contain mb-1"/>
-          <h3 id="view-biz-name" class="font-headline-sm font-bold text-on-surface uppercase leading-tight">PubliCraft CNC</h3>
-          <p id="view-biz-id" class="text-xs font-mono text-on-surface-variant">RIF: J-40918290-1</p>
-          <p id="view-biz-address" class="text-[11px] text-on-surface-variant">Caracas, Venezuela</p>
-          <p id="view-biz-phone" class="text-[11px] text-on-surface-variant">Tel: +58 412 8421990</p>
-        </div>
-
-        <hr/>
-
-        <!-- Document Title & Folio -->
-        <div class="flex justify-between items-center text-xs">
-          <div>
-            <span id="view-doc-badge" class="px-2 py-0.5 rounded bg-surface-container font-bold text-[10px] text-secondary">VENTA POS</span>
-            <p id="view-doc-title" class="font-bold mt-0.5 text-on-surface">FACTURA DE VENTA</p>
-          </div>
-          <div class="text-right">
-            <span id="view-doc-number" class="font-mono font-bold text-sm text-secondary">No. FES-001</span>
-            <div class="text-[10px] text-on-surface-variant mt-0.5">
-              <span id="view-doc-date">12/10/2026</span> <span id="view-doc-time">10:30 AM</span>
-            </div>
-          </div>
-        </div>
-
-        <hr/>
-
-        <!-- Client Info -->
-        <div class="text-xs space-y-0.5">
-          <div class="flex justify-between">
-            <span id="view-lbl-person" class="text-on-surface-variant">Cliente:</span>
-            <strong id="view-client-name" class="text-on-surface">Cliente Mostrador</strong>
-          </div>
-          <div id="view-client-id-row" class="flex justify-between hidden">
-            <span class="text-on-surface-variant">Doc:</span>
-            <span id="view-client-id" class="font-mono text-on-surface"></span>
-          </div>
-          <div id="view-client-city-row" class="flex justify-between hidden">
-            <span class="text-on-surface-variant">Direccion:</span>
-            <span id="view-client-city" class="text-on-surface"></span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-on-surface-variant">Pago:</span>
-            <span id="view-payment-form" class="font-semibold text-on-surface">Pago Movil</span>
-          </div>
-          <div class="flex justify-between text-[11px] text-on-surface-variant">
-            <span id="view-lbl-salesperson">Caja:</span>
-            <span id="view-salesperson">Caja 1</span>
-          </div>
-        </div>
-
-        <hr/>
-
-        <!-- Items Table for Venta -->
-        <div id="ticket-items-block" class="space-y-1 text-xs">
-          <div class="flex justify-between font-bold text-on-surface-variant border-b border-surface-container pb-1 text-[11px]">
-            <span class="w-8">Cant</span>
-            <span class="flex-1 px-1">Descripcion</span>
-            <span class="w-16 text-right">Total</span>
-          </div>
-          <div id="view-items-body" class="space-y-1 pt-1">
-            <!-- Dynamic Items -->
-          </div>
-        </div>
-
-        <!-- Receipt Concept for Ingreso/Egreso -->
-        <div id="ticket-payment-receipt-block" class="hidden text-xs space-y-1">
-          <div class="text-on-surface-variant">Concepto:</div>
-          <div id="view-payment-concept" class="font-semibold text-on-surface p-1.5 rounded bg-surface-container-low"></div>
-          <div id="view-payment-ref-row" class="flex justify-between hidden">
-            <span class="text-on-surface-variant">Referencia:</span>
-            <span id="view-payment-ref" class="font-mono text-on-surface"></span>
-          </div>
-          <div id="view-prev-balance-row" class="flex justify-between hidden">
-            <span class="text-on-surface-variant">Saldo Anterior:</span>
-            <span id="view-prev-balance" class="font-mono"></span>
-          </div>
-          <div id="view-new-balance-row" class="flex justify-between hidden">
-            <span class="text-on-surface-variant">Nuevo Saldo:</span>
-            <span id="view-new-balance" class="font-mono"></span>
-          </div>
-        </div>
-
-        <hr/>
-
-        <!-- Totals Ledger -->
-        <div class="space-y-1 text-xs">
-          <div id="view-subtotal-row" class="flex justify-between">
-            <span class="text-on-surface-variant">Subtotal:</span>
-            <span id="view-subtotal" class="font-mono font-semibold">$0.00</span>
-          </div>
-          <div id="view-discount-row" class="flex justify-between text-error hidden">
-            <span>Descuento:</span>
-            <span id="view-discount" class="font-mono font-semibold">-$0.00</span>
-          </div>
-          <div id="view-tax-row" class="flex justify-between hidden">
-            <span class="text-on-surface-variant">IVA Trasladado:</span>
-            <span id="view-tax" class="font-mono font-semibold">$0.00</span>
-          </div>
-          <div class="flex justify-between text-sm font-bold pt-1 border-t border-surface-container">
-            <span id="view-total-lbl">TOTAL ($ USD):</span>
-            <span id="view-total" class="text-secondary font-mono text-base font-extrabold">$0.00 USD</span>
-          </div>
-          <div id="view-dual-currency-wrapper" class="p-2 rounded-lg bg-surface-container-low text-center space-y-0.5 mt-1 border border-surface-container">
-            <span id="view-dual-title" class="text-[11px] text-on-surface-variant font-semibold block">Equivalente Oficial BCV:</span>
-            <strong id="view-usd-total" class="text-base text-on-tertiary-container font-mono block">Bs. 0,00</strong>
-            <span id="view-exchange-rate-lbl" class="text-[10px] text-on-surface-variant block font-mono">Tasa BCV: 798.33 Bs./$</span>
-          </div>
-          <div id="view-items-count-row" class="hidden"><span id="view-items-count"></span></div>
-        </div>
-
-        <!-- Suiche 7B QR Container -->
-        <div id="view-qr-wrapper" class="text-center pt-2 hidden">
-          <div class="inline-block p-2 bg-white rounded-xl shadow-sm border border-surface-container">
-            <div id="qrcode" class="mx-auto flex justify-center"></div>
-          </div>
-          <p id="view-qr-caption" class="text-[10px] text-on-surface-variant mt-1 font-semibold">Escanea con tu banco para Pago Movil Suiche 7B</p>
-          <div id="suiche-payload-text" class="hidden"></div>
-        </div>
-
-        <!-- Barcode -->
-        <div id="barcode-wrapper" class="text-center hidden pt-1">
-          <canvas id="barcode-canvas" class="mx-auto"></canvas>
-        </div>
-
-        <!-- Signature line -->
-        <div id="view-signature-wrapper" class="pt-4 text-center">
-          <div class="border-t border-dashed border-outline-variant w-40 mx-auto mb-1"></div>
-          <span id="view-signature-text" class="text-[10px] text-on-surface-variant font-semibold">Firma Conforme</span>
-        </div>
-
-        <!-- Footer notes -->
-        <div id="view-notes-wrapper" class="text-center text-[10px] text-on-surface-variant pt-1 border-t border-surface-container">
-          <p id="view-notes-text">Gracias por su confianza.</p>
-        </div>
-      </div>
-
-      <!-- Action Buttons for Ticket -->
-      <div class="grid grid-cols-4 gap-2 pt-2 border-t border-surface-container">
-        <button id="btn-save-to-history" class="py-2.5 rounded-xl bg-surface-container text-on-surface font-label-sm text-label-sm font-semibold flex items-center justify-center gap-1 hover:bg-surface-container-high transition-colors" type="button" title="Guardar">
-          <span class="material-symbols-outlined text-[18px]">save</span>
-          <span class="hidden sm:inline">Guardar</span>
-        </button>
-        <button id="btn-download-img" class="py-2.5 rounded-xl bg-surface-container text-secondary font-label-sm text-label-sm font-bold flex items-center justify-center gap-1 hover:bg-surface-container-high transition-colors" type="button" title="Descargar PNG">
-          <span class="material-symbols-outlined text-[18px]">download</span>
-          <span>PNG</span>
-        </button>
-        <button id="btn-share-whatsapp" class="py-2.5 rounded-xl bg-surface-container text-on-tertiary-container font-label-sm text-label-sm font-bold flex items-center justify-center gap-1 hover:bg-surface-container-high transition-colors" type="button" title="Compartir WhatsApp">
-          <i class="fa-brands fa-whatsapp text-[16px]"></i>
-          <span>WA</span>
-        </button>
-        <button id="btn-print" class="py-2.5 rounded-xl bg-primary text-on-primary font-label-sm text-label-sm font-bold flex items-center justify-center gap-1 shadow-sm active:scale-95 transition-all" type="button" title="Imprimir Ticket">
-          <span class="material-symbols-outlined text-[18px]">print</span>
-          <span>Imprimir</span>
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-
-  <!-- ==========================================================================
-       MODAL 2: HOJA DE PRESUPUESTO FORMAL & FIRMA DIGITAL (Stitch 1:1)
-       ========================================================================== -->
-  <div id="modal-quote-sheet" class="modal-overlay hidden">
-    <div class="modal-content max-w-2xl bg-surface-container-lowest rounded-2xl shadow-xl overflow-hidden p-4 sm:p-6 flex flex-col gap-4 border border-surface-container">
-      
-      <!-- Subheader con acciones rapidas -->
-      <div class="flex items-center justify-between pb-2 border-b border-surface-container">
-        <button id="btn-close-quote-sheet" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors font-label-md text-label-md font-semibold" type="button">
-          <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-          <span>Volver</span>
-        </button>
-        <div class="flex items-center gap-1.5">
-          <button id="btn-share-quote-sheet-wa" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high active:scale-95 transition-all shadow-sm" title="Compartir WhatsApp" type="button">
-            <span class="material-symbols-outlined text-[18px]">share</span>
-          </button>
-          <button id="btn-download-quote-img" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high active:scale-95 transition-all shadow-sm" title="Descargar Imagen" type="button">
-            <span class="material-symbols-outlined text-[18px]">download</span>
-          </button>
-          <button id="btn-print-quote-sheet" class="w-9 h-9 rounded-full bg-secondary text-on-secondary flex items-center justify-center hover:bg-secondary-container active:scale-95 transition-all shadow-sm" title="Imprimir" type="button">
-            <span class="material-symbols-outlined text-[18px]">print</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Document Printable Body -->
-      <div class="relative w-full rounded-xl bg-surface-container-lowest shadow-sm overflow-hidden p-4 sm:p-5 flex flex-col gap-4 border border-surface-container" id="quote-printable-card">
-        
-        <!-- Watermark Oficial -->
-        <div class="flex items-center justify-between pb-2 bg-surface-container-low -mx-4 -mt-4 sm:-mx-5 sm:-mt-5 px-4 sm:px-5 pt-3 border-b border-surface-container">
-          <div class="flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-[16px] text-secondary">verified_user</span>
-            <span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Presupuesto Formal Certificado</span>
-          </div>
-          <span class="font-label-sm text-label-sm text-secondary font-bold">PubliCraft CNC</span>
-        </div>
-
-        <!-- Encabezado Membretado Oficial -->
-        <div class="flex flex-col gap-3">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex flex-col">
-              <div class="flex items-center gap-2">
-                <img id="qsheet-logo-img" alt="Logo" class="w-9 h-9 object-contain rounded-lg hidden"/>
-                <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary font-bold">
-                  <span class="material-symbols-outlined text-[20px]">bolt</span>
-                </div>
-                <div>
-                  <p id="qsheet-biz-name" class="font-headline-sm text-headline-sm text-on-surface leading-tight font-bold">PubliCraft CNC</p>
-                  <p class="font-label-sm text-label-sm text-on-surface-variant">Soluciones Integrales de Publicidad</p>
-                </div>
-              </div>
-              <div class="mt-2 text-on-surface-variant flex flex-col gap-0.5">
-                <span id="qsheet-biz-address" class="font-body-sm text-body-sm">Av. Principal Los Cortijos, Centro Industrial CNC</span>
-                <span id="qsheet-biz-phone" class="font-body-sm text-body-sm flex items-center gap-1 font-semibold text-secondary">
-                  +58 412 8421990
-                </span>
-              </div>
-            </div>
-
-            <!-- Ficha de Registro de la Cotizacion -->
-            <div class="p-2.5 rounded-lg bg-surface-container-low text-right flex flex-col items-end shrink-0 border border-surface-container">
-              <span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">PRESUPUESTO</span>
-              <span id="qsheet-folio" class="font-headline-sm text-headline-sm text-secondary tracking-tight font-bold font-mono">COT-001</span>
-              <span id="qsheet-date" class="font-label-sm text-label-sm text-on-surface-variant mt-1">12 Oct 2026</span>
-              <span id="qsheet-validity-text" class="font-label-sm text-label-sm text-on-surface-variant">Validez: 15 Dias</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Datos del Cliente & Obra -->
-        <div class="p-3 rounded-xl bg-surface-container-low flex flex-col gap-2 border border-surface-container">
-          <span class="font-label-sm text-label-sm text-secondary uppercase font-bold">Datos del Cliente</span>
-          <div>
-            <p id="qsheet-client-name" class="font-headline-sm text-headline-sm text-on-surface font-bold">Boutique Velvet & Co.</p>
-            <p id="qsheet-client-phone" class="font-body-sm text-body-sm text-on-surface-variant">584141234567</p>
-          </div>
-          <div class="p-2 rounded-lg bg-surface-container-lowest flex items-center gap-2 border border-surface-container">
-            <span class="material-symbols-outlined text-[18px] text-secondary">view_in_ar</span>
-            <div class="flex flex-col">
-              <span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Proyecto Cotizado:</span>
-              <span id="qsheet-title" class="font-label-md text-label-md text-on-surface font-bold">Aviso Corporeo 3D con Luz Neon Flex</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tabla de Partidas Cotizadas -->
-        <div class="stitch-table-wrapper">
-          <table class="stitch-table">
-            <thead>
-              <tr>
-                <th style="width:40px;">#</th>
-                <th>Concepto / Partida</th>
-                <th style="width:60px; text-align:center;">Cant</th>
-                <th style="width:90px; text-align:right;">P. Unit</th>
-                <th style="width:100px; text-align:right;">Total ($)</th>
-              </tr>
-            </thead>
-            <tbody id="qsheet-items-body">
-              <!-- Populated dynamically -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Resumen Economico -->
-        <div class="p-3 rounded-xl bg-surface-container-low flex flex-col gap-2 border border-surface-container">
-          <div class="flex justify-between items-baseline pt-1">
-            <div class="flex flex-col">
-              <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Total del Proyecto:</span>
-              <span id="qsheet-rate-note" class="font-label-sm text-label-sm text-on-surface-variant">Tasa oficial BCV</span>
-            </div>
-            <div class="text-right">
-              <span id="qsheet-total-usd" class="font-headline-lg-mobile text-headline-lg-mobile text-secondary font-extrabold block">$0.00 USD</span>
-              <span id="qsheet-total-bcv" class="font-label-sm text-label-sm text-on-tertiary-container font-bold block">Bs. 0,00</span>
-            </div>
-          </div>
-
-          <!-- Esquema 50/50 -->
-          <div class="p-2.5 rounded-lg bg-surface-container-highest flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[20px] text-secondary">payments</span>
-              <div class="flex flex-col">
-                <span class="font-label-md text-label-md text-on-surface font-bold">Esquema 50% Anticipo / 50% Entrega</span>
-                <span class="font-body-sm text-body-sm text-on-surface-variant">Anticipo Requerido: <strong id="qsheet-anticipo-usd" class="text-secondary">$0.00 USD</strong></span>
-              </div>
-            </div>
-            <span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-lowest text-on-tertiary-container font-bold">Formal</span>
-          </div>
-        </div>
-
-        <!-- Cuentas Bancarias -->
-        <div class="p-3 rounded-lg bg-surface-container text-on-surface text-xs space-y-1">
-          <strong class="text-on-surface font-semibold flex items-center gap-1">
-            <span class="material-symbols-outlined text-[15px] text-secondary">account_balance</span>
-            Cuentas para Pago de Anticipo:
-          </strong>
-          <div id="qsheet-bank-info" class="font-mono text-on-surface-variant leading-relaxed">
-            Pago Movil: Banesco (0134) - C.I: 24.190.824 - Tel: 0412-8421990
-          </div>
-        </div>
-
-        <!-- SECCION DE FIRMA DIGITAL (HTML5 Canvas Interactivo) -->
-        <div class="p-3 rounded-xl bg-surface-container-low flex flex-col gap-2.5 border border-surface-container">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-[18px] text-on-tertiary-container">draw</span>
-              <span class="font-label-md text-label-md text-on-surface font-bold">Firma Digital de Aprobacion</span>
-            </div>
-            <button type="button" id="btn-clear-signature" class="px-2 py-1 rounded bg-surface-container text-xs font-semibold text-error hover:bg-surface-container-high transition-colors">
-              Limpiar
-            </button>
-          </div>
-
-          <div class="signature-canvas-wrapper h-28 bg-white rounded-xl border border-surface-container relative" id="signature-canvas-box">
-            <canvas id="quote-signature-canvas" class="w-full h-full cursor-crosshair rounded-xl"></canvas>
-            <div class="signature-placeholder absolute inset-0 flex items-center justify-center text-xs text-on-surface-variant pointer-events-none" id="signature-placeholder">
-              Dibuja aqui tu firma digital para registrar la aprobacion
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Footer Actions -->
-      <div class="flex flex-col gap-2 pt-1">
-        <button id="btn-convert-quote-to-project" class="w-full h-12 rounded-xl bg-primary text-on-primary font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all font-bold" type="button">
-          <span class="material-symbols-outlined text-[20px]">assignment_add</span>
-          <span>Convertir a Orden de Proyecto</span>
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-
-  <!-- MODAL 3: PRODUCT PICKER PARA POS -->
-  <div id="modal-product-picker" class="modal-overlay hidden">
-    <div class="modal-content max-w-lg">
-      <div class="flex items-center justify-between pb-2 border-b border-surface-container">
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined text-secondary text-[20px]">inventory_2</span>
-          <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Seleccionar del Catalogo</h3>
-        </div>
-        <button id="btn-close-product-picker" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" type="button">
-          <span class="material-symbols-outlined text-[18px]">close</span>
-        </button>
-      </div>
-      <div class="py-3 space-y-3">
-        <div class="relative">
-          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
-          <input id="picker-search-product" type="text" class="w-full pl-9 pr-3 py-2 rounded-xl bg-surface-container-low border border-surface-container font-body-md text-on-surface" placeholder="Buscar producto o codigo..."/>
-        </div>
-        <div id="picker-product-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[340px] overflow-y-auto">
-          <!-- Populated by app.js -->
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- MODAL 4: CLIENT PICKER PARA POS -->
-  <div id="modal-client-picker" class="modal-overlay hidden">
-    <div class="modal-content max-w-md">
-      <div class="flex items-center justify-between pb-2 border-b border-surface-container">
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined text-secondary text-[20px]">group</span>
-          <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Seleccionar Cliente</h3>
-        </div>
-        <button id="btn-close-client-picker" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" type="button">
-          <span class="material-symbols-outlined text-[18px]">close</span>
-        </button>
-      </div>
-      <div class="py-3 space-y-3">
-        <div class="relative">
-          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
-          <input id="picker-search-client" type="text" class="w-full pl-9 pr-3 py-2 rounded-xl bg-surface-container-low border border-surface-container font-body-md text-on-surface" placeholder="Buscar por nombre o cedula..."/>
-        </div>
-        <div id="picker-client-list" class="flex flex-col gap-1.5 max-h-[300px] overflow-y-auto">
-          <!-- Populated by app.js -->
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- MODAL 5: NUEVO PROYECTO -->
-  <div id="modal-project-form" class="modal-overlay hidden">
-    <div class="modal-content max-w-md">
-      <div class="flex items-center justify-between pb-2 border-b border-surface-container">
-        <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Nueva Orden de Proyecto</h3>
-        <button id="btn-close-project-form" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
-          <span class="material-symbols-outlined text-[18px]">close</span>
-        </button>
-      </div>
-      <div class="py-3 space-y-2.5">
-        <div>
-          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Titulo del Trabajo *</label>
-          <input type="text" id="p-form-title" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm font-semibold" placeholder="Aviso Corporeo Letras 3D"/>
-        </div>
-        <div>
-          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Cliente *</label>
-          <input type="text" id="p-form-client-name" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm" placeholder="Nombre o Comercio"/>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Telefono</label>
-            <input type="tel" id="p-form-client-phone" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm" placeholder="0414-1234567"/>
-          </div>
-          <div>
-            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Etapa Inicial</label>
-            <select id="p-form-initial-status" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm font-semibold">
-              <option value="aprobado">1 - Aprobado</option>
-              <option value="abono">2 - Anticipo Recibido</option>
-              <option value="produccion" selected>3 - Produccion Taller</option>
-              <option value="instalacion">4 - En Sitio / Montaje</option>
-            </select>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Total ($ USD)</label>
-            <input type="number" id="p-form-total" step="0.01" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm font-bold text-secondary" placeholder="0.00"/>
-          </div>
-          <div>
-            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Anticipo Pagado ($)</label>
-            <input type="number" id="p-form-abono" step="0.01" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm font-bold text-on-tertiary-container" value="0.00"/>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Fecha Inicio</label>
-            <input type="date" id="p-form-date-start" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-xs"/>
-          </div>
-          <div>
-            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Fecha Entrega</label>
-            <input type="date" id="p-form-date-deadline" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-xs"/>
-          </div>
-        </div>
-        <div>
-          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Ubicacion / Medida Fachada</label>
-          <input type="text" id="p-form-address" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm" placeholder="Las Mercedes, Local 2"/>
-        </div>
-        <div class="flex justify-end gap-2 pt-2 border-t border-surface-container">
-          <button id="btn-cancel-project-form" class="px-4 py-2 rounded-lg bg-surface-container text-on-surface-variant text-sm font-semibold" type="button">Cancelar</button>
-          <button id="btn-save-project-form" class="px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-bold shadow-sm" type="button">Crear Proyecto</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- MODAL 6: VISOR DE IMAGEN FULL -->
-  <div id="modal-image-viewer" class="modal-overlay hidden">
-    <div class="modal-content max-w-xl p-3 flex flex-col gap-2">
-      <div class="flex justify-between items-center pb-1">
-        <span id="image-viewer-title" class="font-headline-sm text-headline-sm font-bold truncate">Visor de Imagen</span>
-        <button id="btn-close-image-viewer" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant" type="button">
-          <span class="material-symbols-outlined text-[18px]">close</span>
-        </button>
-      </div>
-      <div class="rounded-xl overflow-hidden bg-black flex items-center justify-center max-h-[70vh]">
-        <img id="image-viewer-img" alt="Vista previa" class="max-h-[68vh] object-contain w-auto mx-auto"/>
-      </div>
-      <div class="flex justify-end gap-2 pt-1">
-        <a id="btn-download-viewer-img" class="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-bold inline-flex items-center gap-1" download>
-          <span class="material-symbols-outlined text-[16px]">download</span>
-          <span>Descargar</span>
-        </a>
-      </div>
-    </div>
-  </div>
-
-
   <!-- TOAST NOTIFICATIONS CONTAINER -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- HIDDEN COMPATIBILITY BINDINGS FOR APP.JS ENGINE -->
+  <!-- COMPATIBILITY HOOKS FOR APP ENGINE (Zero Display) -->
   <select id="currency-symbol" class="hidden"><option value="$" selected>$</option></select>
   <input type="text" id="doc-title" value="FACTURA DE VENTA" class="hidden"/>
   <input type="checkbox" id="toggle-dual-currency" checked class="hidden"/>
@@ -1981,7 +1669,16 @@ Transferencias: Banco BBVA / Zelle disponible para proyectos industriales.</text
   <button id="btn-close-sidebar-mobile" class="hidden"></button>
   <button id="btn-quick-sample" class="hidden"></button>
   <button id="btn-quick-reset" class="hidden"></button>
-  <div id="barcode-wrapper" class="hidden"><canvas id="barcode-canvas"></canvas></div>
+  <div id="modal-thermal-ticket" class="hidden"></div>
+  <div id="modal-quote-sheet" class="hidden"></div>
+  <div id="modal-product-picker" class="hidden"></div>
+  <div id="modal-client-picker" class="hidden"></div>
+  <div id="modal-project-form" class="hidden"></div>
+  <div id="modal-image-viewer" class="hidden"></div>
+  <input id="picker-search-product" class="hidden" type="text"/>
+  <div id="picker-product-list" class="hidden"></div>
+  <input id="picker-search-client" class="hidden" type="text"/>
+  <div id="picker-client-list" class="hidden"></div>
 
   <!-- SCRIPT PRINCIPAL -->
   <script src="app.js"></script>

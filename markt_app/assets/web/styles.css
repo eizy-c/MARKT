@@ -424,10 +424,11 @@ button, .btn, .stitch-nav-item, .phase-chip, .cat-pill, .doc-type-btn {
   color: #0F172A;
   font-family: var(--font-body);
   padding: 1.5rem 1.25rem;
-  max-width: 360px;
+  width: 100%;
+  max-width: 440px;
   margin: 0 auto;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 4px 16px rgba(11,28,48,0.08);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 2px 12px rgba(11,28,48,0.06);
   border: 1px solid var(--surface-container);
 }
 

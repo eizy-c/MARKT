@@ -450,26 +450,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const currentViewTitle = document.getElementById('current-view-title');
       if (currentViewTitle) {
-        if (targetView === 'view-pos') currentViewTitle.textContent = 'Terminal Pos';
+        if (targetView === 'view-pos') currentViewTitle.textContent = 'Terminal POS';
+        else if (targetView === 'view-ticket') currentViewTitle.textContent = 'Ticket Oficial';
         else if (targetView === 'view-cotizaciones') currentViewTitle.textContent = 'Cotizaciones';
+        else if (targetView === 'view-cotizacion-detalle') currentViewTitle.textContent = 'Presupuesto Formal';
         else if (targetView === 'view-proyectos') currentViewTitle.textContent = 'Proyectos';
-        else if (targetView === 'view-galeria') currentViewTitle.textContent = 'Archivos Y Carga';
-        else if (targetView === 'view-ajustes') currentViewTitle.textContent = 'Mi Negocio';
-        else if (targetView === 'view-productos') currentViewTitle.textContent = 'Catálogo';
+        else if (targetView === 'view-galeria') currentViewTitle.textContent = 'Archivos CNC';
+        else if (targetView === 'view-productos') currentViewTitle.textContent = 'Catalogo';
         else if (targetView === 'view-clientes') currentViewTitle.textContent = 'Clientes';
         else if (targetView === 'view-historial') currentViewTitle.textContent = 'Historial';
+        else if (targetView === 'view-ajustes') currentViewTitle.textContent = 'Mi Negocio';
       }
 
       if (targetView === 'view-pos') {
-        if (pageTitleText) pageTitleText.textContent = 'Terminal Pos';
+        if (pageTitleText) pageTitleText.textContent = 'Terminal POS';
+      } else if (targetView === 'view-ticket') {
+        updateCalculationsAndPreview();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (targetView === 'view-cotizaciones') {
         if (pageTitleText) pageTitleText.textContent = 'Cotizaciones';
         renderQuotesHistory();
+      } else if (targetView === 'view-cotizacion-detalle') {
+        renderQuoteItemsTable();
+        recalcQuoteTotals();
+        setTimeout(() => initSignatureCanvas(), 100);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (targetView === 'view-proyectos') {
         if (pageTitleText) pageTitleText.textContent = 'Proyectos';
         renderProjectsPipeline();
       } else if (targetView === 'view-galeria') {
-        if (pageTitleText) pageTitleText.textContent = 'Archivos Y Carga';
+        if (pageTitleText) pageTitleText.textContent = 'Archivos CNC';
         renderGallery();
       } else if (targetView === 'view-productos') {
         renderProductsTable();
@@ -525,19 +535,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const btnOpenThermalModal = document.getElementById('btn-open-thermal-modal');
-    const modalThermalTicket = document.getElementById('modal-thermal-ticket');
-    const btnCloseThermalModal = document.getElementById('btn-close-thermal-modal');
-
-    if (btnOpenThermalModal && modalThermalTicket) {
+    if (btnOpenThermalModal) {
       btnOpenThermalModal.addEventListener('click', () => {
-        updateCalculationsAndPreview();
-        modalThermalTicket.classList.remove('hidden');
+        switchView('view-ticket');
       });
     }
 
-    if (btnCloseThermalModal && modalThermalTicket) {
-      btnCloseThermalModal.addEventListener('click', () => {
-        modalThermalTicket.classList.add('hidden');
+    const btnBackToPos = document.getElementById('btn-back-to-pos');
+    if (btnBackToPos) {
+      btnBackToPos.addEventListener('click', () => {
+        switchView('view-pos');
+      });
+    }
+
+    const btnBackToQuotes = document.getElementById('btn-back-to-quotes');
+    if (btnBackToQuotes) {
+      btnBackToQuotes.addEventListener('click', () => {
+        switchView('view-cotizaciones');
+      });
+    }
+
+    const btnNewQuote = document.getElementById('btn-new-quote');
+    if (btnNewQuote) {
+      btnNewQuote.addEventListener('click', () => {
+        initActiveQuote();
+        switchView('view-cotizacion-detalle');
       });
     }
 
@@ -1951,7 +1973,8 @@ document.addEventListener('DOMContentLoaded', () => {
     incrementFolioCounter();
     updateCalculationsAndPreview();
 
-    showToast(`Comprobante guardado. Próximo folio: ${state.business.docNumber}`, 'success');
+    showToast(`Comprobante guardado. Proximo folio: ${state.business.docNumber}`, 'success');
+    switchView('view-ticket');
   }
 
   function incrementFolioCounter() {
@@ -2918,7 +2941,10 @@ document.addEventListener('DOMContentLoaded', () => {
     container.querySelectorAll('.btn-q-view').forEach(b => {
       b.addEventListener('click', () => {
         const q = state.cotizaciones.find(item => item.id == b.dataset.id);
-        if (q) openQuoteSheetModal(q);
+        if (q) {
+          initActiveQuote(q);
+          switchView('view-cotizacion-detalle');
+        }
       });
     });
     container.querySelectorAll('.btn-q-edit').forEach(b => {
@@ -2926,7 +2952,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const q = state.cotizaciones.find(item => item.id == b.dataset.id);
         if (q) {
           initActiveQuote(q);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          switchView('view-cotizacion-detalle');
           showToast(`Cargada ${q.folio} en editor.`, 'info');
         }
       });
@@ -3420,7 +3446,10 @@ ${bankArea.value.trim()}
     container.querySelectorAll('.btn-q-view').forEach(b => {
       b.addEventListener('click', () => {
         const q = state.cotizaciones.find(item => item.id == b.dataset.id);
-        if (q) openQuoteSheetModal(q);
+        if (q) {
+          initActiveQuote(q);
+          switchView('view-cotizacion-detalle');
+        }
       });
     });
     container.querySelectorAll('.btn-q-edit').forEach(b => {
@@ -3428,7 +3457,7 @@ ${bankArea.value.trim()}
         const q = state.cotizaciones.find(item => item.id == b.dataset.id);
         if (q) {
           initActiveQuote(q);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          switchView('view-cotizacion-detalle');
           showToast(`Cargada ${q.folio} en editor.`, 'info');
         }
       });
@@ -3811,6 +3840,67 @@ ${bankArea.value.trim()}
   // CONFIGURACIÓN DE EVENT LISTENERS DE LOS NUEVOS MÓDULOS
   // ==========================================================================
   function setupNewModulesEventListeners() {
+
+    // POS Real-time Catalog Search
+    const inputStitchPosSearch = document.getElementById('stitch-pos-search');
+    if (inputStitchPosSearch) {
+      inputStitchPosSearch.addEventListener('input', e => {
+        const q = (e.target.value || '').toLowerCase().trim();
+        document.querySelectorAll('#pos-quick-catalog-grid > div').forEach(card => {
+          const text = (card.textContent || '').toLowerCase();
+          if (!q || text.includes(q)) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    }
+
+    // POS Category Filter Buttons
+    document.querySelectorAll('.pos-cat-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.pos-cat-btn').forEach(b => {
+          b.classList.remove('bg-primary', 'text-on-primary');
+          b.classList.add('bg-surface-container-lowest', 'text-on-surface-variant');
+        });
+        btn.classList.remove('bg-surface-container-lowest', 'text-on-surface-variant');
+        btn.classList.add('bg-primary', 'text-on-primary');
+
+        const cat = btn.getAttribute('data-cat');
+        document.querySelectorAll('#pos-quick-catalog-grid > div').forEach(card => {
+          if (cat === 'all') {
+            card.style.display = '';
+          } else {
+            const cardText = (card.textContent || '').toLowerCase();
+            if (cardText.includes(cat.toLowerCase())) {
+              card.style.display = '';
+            } else {
+              card.style.display = 'none';
+            }
+          }
+        });
+      });
+    });
+
+    // Inline Project Form toggling (No modal)
+    const btnShowAddProj = document.getElementById('btn-show-add-project');
+    const projectFormBox = document.getElementById('project-form-box');
+    const btnCancelProjForm = document.getElementById('btn-cancel-project-form');
+    if (btnShowAddProj && projectFormBox) {
+      btnShowAddProj.addEventListener('click', () => {
+        projectFormBox.classList.toggle('hidden');
+        if (!projectFormBox.classList.contains('hidden')) {
+          projectFormBox.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    }
+    if (btnCancelProjForm && projectFormBox) {
+      btnCancelProjForm.addEventListener('click', () => {
+        projectFormBox.classList.add('hidden');
+      });
+    }
+
     // Stitch POS Quick Add Buttons
     document.querySelectorAll('.btn-stitch-quick-add').forEach(btn => {
       btn.addEventListener('click', () => {
