@@ -18,9 +18,7 @@ class _PosScreenState extends State<PosScreen> {
   final List<Client> _clients = [];
   final List<BankAccount> _bankAccounts = [];
   final List<Seller> _sellers = [
-    Seller(id: '1', name: 'Eizy Vendedor Principal', code: 'VEND-01'),
-    Seller(id: '2', name: 'Caja Mostrador', code: 'CAJA-01'),
-    Seller(id: '3', name: 'Ventas Online', code: 'ONL-01'),
+    Seller(id: '1', name: 'Vendedor Principal', code: 'VEND-01'),
   ];
 
   // Tipo de comprobante: 'factura' | 'cotizacion' | 'egreso' | 'abono'
@@ -114,6 +112,13 @@ class _PosScreenState extends State<PosScreen> {
           }
           _selectedSeller = _sellers.first;
         });
+      } else {
+        setState(() {
+          _sellers.clear();
+          final generic = Seller(id: '1', name: 'Vendedor Principal', code: 'VEND-01');
+          _sellers.add(generic);
+          _selectedSeller = generic;
+        });
       }
     } catch (_) {}
   }
@@ -140,32 +145,14 @@ class _PosScreenState extends State<PosScreen> {
           }
           if (_bankAccounts.isNotEmpty) {
             _selectedBank = _bankAccounts.first;
+          } else {
+            _selectedBank = null;
           }
         });
       } else {
-        final defaultAccounts = [
-          BankAccount(
-            id: '1',
-            bankName: 'Banesco Banco Universal',
-            accountNumber: '0134-0000-00-0000000000',
-            accountHolder: 'EIZY STORE C.A.',
-            docId: 'J-28425010-0',
-            phone: '0414-5803945',
-            accountType: 'Corriente',
-          ),
-          BankAccount(
-            id: '2',
-            bankName: 'Banco de Venezuela',
-            accountNumber: '0102-0000-00-0000000000',
-            accountHolder: 'EIZY STORE C.A.',
-            docId: 'J-28425010-0',
-            phone: '0414-5803945',
-            accountType: 'Corriente',
-          ),
-        ];
         setState(() {
-          _bankAccounts.addAll(defaultAccounts);
-          _selectedBank = defaultAccounts.first;
+          _bankAccounts.clear();
+          _selectedBank = null;
         });
       }
     } catch (_) {}

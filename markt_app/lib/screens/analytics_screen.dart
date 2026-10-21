@@ -34,54 +34,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         for (final item in rawInvoices) {
           _invoices.add(Invoice.fromJson(Map<String, dynamic>.from(item)));
         }
-      } else {
-        // Datos demostrativos de facturación
-        final demo = [
-          Invoice(
-            id: 'inv1',
-            folio: 'FES-0038',
-            date: DateTime.now().subtract(const Duration(hours: 3)),
-            client: Client(id: '1', docId: 'V-19827364', firstName: 'Carlos', lastName: 'Pérez', phone: '04141234567', address: 'Barquisimeto'),
-            seller: Seller(id: '1', name: 'Ana Gómez', code: 'VEND-01', commissionPercent: 5.0),
-            items: [
-              CartItem(
-                product: Product(id: 'p1', name: 'Lámina Acrílico 3mm', category: 'Materiales', priceUsd: 45.0, costUsd: 25.0, stock: 8),
-                quantity: 2,
-              ),
-              CartItem(
-                product: Product(id: 'p2', name: 'Perfil Aluminio Anodizado', category: 'Perfiles', priceUsd: 15.0, costUsd: 8.0, stock: 20),
-                quantity: 3,
-              ),
-            ],
-            rateBcv: 881.88,
-            currencyMode: 'USD',
-            totalUsd: 135.0,
-            totalBs: 135.0 * 881.88,
-            paymentMethod: 'pago_movil',
-            business: BusinessProfile(),
-          ),
-          Invoice(
-            id: 'inv2',
-            folio: 'FES-0037',
-            date: DateTime.now().subtract(const Duration(days: 2)),
-            client: Client(id: '2', docId: 'J-501928374', firstName: 'Publicidad', lastName: 'Creativa C.A.', phone: '04129876543', address: 'Cabudare'),
-            seller: Seller(id: '2', name: 'Luis Martínez', code: 'VEND-02', commissionPercent: 4.0),
-            items: [
-              CartItem(
-                product: Product(id: 'p3', name: 'Corte Láser CNC Trofeos', category: 'Servicios', priceUsd: 80.0, costUsd: 20.0, stock: 100),
-                quantity: 1,
-              ),
-            ],
-            rateBcv: 881.88,
-            currencyMode: 'USD',
-            totalUsd: 80.0,
-            totalBs: 80.0 * 881.88,
-            paymentMethod: 'efectivo_usd',
-            business: BusinessProfile(),
-          ),
-        ];
-        _invoices.addAll(demo);
-        await StorageService.instance.save('invoices', _invoices.map((i) => i.toJson()).toList());
       }
 
       _cashMovements.clear();

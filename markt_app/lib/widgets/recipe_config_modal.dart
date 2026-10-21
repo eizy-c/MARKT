@@ -108,7 +108,7 @@ class _RecipeConfigModalState extends State<RecipeConfigModal> {
 
                   // Si es Material de Inventario: Selector de artículo
                   if (type == 'material' && widget.availableProducts.isNotEmpty) ...[
-                    const Text('Vincular a Artículo de Inventario (Opcional):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    const Text('Vincular a Material / Artículo de Inventario (Opcional):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                     const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -120,15 +120,18 @@ class _RecipeConfigModalState extends State<RecipeConfigModal> {
                         child: DropdownButton<Product?>(
                           isExpanded: true,
                           value: selectedProduct,
-                          hint: const Text('Seleccionar del inventario...'),
+                          hint: const Text('Seleccionar insumo o material...'),
                           dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                           style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 12),
                           items: [
                             const DropdownMenuItem<Product?>(value: null, child: Text('Personalizado (sin inventario)')),
-                            ...widget.availableProducts.map((p) => DropdownMenuItem(
-                                  value: p,
-                                  child: Text('${p.name} (Stock: ${p.stock}) - Costo: \$${p.costUsd > 0 ? p.costUsd.toStringAsFixed(2) : p.priceUsd.toStringAsFixed(2)}'),
-                                )),
+                            ...widget.availableProducts.map((p) {
+                              final tag = p.type == 'material' ? '[Material]' : (p.type == 'servicio' ? '[Servicio]' : '[Prod]');
+                              return DropdownMenuItem(
+                                value: p,
+                                child: Text('$tag ${p.name} (Stock: ${p.stock} ${p.unit}) - Costo: \$${p.costUsd > 0 ? p.costUsd.toStringAsFixed(2) : p.priceUsd.toStringAsFixed(2)}'),
+                              );
+                            }),
                           ],
                           onChanged: (val) {
                             setDialogState(() {
@@ -136,6 +139,9 @@ class _RecipeConfigModalState extends State<RecipeConfigModal> {
                               if (val != null) {
                                 nameCtrl.text = val.name;
                                 costCtrl.text = (val.costUsd > 0 ? val.costUsd : val.priceUsd).toStringAsFixed(2);
+                                if (val.unit.isNotEmpty && ['unid', 'mts', 'm2', 'horas', 'global'].contains(val.unit)) {
+                                  unit = val.unit;
+                                }
                               }
                             });
                           },

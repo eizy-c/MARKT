@@ -22,14 +22,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController bcvEurCtrl;
 
   // Datos del Negocio
-  final businessNameCtrl = TextEditingController(text: 'EIZY STORE');
-  final rifCtrl = TextEditingController(text: 'V-28425010');
-  final phoneCtrl = TextEditingController(text: '0414-5803945');
-  final addressCtrl = TextEditingController(text: 'Lara - Barquisimeto');
+  final businessNameCtrl = TextEditingController(text: '');
+  final rifCtrl = TextEditingController(text: '');
+  final phoneCtrl = TextEditingController(text: '');
+  final addressCtrl = TextEditingController(text: '');
   final warrantyNoteCtrl = TextEditingController(
     text: 'Montos calculados según tasa oficial de referencia BCV.\nGracias por su compra.',
   );
-  final folioCtrl = TextEditingController(text: '90');
+  final folioCtrl = TextEditingController(text: '0');
 
   // Opciones de Impresión
   bool showQrPagoMovil = true;
@@ -82,28 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
         });
       } else {
-        final defaultAccounts = [
-          BankAccount(
-            id: '1',
-            bankName: 'Banesco Banco Universal',
-            accountNumber: '0134-0000-00-0000000000',
-            accountHolder: 'EIZY STORE C.A.',
-            docId: 'J-28425010-0',
-            phone: '0414-5803945',
-            accountType: 'Corriente',
-          ),
-          BankAccount(
-            id: '2',
-            bankName: 'Banco de Venezuela',
-            accountNumber: '0102-0000-00-0000000000',
-            accountHolder: 'EIZY STORE C.A.',
-            docId: 'J-28425010-0',
-            phone: '0414-5803945',
-            accountType: 'Corriente',
-          ),
-        ];
-        setState(() => _bankAccounts.addAll(defaultAccounts));
-        await StorageService.instance.save('bank_accounts', defaultAccounts.map((a) => a.toJson()).toList());
+        setState(() => _bankAccounts.clear());
       }
     } catch (_) {}
   }
@@ -1668,10 +1647,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (success) {
                   setState(() {
                     _bankAccounts.clear();
+                    _sellers.clear();
+                    businessNameCtrl.clear();
+                    rifCtrl.clear();
+                    phoneCtrl.clear();
+                    addressCtrl.clear();
+                    folioCtrl.text = '0';
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Datos de prueba eliminados. La app esta limpia.'),
+                      content: Text('Datos de prueba eliminados. La app esta limpia en 0.'),
                       backgroundColor: Color(0xFF10B981),
                     ),
                   );

@@ -44,10 +44,36 @@ class RecipeItem {
   );
 }
 
+class ProductCategory {
+  final String id;
+  final String name;
+  final String type; // 'producto', 'servicio', 'material'
+
+  ProductCategory({
+    required this.id,
+    required this.name,
+    this.type = 'producto',
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'type': type,
+  };
+
+  factory ProductCategory.fromJson(Map<String, dynamic> json) => ProductCategory(
+    id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: json['name'] ?? '',
+    type: json['type'] ?? 'producto',
+  );
+}
+
 class Product {
   final String id;
   final String name;
   final String category;
+  final String type; // 'producto', 'servicio', 'material'
+  final String unit; // 'unid', 'mts', 'm2', 'láminas', etc.
   final double priceUsd;
   final double costUsd;
   final int stock;
@@ -59,6 +85,8 @@ class Product {
     required this.id,
     required this.name,
     required this.category,
+    this.type = 'producto',
+    this.unit = 'unid',
     required this.priceUsd,
     this.costUsd = 0.0,
     this.stock = 0,
@@ -85,6 +113,8 @@ class Product {
     String? id,
     String? name,
     String? category,
+    String? type,
+    String? unit,
     double? priceUsd,
     double? costUsd,
     int? stock,
@@ -96,6 +126,8 @@ class Product {
       id: id ?? this.id,
       name: name ?? this.name,
       category: category ?? this.category,
+      type: type ?? this.type,
+      unit: unit ?? this.unit,
       priceUsd: priceUsd ?? this.priceUsd,
       costUsd: costUsd ?? this.costUsd,
       stock: stock ?? this.stock,
@@ -109,6 +141,8 @@ class Product {
     'id': id,
     'name': name,
     'category': category,
+    'type': type,
+    'unit': unit,
     'priceUsd': priceUsd,
     'costUsd': costUsd,
     'stock': stock,
@@ -121,6 +155,8 @@ class Product {
     id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
     name: json['name'] ?? '',
     category: json['category'] ?? 'General',
+    type: json['type'] ?? 'producto',
+    unit: json['unit'] ?? 'unid',
     priceUsd: (json['priceUsd'] as num?)?.toDouble() ?? (json['price'] as num?)?.toDouble() ?? 0.0,
     costUsd: (json['costUsd'] as num?)?.toDouble() ?? (json['cost'] as num?)?.toDouble() ?? 0.0,
     stock: (json['stock'] as num?)?.toInt() ?? 0,
@@ -219,17 +255,17 @@ class BusinessProfile {
   int folioCounter;
 
   BusinessProfile({
-    this.name = 'EIZY STORE',
-    this.rif = 'V-28425010',
-    this.phone = '0414-5803945',
-    this.address = 'Lara - Barquisimeto',
+    this.name = 'Mi Comercio',
+    this.rif = '',
+    this.phone = '',
+    this.address = '',
     this.warrantyNote = 'Montos calculados según tasa oficial de referencia BCV.\nGracias por su compra.',
     this.showQrPagoMovil = true,
     this.showBarcode = true,
     this.showSignatureLine = true,
     this.showIvaBreakdown = false,
     this.ticketTheme = 'pos_termico',
-    this.folioCounter = 90,
+    this.folioCounter = 0,
   });
 
   Map<String, dynamic> toJson() => {
@@ -247,17 +283,17 @@ class BusinessProfile {
   };
 
   factory BusinessProfile.fromJson(Map<String, dynamic> json) => BusinessProfile(
-    name: json['name'] ?? 'EIZY STORE',
-    rif: json['rif'] ?? 'V-28425010',
-    phone: json['phone'] ?? '0414-5803945',
-    address: json['address'] ?? 'Lara - Barquisimeto',
+    name: json['name'] ?? 'Mi Comercio',
+    rif: json['rif'] ?? '',
+    phone: json['phone'] ?? '',
+    address: json['address'] ?? '',
     warrantyNote: json['warrantyNote'] ?? 'Montos calculados según tasa oficial de referencia BCV.\nGracias por su compra.',
     showQrPagoMovil: json['showQrPagoMovil'] ?? true,
     showBarcode: json['showBarcode'] ?? true,
     showSignatureLine: json['showSignatureLine'] ?? true,
     showIvaBreakdown: json['showIvaBreakdown'] ?? false,
     ticketTheme: json['ticketTheme'] ?? 'pos_termico',
-    folioCounter: (json['folioCounter'] as num?)?.toInt() ?? 90,
+    folioCounter: (json['folioCounter'] as num?)?.toInt() ?? 0,
   );
 }
 
