@@ -1572,12 +1572,12 @@ document.addEventListener('DOMContentLoaded', () => {
       viewItemsCount.textContent = state.items.length;
 
       if (state.options.showTaxTable && taxAmount > 0) {
-        viewTaxTableWrapper.classList.remove('hidden');
-        viewTaxRateLbl.textContent = `IVA ${taxRate}%`;
-        viewTaxBase.textContent = fmtInputCurr(taxableBase);
-        viewTaxVal.textContent = fmtInputCurr(taxAmount);
+        if (viewTaxTableWrapper) viewTaxTableWrapper.classList.remove('hidden');
+        if (viewTaxRateLbl) viewTaxRateLbl.textContent = `IVA ${taxRate}%`;
+        if (viewTaxBase) viewTaxBase.textContent = fmtInputCurr(taxableBase);
+        if (viewTaxVal) viewTaxVal.textContent = fmtInputCurr(taxAmount);
       } else {
-        viewTaxTableWrapper.classList.add('hidden');
+        if (viewTaxTableWrapper) viewTaxTableWrapper.classList.add('hidden');
       }
 
     } else {
@@ -1600,8 +1600,8 @@ document.addEventListener('DOMContentLoaded', () => {
       viewSubtotalRow.classList.add('hidden');
       viewDiscountRow.classList.add('hidden');
       viewTaxRow.classList.add('hidden');
-      viewItemsCountRow.classList.add('hidden');
-      viewTaxTableWrapper.classList.add('hidden');
+      if (viewItemsCountRow) viewItemsCountRow.classList.add('hidden');
+      if (viewTaxTableWrapper) viewTaxTableWrapper.classList.add('hidden');
 
       viewPaymentConcept.textContent = state.paymentDetails.concept || 'Pago por concepto de bienes/servicios.';
       
