@@ -4,9 +4,13 @@ class RecipeItem {
   final String name; // e.g. 'Separadores Metálicos', 'Tira LED Neón', 'Corte Láser CNC'
   final String type; // 'material', 'consumible', 'mano_obra', 'corte_cnc', 'instalacion'
   final double quantity; // e.g. 4.0 (unids), 2.5 (metros), 0.5 (horas)
-  final String unit; // 'unid', 'mts', 'm2', 'horas', 'global'
+  final String unit; // 'unid', 'mts', 'm2', 'cm2', 'láminas', 'horas', 'global'
   final double unitCostUsd;
+  final double unitSalePriceUsd; // Precio de venta unitario asignado al insumo
   final bool deductInventory;
+  final double? widthCm;        // Ancho en cm para piezas recortadas (ej: acrílicos, MDF)
+  final double? heightCm;       // Alto en cm
+  final double? wastePercent;   // Margen de merma / desperdicio (ej: 20%)
 
   RecipeItem({
     required this.id,
@@ -16,10 +20,16 @@ class RecipeItem {
     required this.quantity,
     this.unit = 'unid',
     required this.unitCostUsd,
+    this.unitSalePriceUsd = 0.0,
     this.deductInventory = true,
+    this.widthCm,
+    this.heightCm,
+    this.wastePercent,
   });
 
   double get totalCostUsd => quantity * unitCostUsd;
+  double get effectiveSalePrice => unitSalePriceUsd > 0 ? unitSalePriceUsd : (unitCostUsd * 1.5);
+  double get totalSalePriceUsd => quantity * effectiveSalePrice;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -29,7 +39,11 @@ class RecipeItem {
     'quantity': quantity,
     'unit': unit,
     'unitCostUsd': unitCostUsd,
+    'unitSalePriceUsd': unitSalePriceUsd,
     'deductInventory': deductInventory,
+    'widthCm': widthCm,
+    'heightCm': heightCm,
+    'wastePercent': wastePercent,
   };
 
   factory RecipeItem.fromJson(Map<String, dynamic> json) => RecipeItem(
@@ -40,7 +54,11 @@ class RecipeItem {
     quantity: (json['quantity'] as num?)?.toDouble() ?? 1.0,
     unit: json['unit'] ?? 'unid',
     unitCostUsd: (json['unitCostUsd'] as num?)?.toDouble() ?? 0.0,
+    unitSalePriceUsd: (json['unitSalePriceUsd'] as num?)?.toDouble() ?? 0.0,
     deductInventory: json['deductInventory'] ?? true,
+    widthCm: (json['widthCm'] as num?)?.toDouble(),
+    heightCm: (json['heightCm'] as num?)?.toDouble(),
+    wastePercent: (json['wastePercent'] as num?)?.toDouble(),
   );
 }
 
@@ -94,6 +112,8 @@ class Product {
     this.code,
     this.recipe = const [],
   });
+
+  double get recipeTotalSalePriceUsd => recipe.isEmpty ? priceUsd : recipe.fold(0.0, (acc, item) => acc + item.totalSalePriceUsd);
 
   double get recipeTotalCostUsd {
     if (recipe.isEmpty) return costUsd;

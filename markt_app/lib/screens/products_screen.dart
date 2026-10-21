@@ -1,3 +1,4 @@
+import '../services/bcv_service.dart';
 import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../services/debug_logger.dart';
@@ -307,6 +308,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final stockCtrl = TextEditingController(text: existingProduct != null ? existingProduct.stock.toString() : '10');
     final minStockCtrl = TextEditingController(text: existingProduct != null ? existingProduct.minStock.toString() : '3');
     List<RecipeItem> currentRecipe = existingProduct != null ? List.from(existingProduct.recipe) : [];
+    final cVal = existingProduct?.costUsd ?? 0.0;
+    final pVal = existingProduct?.priceUsd ?? 0.0;
+    final initialMargin = (cVal > 0 && pVal > 0) ? (((pVal - cVal) / cVal) * 100.0).toStringAsFixed(0) : '50';
+    final marginCtrl = TextEditingController(text: initialMargin);
+    double suggestedRetailFromRecipe = existingProduct?.recipeTotalSalePriceUsd ?? 0.0;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -481,54 +487,134 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.3)),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Receta & Materiales (BOM):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF6366F1))),
-                              Text(
-                                currentRecipe.isEmpty
-                                    ? 'Sin materiales configurados'
-                                    : '${currentRecipe.length} componentes (\$${currentRecipe.fold(0.0, (a, b) => a + b.totalCostUsd).toStringAsFixed(2)})',
-                                style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Receta de Fabricación (BOM):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF6366F1))),
+                                  Text(
+                                    currentRecipe.isEmpty
+                                        ? 'Sin materiales configurados'
+                                        : '${currentRecipe.length} componentes • Costo: \$${currentRecipe.fold(0.0, (a, b) => a + b.totalCostUsd).toStringAsFixed(2)}',
+                                    style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: () {
+                                  showModalBottomSheet(
+                                    context: ctx,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (_) => RecipeConfigModal(
+                                      title: nameCtrl.text.trim().isEmpty ? 'Producto' : nameCtrl.text.trim(),
+                                      initialRecipe: currentRecipe,
+                                      availableProducts: _products,
+                                      onSave: (updated, totalCost, [suggestedSalePrice]) {
+                                        setModalState(() {
+                                          currentRecipe = updated;
+                                          costCtrl.text = totalCost.toStringAsFixed(2);
+                                          if (suggestedSalePrice != null && (suggestedSalePrice as double) > 0) {
+                                            suggestedRetailFromRecipe = suggestedSalePrice;
+                                          }
+                                          final m = double.tryParse(marginCtrl.text) ?? 50.0;
+                                          priceCtrl.text = (totalCost * (1.0 + (m / 100.0))).toStringAsFixed(2);
+                                        });
+                                      },
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.architecture, size: 14),
+                                label: Text(currentRecipe.isEmpty ? 'Configurar Receta' : 'Editar Receta', style: const TextStyle(fontSize: 11)),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF6366F1),
+                                  side: const BorderSide(color: Color(0xFF6366F1)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  minimumSize: Size.zero,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
                               ),
                             ],
                           ),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              showModalBottomSheet(
-                                context: ctx,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => RecipeConfigModal(
-                                  title: nameCtrl.text.trim().isEmpty ? 'Producto' : nameCtrl.text.trim(),
-                                  initialRecipe: currentRecipe,
-                                  availableProducts: _products,
-                                  onSave: (updated, totalCost) {
-                                    setModalState(() {
-                                      currentRecipe = updated;
-                                      costCtrl.text = totalCost.toStringAsFixed(2);
-                                    });
-                                  },
+                          if (suggestedRetailFromRecipe > 0) ...[
+                            const SizedBox(height: 8),
+                            InkWell(
+                              onTap: () {
+                                setModalState(() {
+                                  priceCtrl.text = suggestedRetailFromRecipe.toStringAsFixed(2);
+                                  final c = double.tryParse(costCtrl.text) ?? 0.0;
+                                  if (c > 0) {
+                                    marginCtrl.text = (((suggestedRetailFromRecipe - c) / c) * 100.0).toStringAsFixed(0);
+                                  }
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
-                              );
-                            },
-                            icon: const Icon(Icons.architecture, size: 14),
-                            label: Text(currentRecipe.isEmpty ? 'Configurar Receta' : 'Editar Receta', style: const TextStyle(fontSize: 11)),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF6366F1),
-                              side: const BorderSide(color: Color(0xFF6366F1)),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              minimumSize: Size.zero,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.auto_awesome, size: 13, color: Color(0xFF10B981)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Suma venta de insumos: \$${suggestedRetailFromRecipe.toStringAsFixed(2)} [Tocar para aplicar]',
+                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
                     const SizedBox(height: 12),
+
+                    // Selector de Margen de Ganancia (%) Automático
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('% de Ganancia Deseada:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            Text('Precio de venta automático', style: TextStyle(fontSize: 10, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [30, 40, 50, 60, 80, 100].map((mVal) {
+                              final isCurrent = marginCtrl.text == mVal.toString();
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: ActionChip(
+                                  label: Text('+$mVal%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isCurrent ? Colors.white : null)),
+                                  backgroundColor: isCurrent ? const Color(0xFF6366F1) : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                                  onPressed: () {
+                                    setModalState(() {
+                                      marginCtrl.text = mVal.toString();
+                                      final c = double.tryParse(costCtrl.text) ?? 0.0;
+                                      priceCtrl.text = (c * (1.0 + (mVal / 100.0))).toStringAsFixed(2);
+                                    });
+                                  },
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
                   ],
 
                   // Precios / Costos
@@ -537,11 +623,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       Expanded(
                         child: TextField(
                           controller: costCtrl,
+                          readOnly: currentRecipe.isNotEmpty,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          onChanged: (_) => setModalState(() {}),
+                          onChanged: (val) {
+                            final c = double.tryParse(val) ?? 0.0;
+                            final m = double.tryParse(marginCtrl.text) ?? 50.0;
+                            if (itemType == 'producto') {
+                              priceCtrl.text = (c * (1.0 + (m / 100.0))).toStringAsFixed(2);
+                            }
+                            setModalState(() {});
+                          },
                           style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
                           decoration: InputDecoration(
-                            labelText: 'Costo Base (\$ USD)',
+                            labelText: currentRecipe.isNotEmpty ? 'Costo Receta (\$ USD)' : 'Costo Base (\$ USD)',
+                            helperText: currentRecipe.isNotEmpty ? 'Suma automática de receta' : null,
                             labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                             filled: true,
                             fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
@@ -550,14 +645,46 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         ),
                       ),
                       const SizedBox(width: 10),
+                      if (itemType == 'producto') ...[
+                        SizedBox(
+                          width: 80,
+                          child: TextField(
+                            controller: marginCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            onChanged: (val) {
+                              final m = double.tryParse(val) ?? 0.0;
+                              final c = double.tryParse(costCtrl.text) ?? 0.0;
+                              priceCtrl.text = (c * (1.0 + (m / 100.0))).toStringAsFixed(2);
+                              setModalState(() {});
+                            },
+                            style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              labelText: '% Gan.',
+                              suffixText: '%',
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
                       Expanded(
                         child: TextField(
                           controller: priceCtrl,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          onChanged: (_) => setModalState(() {}),
-                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                          onChanged: (val) {
+                            final p = double.tryParse(val) ?? 0.0;
+                            final c = double.tryParse(costCtrl.text) ?? 0.0;
+                            if (c > 0 && p > 0) {
+                              final calculatedM = ((p - c) / c) * 100.0;
+                              marginCtrl.text = calculatedM.toStringAsFixed(0);
+                            }
+                            setModalState(() {});
+                          },
+                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold),
                           decoration: InputDecoration(
-                            labelText: itemType == 'material' ? 'Precio Venta (\$ opcional)' : 'Precio Venta (\$ USD) *',
+                            labelText: itemType == 'material' ? 'Precio Venta (\$ opcional)' : 'Precio Venta Sugerido (\$ USD) *',
                             labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                             filled: true,
                             fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
@@ -569,39 +696,51 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Indicador dinámico de margen de ganancia si tiene precio de venta
+                  // Tarjeta dinámica de rentabilidad y ganancia neta en vivo
                   if (price > 0 && itemType != 'material')
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
                         color: margin >= 30 ? const Color(0xFF10B981).withValues(alpha: 0.15) : const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: (margin >= 30 ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withValues(alpha: 0.3)),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Column(
                         children: [
-                          Text(
-                            'Margen Estimado de Ganancia:',
-                            style: TextStyle(
-                              color: margin >= 30 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Ganancia Neta Limpia:',
+                                style: TextStyle(
+                                  color: margin >= 30 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                '+\$${(price - cost).toStringAsFixed(2)} (~Bs. ${((price - cost) * BcvService.instance.currentRates.usd).toStringAsFixed(2)})',
+                                style: TextStyle(
+                                  color: margin >= 30 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            '${margin.toStringAsFixed(1)}% (\$${(price - cost).toStringAsFixed(2)})',
-                            style: TextStyle(
-                              color: margin >= 30 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Margen Comercial: ${margin.toStringAsFixed(1)}%', style: TextStyle(fontSize: 11, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                              Text('Venta Final: \$${price.toStringAsFixed(2)} (~Bs. ${(price * BcvService.instance.currentRates.usd).toStringAsFixed(2)})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            ],
                           ),
                         ],
                       ),
                     ),
                   const SizedBox(height: 10),
-
-                  // Stock Actual y Mínimo (Crucial para Materiales y Productos)
+// Stock Actual y Mínimo (Crucial para Materiales y Productos)
                   if (itemType != 'servicio') ...[
                     Row(
                       children: [
