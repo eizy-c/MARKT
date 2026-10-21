@@ -1,3 +1,49 @@
+class RecipeItem {
+  final String id;
+  final String? inventoryProductId; // ID del producto en inventario si descuenta stock
+  final String name; // e.g. 'Separadores Metálicos', 'Tira LED Neón', 'Corte Láser CNC'
+  final String type; // 'material', 'consumible', 'mano_obra', 'corte_cnc', 'instalacion'
+  final double quantity; // e.g. 4.0 (unids), 2.5 (metros), 0.5 (horas)
+  final String unit; // 'unid', 'mts', 'm2', 'horas', 'global'
+  final double unitCostUsd;
+  final bool deductInventory;
+
+  RecipeItem({
+    required this.id,
+    this.inventoryProductId,
+    required this.name,
+    this.type = 'material',
+    required this.quantity,
+    this.unit = 'unid',
+    required this.unitCostUsd,
+    this.deductInventory = true,
+  });
+
+  double get totalCostUsd => quantity * unitCostUsd;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'inventoryProductId': inventoryProductId,
+    'name': name,
+    'type': type,
+    'quantity': quantity,
+    'unit': unit,
+    'unitCostUsd': unitCostUsd,
+    'deductInventory': deductInventory,
+  };
+
+  factory RecipeItem.fromJson(Map<String, dynamic> json) => RecipeItem(
+    id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    inventoryProductId: json['inventoryProductId']?.toString(),
+    name: json['name'] ?? '',
+    type: json['type'] ?? 'material',
+    quantity: (json['quantity'] as num?)?.toDouble() ?? 1.0,
+    unit: json['unit'] ?? 'unid',
+    unitCostUsd: (json['unitCostUsd'] as num?)?.toDouble() ?? 0.0,
+    deductInventory: json['deductInventory'] ?? true,
+  );
+}
+
 class Product {
   final String id;
   final String name;
@@ -7,6 +53,7 @@ class Product {
   final int stock;
   final int minStock;
   final String? code;
+  final List<RecipeItem> recipe; // Receta / Consumibles predeterminados
 
   Product({
     required this.id,
@@ -17,12 +64,45 @@ class Product {
     this.stock = 0,
     this.minStock = 2,
     this.code,
+    this.recipe = const [],
   });
 
+  double get recipeTotalCostUsd {
+    if (recipe.isEmpty) return costUsd;
+    return recipe.fold(0.0, (acc, item) => acc + item.totalCostUsd);
+  }
+
+  double get effectiveCostUsd => recipe.isNotEmpty ? recipeTotalCostUsd : costUsd;
+
   double get marginPercentage {
+    final c = effectiveCostUsd;
     if (priceUsd <= 0) return 0.0;
-    if (costUsd <= 0) return 100.0;
-    return ((priceUsd - costUsd) / priceUsd) * 100;
+    if (c <= 0) return 100.0;
+    return ((priceUsd - c) / priceUsd) * 100;
+  }
+
+  Product copyWith({
+    String? id,
+    String? name,
+    String? category,
+    double? priceUsd,
+    double? costUsd,
+    int? stock,
+    int? minStock,
+    String? code,
+    List<RecipeItem>? recipe,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      category: category ?? this.category,
+      priceUsd: priceUsd ?? this.priceUsd,
+      costUsd: costUsd ?? this.costUsd,
+      stock: stock ?? this.stock,
+      minStock: minStock ?? this.minStock,
+      code: code ?? this.code,
+      recipe: recipe ?? this.recipe,
+    );
   }
 
   Map<String, dynamic> toJson() => {
@@ -34,6 +114,7 @@ class Product {
     'stock': stock,
     'minStock': minStock,
     'code': code,
+    'recipe': recipe.map((r) => r.toJson()).toList(),
   };
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
@@ -45,6 +126,7 @@ class Product {
     stock: (json['stock'] as num?)?.toInt() ?? 0,
     minStock: (json['minStock'] as num?)?.toInt() ?? 2,
     code: json['code']?.toString(),
+    recipe: (json['recipe'] as List?)?.map((r) => RecipeItem.fromJson(Map<String, dynamic>.from(r))).toList() ?? [],
   );
 }
 
@@ -360,35 +442,75 @@ class ProjectItem {
   final String id;
   final String title;
   final String clientName;
+  final String clientPhone;
   final double totalUsd;
   final String status;
   final DateTime date;
+  final List<RecipeItem> recipe; // Receta / Consumibles específicos del proyecto
+  final String dimensions; // e.g. '50x50 cm'
 
   ProjectItem({
     required this.id,
     required this.title,
     required this.clientName,
+    this.clientPhone = '',
     required this.totalUsd,
     required this.status,
     required this.date,
+    this.recipe = const [],
+    this.dimensions = '',
   });
+
+  double get totalCostUsd => recipe.fold(0.0, (acc, item) => acc + item.totalCostUsd);
+  double get netProfitUsd => totalUsd - totalCostUsd;
+  double get profitMarginPercent => totalUsd > 0 ? (netProfitUsd / totalUsd) * 100 : 0.0;
+
+  ProjectItem copyWith({
+    String? id,
+    String? title,
+    String? clientName,
+    String? clientPhone,
+    double? totalUsd,
+    String? status,
+    DateTime? date,
+    List<RecipeItem>? recipe,
+    String? dimensions,
+  }) {
+    return ProjectItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      clientName: clientName ?? this.clientName,
+      clientPhone: clientPhone ?? this.clientPhone,
+      totalUsd: totalUsd ?? this.totalUsd,
+      status: status ?? this.status,
+      date: date ?? this.date,
+      recipe: recipe ?? this.recipe,
+      dimensions: dimensions ?? this.dimensions,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'title': title,
     'clientName': clientName,
+    'clientPhone': clientPhone,
     'totalUsd': totalUsd,
     'status': status,
     'date': date.toIso8601String(),
+    'recipe': recipe.map((r) => r.toJson()).toList(),
+    'dimensions': dimensions,
   };
 
   factory ProjectItem.fromJson(Map<String, dynamic> json) => ProjectItem(
     id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
     title: json['title'] ?? '',
     clientName: json['clientName'] ?? '',
+    clientPhone: json['clientPhone'] ?? '',
     totalUsd: (json['totalUsd'] as num?)?.toDouble() ?? 0.0,
     status: json['status'] ?? 'pending',
     date: DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
+    recipe: (json['recipe'] as List?)?.map((r) => RecipeItem.fromJson(Map<String, dynamic>.from(r))).toList() ?? [],
+    dimensions: json['dimensions'] ?? '',
   );
 }
 

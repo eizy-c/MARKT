@@ -888,6 +888,55 @@ class _PosScreenState extends State<PosScreen> {
     }
     // Cotización NO impacta caja
 
+    // Deducción de Inventario (Solo en Factura / Venta real)
+    if (_voucherType == 'factura') {
+      try {
+        final rawProducts = await StorageService.instance.load('products');
+        if (rawProducts != null && rawProducts is List) {
+          final List<Product> allProducts = rawProducts.map((p) => Product.fromJson(Map<String, dynamic>.from(p))).toList();
+          bool modified = false;
+
+          for (final item in invoiceItems) {
+            // 1. Si el producto tiene receta/despiece de materiales
+            if (item.product.recipe.isNotEmpty) {
+              for (final recipeItem in item.product.recipe) {
+                if (recipeItem.deductInventory && recipeItem.inventoryProductId != null) {
+                  final idx = allProducts.indexWhere((p) => p.id == recipeItem.inventoryProductId);
+                  if (idx != -1) {
+                    final needed = (recipeItem.quantity * item.quantity).ceil();
+                    allProducts[idx] = allProducts[idx].copyWith(
+                      stock: (allProducts[idx].stock - needed).clamp(0, 999999),
+                    );
+                    modified = true;
+                  }
+                }
+              }
+            }
+
+            // 2. Descontar también el producto en sí si tiene stock inventariable
+            final pIdx = allProducts.indexWhere((p) => p.id == item.product.id);
+            if (pIdx != -1) {
+              allProducts[pIdx] = allProducts[pIdx].copyWith(
+                stock: (allProducts[pIdx].stock - item.quantity).clamp(0, 999999),
+              );
+              modified = true;
+            }
+          }
+
+          if (modified) {
+            await StorageService.instance.save('products', allProducts.map((p) => p.toJson()).toList());
+            // Actualizar lista local de productos en POS
+            setState(() {
+              _products.clear();
+              _products.addAll(allProducts);
+            });
+          }
+        }
+      } catch (e) {
+        DebugLogger.instance.error('Error al descontar inventario de componentes: $e');
+      }
+    }
+
     // Limpiar carrito / formulario
     setState(() {
       _cart.clear();

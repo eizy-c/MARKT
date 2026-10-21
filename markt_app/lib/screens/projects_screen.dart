@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../services/debug_logger.dart';
 import '../services/storage_service.dart';
+import '../widgets/recipe_config_modal.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -12,12 +13,26 @@ class ProjectsScreen extends StatefulWidget {
 
 class _ProjectsScreenState extends State<ProjectsScreen> {
   final List<ProjectItem> _projects = [];
+  final List<Product> _products = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadProjects();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final rawProds = await StorageService.instance.load('products');
+      if (rawProds != null && rawProds is List) {
+        _products.clear();
+        for (final item in rawProds) {
+          _products.add(Product.fromJson(Map<String, dynamic>.from(item)));
+        }
+      }
+    } catch (_) {}
+    await _loadProjects();
   }
 
   Future<void> _loadProjects() async {
@@ -80,7 +95,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   void _showAddProjectDialog() {
     final titleController = TextEditingController();
     final clientController = TextEditingController();
+    final phoneController = TextEditingController();
+    final dimController = TextEditingController();
     final totalController = TextEditingController();
+    List<RecipeItem> currentRecipe = [];
     String stage = '1_aprobacion';
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -135,28 +153,125 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              TextField(
-                controller: clientController,
-                style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
-                decoration: InputDecoration(
-                  labelText: 'Nombre del Cliente / Empresa',
-                  labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: clientController,
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                      decoration: InputDecoration(
+                        labelText: 'Cliente / Empresa',
+                        labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                      decoration: InputDecoration(
+                        labelText: 'WhatsApp / Teléfono',
+                        labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
-              TextField(
-                controller: totalController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
-                decoration: InputDecoration(
-                  labelText: 'Presupuesto Total (\$ USD)',
-                  labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: dimController,
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                      decoration: InputDecoration(
+                        labelText: 'Medidas (ej. 50x50 cm)',
+                        labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: totalController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                      decoration: InputDecoration(
+                        labelText: 'Precio Venta (\$ USD) *',
+                        labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Botón Configurar Consumibles / Receta del Proyecto
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Despiece, Consumibles y Mano de Obra:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF6366F1))),
+                        Text(
+                          currentRecipe.isEmpty
+                              ? 'Sin consumibles calculados'
+                              : '${currentRecipe.length} ítems • Costo Total: \$${currentRecipe.fold(0.0, (a, b) => a + b.totalCostUsd).toStringAsFixed(2)}',
+                          style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
+                        ),
+                      ],
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: ctx,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => RecipeConfigModal(
+                            title: titleController.text.trim().isEmpty ? 'Proyecto' : titleController.text.trim(),
+                            initialRecipe: currentRecipe,
+                            availableProducts: _products,
+                            onSave: (updated, totalCost) {
+                              setModalState(() {
+                                currentRecipe = updated;
+                              });
+                            },
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.architecture, size: 14),
+                      label: Text(currentRecipe.isEmpty ? 'Configurar Receta' : 'Editar Receta', style: const TextStyle(fontSize: 11)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF6366F1),
+                        side: const BorderSide(color: Color(0xFF6366F1)),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
@@ -195,9 +310,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       id: DateTime.now().millisecondsSinceEpoch.toString(),
                       title: titleController.text.trim(),
                       clientName: clientController.text.trim().isEmpty ? 'Cliente Ocasional' : clientController.text.trim(),
+                      clientPhone: phoneController.text.trim(),
                       totalUsd: amt,
                       status: stage,
                       date: DateTime.now(),
+                      dimensions: dimController.text.trim(),
+                      recipe: currentRecipe,
                     );
 
                     setState(() => _projects.insert(0, newP));
@@ -442,7 +560,112 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: 6),
+                              if (p.dimensions.isNotEmpty) ...[
+                                const SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    Icon(Icons.straighten, size: 12, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Medidas: ${p.dimensions}',
+                                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              if (p.recipe.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                InkWell(
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (_) => RecipeConfigModal(
+                                        title: p.title,
+                                        initialRecipe: p.recipe,
+                                        availableProducts: _products,
+                                        onSave: (updated, totalCost) async {
+                                          final idx = _projects.indexWhere((item) => item.id == p.id);
+                                          if (idx != -1) {
+                                            setState(() {
+                                              _projects[idx] = p.copyWith(recipe: updated);
+                                            });
+                                            await StorageService.instance.save('proyectos', _projects.map((x) => x.toJson()).toList());
+                                          }
+                                        },
+                                      ),
+                                    );
+                                  },
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.architecture, size: 12, color: Color(0xFF6366F1)),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${p.recipe.length} insumos/servicios • Costo: \$${p.totalCostUsd.toStringAsFixed(2)} • Margen: ${p.profitMarginPercent.toStringAsFixed(0)}%',
+                                          style: const TextStyle(color: Color(0xFF818CF8), fontSize: 11, fontWeight: FontWeight.w600),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.edit, size: 10, color: Color(0xFF818CF8)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ] else ...[
+                                const SizedBox(height: 6),
+                                InkWell(
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (_) => RecipeConfigModal(
+                                        title: p.title,
+                                        initialRecipe: const [],
+                                        availableProducts: _products,
+                                        onSave: (updated, totalCost) async {
+                                          final idx = _projects.indexWhere((item) => item.id == p.id);
+                                          if (idx != -1) {
+                                            setState(() {
+                                              _projects[idx] = p.copyWith(recipe: updated);
+                                            });
+                                            await StorageService.instance.save('proyectos', _projects.map((x) => x.toJson()).toList());
+                                          }
+                                        },
+                                      ),
+                                    );
+                                  },
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.add_circle_outline, size: 12, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '+ Asignar Insumos y Costos (BOM)',
+                                          style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 8),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
