@@ -10,8 +10,10 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
+      statusBarColor: Color(0xFFF8F9FF),
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: Color(0xFFF8F9FF),
+      systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
   runApp(const MarktApp());
@@ -26,8 +28,8 @@ class MarktApp extends StatelessWidget {
       title: 'MARTK POS',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF8F9FF),
       ),
       home: const MarktWebViewScreen(),
     );
@@ -138,7 +140,7 @@ class _MarktWebViewScreenState extends State<MarktWebViewScreen> {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFF0F172A))
+      ..setBackgroundColor(const Color(0xFFF8F9FF))
       ..addJavaScriptChannel(
         'MarktNativeStorageChannel',
         onMessageReceived: _handleStorageMessage,
@@ -194,7 +196,9 @@ class _MarktWebViewScreenState extends State<MarktWebViewScreen> {
         }
       },
       child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FF),
         body: SafeArea(
+          bottom: false,
           child: Stack(
             children: [
               WebViewWidget(controller: _controller),

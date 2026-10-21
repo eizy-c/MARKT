@@ -111,10 +111,10 @@
   <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
 
   <!-- FIXED TOP HEADER (Stitch 1:1) -->
-  <header class="fixed top-0 inset-x-0 z-50 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-b border-surface-container">
+  <header class="sticky top-0 inset-x-0 z-50 bg-surface/95 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-b border-surface-container">
     <div class="h-16 px-4 max-w-7xl mx-auto flex items-center justify-between gap-2 w-full">
       <div class="flex items-center gap-2.5">
-        <button id="btn-toggle-menu" class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 flex-shrink-0" title="Menu del Sistema" type="button">
+        <button id="btn-toggle-menu" onclick="window.toggleDrawer && window.toggleDrawer()" class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 flex-shrink-0 cursor-pointer" title="Menu del Sistema" type="button">
           <span class="material-symbols-outlined text-[22px]">menu</span>
         </button>
         <div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm flex-shrink-0">
@@ -140,7 +140,7 @@
         </div>
 
         <!-- Profile / Mi Negocio Button -->
-        <button id="btn-header-profile" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center border border-surface-container-high hover:ring-2 hover:ring-secondary/40 transition-all stitch-nav-item text-secondary" data-view="view-ajustes" title="Mi Negocio y Ajustes" type="button">
+        <button id="btn-header-profile" onclick="window.switchView('view-ajustes')" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center border border-surface-container-high hover:ring-2 hover:ring-secondary/40 transition-all stitch-nav-item text-secondary cursor-pointer" data-view="view-ajustes" title="Mi Negocio y Ajustes" type="button">
           <span class="material-symbols-outlined text-[18px]">storefront</span>
         </button>
       </div>
@@ -194,15 +194,15 @@
         <span class="material-symbols-outlined">receipt_long</span>
         <span>Ver Ticket / Comprobante</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-cotizaciones" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-cotizaciones')" data-view="view-cotizaciones" type="button">
         <span class="material-symbols-outlined">request_quote</span>
         <span>Cotizaciones y Presupuestos</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-proyectos" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-proyectos')" data-view="view-proyectos" type="button">
         <span class="material-symbols-outlined">pending_actions</span>
         <span>Gestion de Proyectos</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-galeria" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-galeria')" data-view="view-galeria" type="button">
         <span class="material-symbols-outlined">photo_library</span>
         <span>Galeria y Trabajos</span>
       </button>
@@ -216,47 +216,47 @@
         <span>Politicas de Privacidad</span>
       </button>
       <div class="h-px bg-surface-container my-2"></div>
-      <button class="drawer-nav-item" data-view="view-productos" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-productos')" data-view="view-productos" type="button">
         <span class="material-symbols-outlined">inventory_2</span>
         <span>Productos & Costos</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-servicios" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-servicios')" data-view="view-servicios" type="button">
         <span class="material-symbols-outlined">design_services</span>
         <span>Servicios Profesionales</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-materiales" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-materiales')" data-view="view-materiales" type="button">
         <span class="material-symbols-outlined">category</span>
         <span>Materiales e Inventario</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-clientes" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-clientes')" data-view="view-clientes" type="button">
         <span class="material-symbols-outlined">group</span>
         <span>Clientes</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-proveedores" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-proveedores')" data-view="view-proveedores" type="button">
         <span class="material-symbols-outlined">local_shipping</span>
         <span>Proveedores</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-caja" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-caja')" data-view="view-caja" type="button">
         <span class="material-symbols-outlined">payments</span>
         <span>Libro de Caja & Gastos</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-cobranzas" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-cobranzas')" data-view="view-cobranzas" type="button">
         <span class="material-symbols-outlined">account_balance</span>
         <span>Cuentas por Cobrar</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-reportes" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-reportes')" data-view="view-reportes" type="button">
         <span class="material-symbols-outlined">analytics</span>
         <span>Analitica & Reportes</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-vendedores" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-vendedores')" data-view="view-vendedores" type="button">
         <span class="material-symbols-outlined">badge</span>
         <span>Vendedores & Comisiones</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-historial" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-historial')" data-view="view-historial" type="button">
         <span class="material-symbols-outlined">history</span>
         <span>Historial de Comprobantes</span>
       </button>
-      <button class="drawer-nav-item" data-view="view-ajustes" type="button">
+      <button class="drawer-nav-item cursor-pointer" onclick="window.switchView('view-ajustes')" data-view="view-ajustes" type="button">
         <span class="material-symbols-outlined">storefront</span>
         <span>Mi Negocio y Ajustes</span>
       </button>
@@ -279,7 +279,7 @@
   </aside>
 
   <!-- MAIN VIEWPORT CONTAINER (Full Natural Scroll, No Trap) -->
-  <main class="flex-1 flex flex-col relative w-full pt-20 sm:pt-24 pb-24 px-3 sm:px-6 max-w-7xl mx-auto">
+  <main class="flex-1 flex flex-col relative w-full pt-3 sm:pt-4 pb-28 px-3 sm:px-6 max-w-7xl mx-auto">
 
     <!-- ==========================================================================
          VISTA PRINCIPAL: DASHBOARD & PIPELINE DE PROYECTOS (VISTA DE INICIO)
@@ -306,7 +306,7 @@
       <!-- Tarjetas Financieras (KPIs de Analítica en Vivo) -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         <!-- Ventas del Mes -->
-        <div class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between cursor-pointer hover:bg-surface-container/60 transition-colors" data-view="view-pos">
+        <div onclick="window.switchView('view-pos')" class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between cursor-pointer hover:bg-surface-container/60 transition-colors" data-view="view-pos">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-on-surface-variant">Ventas</span>
             <span class="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
@@ -320,7 +320,7 @@
         </div>
 
         <!-- Utilidad Neta Real -->
-        <div class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between cursor-pointer hover:bg-surface-container/60 transition-colors" data-view="view-reportes">
+        <div onclick="window.switchView('view-reportes')" class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between cursor-pointer hover:bg-surface-container/60 transition-colors" data-view="view-reportes">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-secondary">Utilidad Neta</span>
             <span class="w-6 h-6 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
@@ -334,7 +334,7 @@
         </div>
 
         <!-- Cuentas por Cobrar (Quién me debe) -->
-        <div class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between cursor-pointer hover:bg-surface-container/60 transition-colors" data-view="view-cobranzas">
+        <div onclick="window.switchView('view-cobranzas')" class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between cursor-pointer hover:bg-surface-container/60 transition-colors" data-view="view-cobranzas">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-amber-600 dark:text-amber-400">Por Cobrar</span>
             <span class="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
@@ -348,7 +348,7 @@
         </div>
 
         <!-- Saldo en Caja -->
-        <div class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between cursor-pointer hover:bg-surface-container/60 transition-colors" data-view="view-caja">
+        <div onclick="window.switchView('view-caja')" class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between cursor-pointer hover:bg-surface-container/60 transition-colors" data-view="view-caja">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-on-surface-variant">Saldo en Caja</span>
             <span class="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
@@ -2845,13 +2845,13 @@
   <div id="quick-action-sheet" class="fixed bottom-20 inset-x-4 max-w-sm mx-auto z-50 bg-surface-container-lowest rounded-3xl p-4 shadow-2xl border border-surface-container hidden transition-all transform duration-200">
     <div class="flex items-center justify-between pb-2 border-b border-surface-container mb-3">
       <span class="font-bold text-on-surface text-sm">Operaciones Rápidas</span>
-      <button id="btn-close-quick-action" class="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+      <button id="btn-close-quick-action" onclick="window.toggleQuickActionSheet && window.toggleQuickActionSheet()" class="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer" type="button">
         <span class="material-symbols-outlined text-[16px]">close</span>
       </button>
     </div>
     <div class="grid grid-cols-1 gap-2.5">
       <!-- 1. Vender en POS -->
-      <button id="btn-qa-pos" class="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-surface-container text-left transition-colors" type="button">
+      <button id="btn-qa-pos" onclick="window.switchView('view-pos'); window.toggleQuickActionSheet && window.toggleQuickActionSheet();" class="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-surface-container text-left transition-colors cursor-pointer" type="button">
         <div class="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
           <span class="material-symbols-outlined text-[22px]">point_of_sale</span>
         </div>
@@ -2862,7 +2862,7 @@
       </button>
 
       <!-- 2. Añadir Dinero / Ingreso -->
-      <button id="btn-qa-income" class="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-surface-container text-left transition-colors" type="button">
+      <button id="btn-qa-income" onclick="window.switchView('view-caja'); window.toggleQuickActionSheet && window.toggleQuickActionSheet(); setTimeout(() => window.openNewMovementForm && window.openNewMovementForm('income'), 150);" class="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-surface-container text-left transition-colors cursor-pointer" type="button">
         <div class="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
           <span class="material-symbols-outlined text-[22px]">arrow_downward</span>
         </div>
@@ -2873,7 +2873,7 @@
       </button>
 
       <!-- 3. Registrar Gasto / Egreso -->
-      <button id="btn-qa-expense" class="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-surface-container text-left transition-colors" type="button">
+      <button id="btn-qa-expense" onclick="window.switchView('view-caja'); window.toggleQuickActionSheet && window.toggleQuickActionSheet(); setTimeout(() => window.openNewMovementForm && window.openNewMovementForm('expense'), 150);" class="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-surface-container text-left transition-colors cursor-pointer" type="button">
         <div class="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
           <span class="material-symbols-outlined text-[22px]">arrow_upward</span>
         </div>
@@ -2891,35 +2891,89 @@
   <!-- ==========================================================================
        FIXED BOTTOM NAVIGATION BAR (Stitch 1:1)
        ========================================================================== -->
+    
+  <!-- ==========================================================================
+       FLOATING DEBUG TRIGGER & CONSOLA DE DIAGNÓSTICO
+       ========================================================================== -->
+  <div id="debug-floating-container" class="fixed bottom-20 right-3 z-50 flex flex-col items-end pointer-events-auto">
+    <button id="btn-toggle-debug" type="button" class="w-10 h-10 rounded-full bg-slate-900/90 text-white shadow-xl flex items-center justify-center border-2 border-slate-700 active:scale-90 transition-all cursor-pointer relative" title="Consola de Depuración & Diagnóstico">
+      <span class="material-symbols-outlined text-[20px]">bug_report</span>
+      <span id="debug-badge-count" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center border-2 border-slate-900">0</span>
+    </button>
+  </div>
+
+  <!-- MODAL DE DIAGNÓSTICO & CONSOLA DE DEBUG -->
+  <div id="debug-modal-overlay" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden"></div>
+  <div id="debug-modal" class="fixed inset-x-3 bottom-4 max-w-lg mx-auto z-50 bg-slate-950 text-slate-100 rounded-3xl p-4 shadow-2xl border border-slate-800 hidden flex flex-col max-h-[82vh]">
+    <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-amber-400 text-[20px]">terminal</span>
+        <span class="font-bold text-sm">Diagnóstico & Depuración</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-clear-debug-logs" type="button" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold cursor-pointer">Limpiar</button>
+        <button id="btn-close-debug" type="button" class="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Forzar navegación -->
+    <div class="py-2.5 border-b border-slate-800">
+      <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Forzar Cambio de Vista:</span>
+      <div class="grid grid-cols-4 gap-1.5 mt-1.5">
+        <button onclick="window.switchView('view-dashboard')" class="px-1.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-center cursor-pointer">Dashboard</button>
+        <button onclick="window.switchView('view-pos')" class="px-1.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-center cursor-pointer">POS</button>
+        <button onclick="window.switchView('view-caja')" class="px-1.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-center cursor-pointer">Caja</button>
+        <button onclick="window.switchView('view-cobranzas')" class="px-1.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-center cursor-pointer">Cobranzas</button>
+        <button onclick="window.switchView('view-cotizaciones')" class="px-1.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-center cursor-pointer">Cotizar</button>
+        <button onclick="window.switchView('view-proyectos')" class="px-1.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-center cursor-pointer">Proyectos</button>
+        <button onclick="window.switchView('view-reportes')" class="px-1.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-center cursor-pointer">Reportes</button>
+        <button onclick="window.switchView('view-ajustes')" class="px-1.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-center cursor-pointer">Ajustes</button>
+      </div>
+    </div>
+
+    <!-- Consola de Logs -->
+    <div class="flex-1 overflow-y-auto py-2 font-mono text-[11px] space-y-1.5 max-h-[38vh]" id="debug-log-container">
+      <div class="text-slate-500 italic">Sin errores detectados. Sistema listo.</div>
+    </div>
+
+    <!-- Footer info -->
+    <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+      <span id="debug-status-view">Vista: view-dashboard</span>
+      <button id="btn-copy-debug-logs" type="button" class="text-secondary hover:underline cursor-pointer">Copiar Logs</button>
+    </div>
+  </div>
+
     <nav class="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface/95 backdrop-blur-xl shadow-[0_-4px_16px_rgba(11,28,48,0.08)] border-t border-surface-container" data-active-classes="text-secondary">
     <div class="flex justify-around items-center h-16 max-w-lg mx-auto px-2 relative">
       <!-- 1. Inicio -->
-      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[56px] py-1 text-secondary font-bold" data-view="view-dashboard" type="button">
+      <button onclick="window.switchView('view-dashboard')" class="stitch-nav-item flex flex-col items-center justify-center min-w-[56px] py-1 text-secondary font-bold cursor-pointer" data-view="view-dashboard" type="button">
         <span class="material-symbols-outlined text-[22px]">dashboard</span>
         <span class="font-label-sm text-[10px] mt-0.5">Inicio</span>
       </button>
 
       <!-- 2. Caja -->
-      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[56px] py-1 text-on-surface-variant hover:text-on-surface" data-view="view-caja" type="button">
+      <button onclick="window.switchView('view-caja')" class="stitch-nav-item flex flex-col items-center justify-center min-w-[56px] py-1 text-on-surface-variant hover:text-on-surface cursor-pointer" data-view="view-caja" type="button">
         <span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
         <span class="font-label-sm text-[10px] mt-0.5">Caja</span>
       </button>
 
       <!-- 3. BOTÓN CENTRAL FLOTANTE (+) -->
       <div class="relative -top-5 flex items-center justify-center">
-        <button id="btn-quick-action-center" class="w-14 h-14 rounded-full bg-primary text-on-primary shadow-xl flex items-center justify-center active:scale-90 transition-transform border-4 border-surface cursor-pointer" type="button" title="Acción Rápida: Vender / Ingreso / Gasto">
+        <button id="btn-quick-action-center" onclick="window.toggleQuickActionSheet && window.toggleQuickActionSheet()" class="w-14 h-14 rounded-full bg-primary text-on-primary shadow-xl flex items-center justify-center active:scale-90 transition-transform border-4 border-surface cursor-pointer" type="button" title="Acción Rápida: Vender / Ingreso / Gasto">
           <span class="material-symbols-outlined text-[30px]">add</span>
         </button>
       </div>
 
       <!-- 4. Por Cobrar -->
-      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[56px] py-1 text-on-surface-variant hover:text-on-surface" data-view="view-cobranzas" type="button">
+      <button onclick="window.switchView('view-cobranzas')" class="stitch-nav-item flex flex-col items-center justify-center min-w-[56px] py-1 text-on-surface-variant hover:text-on-surface cursor-pointer" data-view="view-cobranzas" type="button">
         <span class="material-symbols-outlined text-[22px]">pending_actions</span>
         <span class="font-label-sm text-[10px] mt-0.5">Por Cobrar</span>
       </button>
 
       <!-- 5. Menú Más -->
-      <button id="btn-bottom-menu-toggle" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-on-surface-variant hover:text-on-surface cursor-pointer" type="button">
+      <button id="btn-bottom-menu-toggle" onclick="window.toggleDrawer && window.toggleDrawer()" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-on-surface-variant hover:text-on-surface cursor-pointer" type="button">
         <span class="material-symbols-outlined text-[22px]">menu</span>
         <span class="font-label-sm text-[10px] mt-0.5">Menú</span>
       </button>

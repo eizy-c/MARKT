@@ -3,6 +3,61 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // ==========================================================================
+  // SISTEMA DE DIAGNÓSTICO & LOGS FLOTANTE (DEBUG CONSOLE)
+  // ==========================================================================
+  const debugConsoleLogs = [];
+  window.logDebug = function(type, message, details = '') {
+    const time = new Date().toLocaleTimeString();
+    debugConsoleLogs.unshift({ time, type, message, details });
+    if (debugConsoleLogs.length > 100) debugConsoleLogs.pop();
+    if (typeof window.updateDebugConsoleUI === 'function') {
+      window.updateDebugConsoleUI();
+    }
+  };
+
+  window.onerror = function(msg, url, line, col, err) {
+    const str = `${msg} (${url ? url.split('/').pop() : 'script'}:${line}:${col})`;
+    window.logDebug('error', str, err && err.stack ? err.stack : '');
+    return false;
+  };
+
+  window.addEventListener('unhandledrejection', function(e) {
+    window.logDebug('error', `Promise Rechazada: ${e.reason ? (e.reason.message || e.reason) : 'Error desconocido'}`);
+  });
+
+  // Helper Global para abrir y cerrar Drawer
+  window.toggleDrawer = function() {
+    const sysDrawer = document.getElementById('system-drawer');
+    const drawerOv = document.getElementById('drawer-overlay');
+    if (!sysDrawer) return;
+    const isOpen = sysDrawer.classList.contains('drawer-open');
+    if (isOpen) {
+      sysDrawer.classList.remove('drawer-open');
+      if (drawerOv) drawerOv.classList.add('hidden');
+    } else {
+      sysDrawer.classList.add('drawer-open');
+      if (drawerOv) drawerOv.classList.remove('hidden');
+    }
+  };
+
+  // Helper Global para abrir y cerrar Quick Action Sheet
+  window.toggleQuickActionSheet = function() {
+    const sheet = document.getElementById('quick-action-sheet');
+    const overlay = document.getElementById('quick-action-overlay');
+    if (!sheet) return;
+    const isHidden = sheet.classList.contains('hidden');
+    if (isHidden) {
+      sheet.classList.remove('hidden');
+      if (overlay) overlay.classList.remove('hidden');
+    } else {
+      sheet.classList.add('hidden');
+      if (overlay) overlay.classList.add('hidden');
+    }
+  };
+
+  let switchView = null;
+
   // --- PURGE LEGACY TEST DATA (Sistema en 0 y Tasa Actual) ---
   function purgeLegacyTestData() {
     try {
@@ -514,116 +569,142 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- NAVIGATION SYSTEM (SIDEBAR & VIEWS) ---
   function setupNavigation() {
-    const switchView = (targetView) => {
-      state.activeView = targetView;
-      appViews.forEach(v => {
-        if (v.id === targetView) v.classList.remove('hidden');
-        else v.classList.add('hidden');
-      });
+    switchView = (targetView) => {
+      try {
+        if (!targetView) return;
+        window.logDebug && window.logDebug('info', `Navegando a: ${targetView}`);
+        state.activeView = targetView;
+        appViews.forEach(v => {
+          if (v.id === targetView) {
+            v.classList.remove('hidden');
+            v.classList.add('active');
+          } else {
+            v.classList.add('hidden');
+            v.classList.remove('active');
+          }
+        });
 
-      navItems.forEach(item => {
-        if (item.getAttribute('data-view') === targetView) item.classList.add('active');
-        else item.classList.remove('active');
-      });
+        navItems.forEach(item => {
+          if (item.getAttribute('data-view') === targetView) item.classList.add('active');
+          else item.classList.remove('active');
+        });
 
-      document.querySelectorAll('.stitch-nav-item, .mobile-nav-btn').forEach(btn => {
-        if (btn.getAttribute('data-view') === targetView) {
-          btn.classList.add('text-secondary');
-          btn.classList.remove('text-on-surface-variant');
-        } else {
-          btn.classList.remove('text-secondary');
-          btn.classList.add('text-on-surface-variant');
+        document.querySelectorAll('.stitch-nav-item, .mobile-nav-btn').forEach(btn => {
+          if (btn.getAttribute('data-view') === targetView) {
+            btn.classList.add('text-secondary', 'font-bold');
+            btn.classList.remove('text-on-surface-variant');
+          } else {
+            btn.classList.remove('text-secondary', 'font-bold');
+            btn.classList.add('text-on-surface-variant');
+          }
+        });
+
+        const currentViewTitle = document.getElementById('current-view-title');
+        if (currentViewTitle) {
+          const titleMap = {
+            'view-dashboard': 'Panel Principal',
+            'view-pos': 'Terminal POS',
+            'view-ticket': 'Ticket Oficial',
+            'view-cotizaciones': 'Cotizaciones',
+            'view-cotizacion-detalle': 'Presupuesto Formal',
+            'view-proyectos': 'Proyectos',
+            'view-galeria': 'Archivos CNC',
+            'view-productos': 'Productos',
+            'view-servicios': 'Servicios',
+            'view-materiales': 'Materiales & Insumos',
+            'view-proveedores': 'Proveedores',
+            'view-vendedores': 'Vendedores & Comisiones',
+            'view-clientes': 'Clientes',
+            'view-historial': 'Historial',
+            'view-ajustes': 'Mi Negocio',
+            'view-changelog': 'Historial de Versiones',
+            'view-caja': 'Libro de Caja',
+            'view-cobranzas': 'Cuentas por Cobrar',
+            'view-reportes': 'Analítica & Reportes',
+            'view-privacidad': 'Políticas de Privacidad'
+          };
+          currentViewTitle.textContent = titleMap[targetView] || 'MARKT';
         }
-      });
 
-      const currentViewTitle = document.getElementById('current-view-title');
-      if (currentViewTitle) {
-        if (targetView === 'view-dashboard') currentViewTitle.textContent = 'Panel Principal';
-        else if (targetView === 'view-pos') currentViewTitle.textContent = 'Terminal POS';
-        else if (targetView === 'view-ticket') currentViewTitle.textContent = 'Ticket Oficial';
-        else if (targetView === 'view-cotizaciones') currentViewTitle.textContent = 'Cotizaciones';
-        else if (targetView === 'view-cotizacion-detalle') currentViewTitle.textContent = 'Presupuesto Formal';
-        else if (targetView === 'view-proyectos') currentViewTitle.textContent = 'Proyectos';
-        else if (targetView === 'view-galeria') currentViewTitle.textContent = 'Archivos CNC';
-        else if (targetView === 'view-productos') currentViewTitle.textContent = 'Productos';
-        else if (targetView === 'view-servicios') currentViewTitle.textContent = 'Servicios';
-        else if (targetView === 'view-materiales') currentViewTitle.textContent = 'Materiales & Insumos';
-        else if (targetView === 'view-proveedores') currentViewTitle.textContent = 'Proveedores';
-        else if (targetView === 'view-vendedores') currentViewTitle.textContent = 'Vendedores & Comisiones';
-        else if (targetView === 'view-clientes') currentViewTitle.textContent = 'Clientes';
-        else if (targetView === 'view-historial') currentViewTitle.textContent = 'Historial';
-        else if (targetView === 'view-ajustes') currentViewTitle.textContent = 'Mi Negocio';
-        else if (targetView === 'view-changelog') currentViewTitle.textContent = 'Historial de Versiones';
-        else if (targetView === 'view-caja') currentViewTitle.textContent = 'Libro de Caja';
-        else if (targetView === 'view-cobranzas') currentViewTitle.textContent = 'Cuentas por Cobrar';
-        else if (targetView === 'view-reportes') currentViewTitle.textContent = 'Analítica & Reportes';
-        else if (targetView === 'view-privacidad') currentViewTitle.textContent = 'Políticas de Privacidad';
+        // Scroll suave arriba al cambiar vista
+        window.scrollTo({ top: 0, behavior: 'instant' });
+
+        // Safe execution of view renderers
+        try {
+          if (targetView === 'view-dashboard') {
+            if (pageTitleText) pageTitleText.textContent = 'Panel Principal';
+            renderDashboard();
+          } else if (targetView === 'view-pos') {
+            if (pageTitleText) pageTitleText.textContent = 'Terminal POS';
+          } else if (targetView === 'view-ticket') {
+            updateCalculationsAndPreview();
+          } else if (targetView === 'view-cotizaciones') {
+            if (pageTitleText) pageTitleText.textContent = 'Cotizaciones';
+            renderQuotesHistory();
+          } else if (targetView === 'view-cotizacion-detalle') {
+            renderQuoteItemsTable();
+            recalcQuoteTotals();
+            setTimeout(() => initSignatureCanvas(), 100);
+          } else if (targetView === 'view-proyectos') {
+            if (pageTitleText) pageTitleText.textContent = 'Proyectos';
+            renderProjectsPipeline();
+          } else if (targetView === 'view-galeria') {
+            if (pageTitleText) pageTitleText.textContent = 'Archivos CNC';
+            renderGallery();
+          } else if (targetView === 'view-productos') {
+            renderProductsTable();
+          } else if (targetView === 'view-servicios') {
+            if (pageTitleText) pageTitleText.textContent = 'Servicios';
+            renderServicesTable();
+          } else if (targetView === 'view-materiales') {
+            if (pageTitleText) pageTitleText.textContent = 'Materiales & Insumos';
+            renderMaterialsTable();
+          } else if (targetView === 'view-proveedores') {
+            if (pageTitleText) pageTitleText.textContent = 'Proveedores';
+            renderSuppliersTable();
+          } else if (targetView === 'view-vendedores') {
+            if (pageTitleText) pageTitleText.textContent = 'Vendedores & Comisiones';
+            renderVendorsTable();
+          } else if (targetView === 'view-clientes') {
+            renderClientsTable();
+          } else if (targetView === 'view-historial') {
+            renderHistoryTable();
+          } else if (targetView === 'view-ajustes') {
+            if (pageTitleText) pageTitleText.textContent = 'Mi Negocio';
+          } else if (targetView === 'view-changelog') {
+            if (pageTitleText) pageTitleText.textContent = 'Historial de Versiones';
+          } else if (targetView === 'view-caja') {
+            if (pageTitleText) pageTitleText.textContent = 'Libro de Caja';
+            renderCajaView();
+          } else if (targetView === 'view-cobranzas') {
+            if (pageTitleText) pageTitleText.textContent = 'Cuentas por Cobrar';
+            renderCxcView();
+          } else if (targetView === 'view-reportes') {
+            if (pageTitleText) pageTitleText.textContent = 'Analítica & Reportes';
+            renderFinancialReport();
+          } else if (targetView === 'view-privacidad') {
+            if (pageTitleText) pageTitleText.textContent = 'Políticas de Privacidad';
+          }
+        } catch (renderError) {
+          console.error(`Error en renderizado de ${targetView}:`, renderError);
+          window.logDebug && window.logDebug('error', `Error render ${targetView}: ${renderError.message}`);
+        }
+
+        if (adminSidebar) adminSidebar.classList.remove('mobile-open');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('mobile-open');
+        const drawerEl = document.getElementById('system-drawer');
+        const drawerOv = document.getElementById('drawer-overlay');
+        if (drawerEl) drawerEl.classList.remove('drawer-open');
+        if (drawerOv) drawerOv.classList.add('hidden');
+
+        const dbgView = document.getElementById('debug-status-view');
+        if (dbgView) dbgView.textContent = `Vista: ${targetView}`;
+      } catch (navErr) {
+        console.error('Error crítico en switchView:', navErr);
+        window.logDebug && window.logDebug('error', `Error en switchView: ${navErr.message}`);
       }
-
-      if (targetView === 'view-dashboard') {
-        if (pageTitleText) pageTitleText.textContent = 'Panel Principal';
-        renderDashboard();
-      } else if (targetView === 'view-pos') {
-        if (pageTitleText) pageTitleText.textContent = 'Terminal POS';
-      } else if (targetView === 'view-ticket') {
-        updateCalculationsAndPreview();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else if (targetView === 'view-cotizaciones') {
-        if (pageTitleText) pageTitleText.textContent = 'Cotizaciones';
-        renderQuotesHistory();
-      } else if (targetView === 'view-cotizacion-detalle') {
-        renderQuoteItemsTable();
-        recalcQuoteTotals();
-        setTimeout(() => initSignatureCanvas(), 100);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else if (targetView === 'view-proyectos') {
-        if (pageTitleText) pageTitleText.textContent = 'Proyectos';
-        renderProjectsPipeline();
-      } else if (targetView === 'view-galeria') {
-        if (pageTitleText) pageTitleText.textContent = 'Archivos CNC';
-        renderGallery();
-      } else if (targetView === 'view-productos') {
-        renderProductsTable();
-      } else if (targetView === 'view-servicios') {
-        if (pageTitleText) pageTitleText.textContent = 'Servicios';
-        renderServicesTable();
-      } else if (targetView === 'view-materiales') {
-        if (pageTitleText) pageTitleText.textContent = 'Materiales & Insumos';
-        renderMaterialsTable();
-      } else if (targetView === 'view-proveedores') {
-        if (pageTitleText) pageTitleText.textContent = 'Proveedores';
-        renderSuppliersTable();
-      } else if (targetView === 'view-vendedores') {
-        if (pageTitleText) pageTitleText.textContent = 'Vendedores & Comisiones';
-        renderVendorsTable();
-      } else if (targetView === 'view-clientes') {
-        renderClientsTable();
-      } else if (targetView === 'view-historial') {
-        renderHistoryTable();
-      } else if (targetView === 'view-ajustes') {
-        if (pageTitleText) pageTitleText.textContent = 'Mi Negocio';
-      } else if (targetView === 'view-changelog') {
-        if (pageTitleText) pageTitleText.textContent = 'Historial de Versiones';
-      } else if (targetView === 'view-caja') {
-        if (pageTitleText) pageTitleText.textContent = 'Libro de Caja';
-        renderCajaView();
-      } else if (targetView === 'view-cobranzas') {
-        if (pageTitleText) pageTitleText.textContent = 'Cuentas por Cobrar';
-        renderCxcView();
-      } else if (targetView === 'view-reportes') {
-        if (pageTitleText) pageTitleText.textContent = 'Analítica & Reportes';
-        renderFinancialReport();
-      } else if (targetView === 'view-privacidad') {
-        if (pageTitleText) pageTitleText.textContent = 'Políticas de Privacidad';
-      }
-
-      if (adminSidebar) adminSidebar.classList.remove('mobile-open');
-      if (sidebarOverlay) sidebarOverlay.classList.remove('mobile-open');
-      const drawerEl = document.getElementById('system-drawer');
-      const drawerOv = document.getElementById('drawer-overlay');
-      if (drawerEl) drawerEl.classList.remove('drawer-open');
-      if (drawerOv) drawerOv.classList.add('hidden');
     };
+    window.switchView = switchView;
 
     navItems.forEach(item => {
       item.addEventListener('click', () => switchView(item.getAttribute('data-view')));
@@ -5754,6 +5835,7 @@ Por favor envíenos su comprobante una vez realizado. ¡Muchas gracias por su pr
   }
 
   function openNewMovementForm(type = 'income', category = null, concept = '') {
+    window.openNewMovementForm = openNewMovementForm;
     const box = document.getElementById('caja-form-box');
     if (!box) return;
 
