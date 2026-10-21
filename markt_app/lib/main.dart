@@ -1,22 +1,46 @@
-import 'dart:convert';
-import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
+
+import 'services/debug_logger.dart';
+import 'services/bcv_service.dart';
+import 'screens/dashboard_screen.dart';
+import 'screens/pos_screen.dart';
+import 'screens/cash_screen.dart';
+import 'screens/projects_screen.dart';
+import 'screens/products_screen.dart';
+import 'screens/clients_screen.dart';
+import 'screens/settings_screen.dart';
+import 'widgets/app_drawer.dart';
+import 'widgets/floating_debug_button.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Color(0xFFF8F9FF),
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Color(0xFFF8F9FF),
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
-  runApp(const MarktApp());
+  runZonedGuarded(() {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    // Capturar errores de Flutter Framework
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      DebugLogger.instance.error(
+        details.exceptionAsString(),
+        details.stack,
+      );
+    };
+
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Color(0xFF020617),
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
+
+    runApp(const MarktApp());
+  }, (error, stack) {
+    // Capturar cualquier error no capturado en la zona
+    DebugLogger.instance.error('Error no capturado en app: $error', stack);
+  });
 }
 
 class MarktApp extends StatelessWidget {
@@ -27,189 +51,217 @@ class MarktApp extends StatelessWidget {
     return MaterialApp(
       title: 'MARTK POS',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF8F9FF),
+      themeMode: ThemeMode.dark,
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF020617), // Dark AMOLED
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF6366F1), // Indigo
+          secondary: Color(0xFF10B981), // Emerald
+          surface: Color(0xFF0F172A),
+          onSurface: Colors.white,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF020617),
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          titleTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
       ),
-      home: const MarktWebViewScreen(),
+      home: const MainNavigationScreen(),
     );
   }
 }
 
-class MarktWebViewScreen extends StatefulWidget {
-  const MarktWebViewScreen({super.key});
+class MainNavigationScreen extends StatefulWidget {
+  const MainNavigationScreen({super.key});
 
   @override
-  State<MarktWebViewScreen> createState() => _MarktWebViewScreenState();
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MarktWebViewScreenState extends State<MarktWebViewScreen> {
-  late final WebViewController _controller;
-  bool _isLoading = true;
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  int _currentIndex = 0;
 
-  Future<Directory> _getDataDirectory() async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final dataDir = Directory('${appDir.path}/markt_data');
-    if (!await dataDir.exists()) {
-      await dataDir.create(recursive: true);
-    }
-    return dataDir;
-  }
+  final List<String> _titles = [
+    'Panel Principal',
+    'Terminal POS (Ventas)',
+    'Libro de Caja',
+    'Proyectos & Pedidos',
+    'Inventario',
+    'Clientes',
+    'Configuración',
+  ];
 
-  Future<void> _handleStorageMessage(JavaScriptMessage message) async {
-    try {
-      final payload = jsonDecode(message.message) as Map<String, dynamic>;
-      final action = payload['action'] as String?;
-      final key = payload['key'] as String?;
-      final requestId = payload['requestId'] as String?;
-      final dataDir = await _getDataDirectory();
-
-      if (action == 'save' && key != null) {
-        final data = payload['data'];
-        final file = File('${dataDir.path}/$key.json');
-        await file.writeAsString(jsonEncode(data), flush: true);
-        if (requestId != null) {
-          _sendResponseToJs(requestId, success: true);
-        }
-      } else if (action == 'load' && key != null) {
-        final file = File('${dataDir.path}/$key.json');
-        if (await file.exists()) {
-          final content = await file.readAsString();
-          final parsed = jsonDecode(content);
-          if (requestId != null) {
-            _sendResponseToJs(requestId, success: true, data: parsed);
-          }
-        } else {
-          if (requestId != null) {
-            _sendResponseToJs(requestId, success: true, data: null);
-          }
-        }
-      } else if (action == 'delete' && key != null) {
-        final file = File('${dataDir.path}/$key.json');
-        if (await file.exists()) {
-          await file.delete();
-        }
-        if (requestId != null) {
-          _sendResponseToJs(requestId, success: true);
-        }
-      } else if (action == 'export_backup') {
-        // Collect all json files into one map
-        final Map<String, dynamic> backup = {};
-        final files = dataDir.listSync().whereType<File>();
-        for (final f in files) {
-          if (f.path.endsWith('.json')) {
-            final fileName = f.uri.pathSegments.last.replaceAll('.json', '');
-            try {
-              backup[fileName] = jsonDecode(await f.readAsString());
-            } catch (_) {}
-          }
-        }
-        if (requestId != null) {
-          _sendResponseToJs(requestId, success: true, data: backup);
-        }
-      } else if (action == 'import_backup') {
-        final backupData = payload['data'] as Map<String, dynamic>?;
-        if (backupData != null) {
-          for (final entry in backupData.entries) {
-            final file = File('${dataDir.path}/${entry.key}.json');
-            await file.writeAsString(jsonEncode(entry.value), flush: true);
-          }
-        }
-        if (requestId != null) {
-          _sendResponseToJs(requestId, success: true);
-        }
-      }
-    } catch (e) {
-      debugPrint('Error en NativeStorage Channel: $e');
-    }
-  }
-
-  void _sendResponseToJs(String requestId, {required bool success, dynamic data}) {
-    final responseJson = jsonEncode({
-      'requestId': requestId,
-      'success': success,
-      'data': data,
-    });
-    // Sanitize for JS invocation
-    final encoded = jsonEncode(responseJson);
-    _controller.runJavaScript('window.MarktNativeStorage && window.MarktNativeStorage._onNativeResponse($encoded);');
-  }
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFFF8F9FF))
-      ..addJavaScriptChannel(
-        'MarktNativeStorageChannel',
-        onMessageReceived: _handleStorageMessage,
-      )
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageStarted: (String url) {
-            setState(() {
-              _isLoading = true;
-            });
-          },
-          onPageFinished: (String url) {
-            setState(() {
-              _isLoading = false;
-            });
-          },
-          onWebResourceError: (WebResourceError error) {
-            debugPrint('Web Resource Error: ${error.description}');
-          },
-          onNavigationRequest: (NavigationRequest request) {
-            final url = request.url;
-            if (url.startsWith('https://api.whatsapp.com') ||
-                url.startsWith('https://wa.me') ||
-                url.startsWith('whatsapp:') ||
-                url.startsWith('https://calendar.google.com') ||
-                url.startsWith('tel:') ||
-                url.startsWith('mailto:')) {
-              final uri = Uri.tryParse(url);
-              if (uri != null) {
-                launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-              return NavigationDecision.prevent;
-            }
-            return NavigationDecision.navigate;
-          },
-        ),
-      )
-      ..loadFlutterAsset('assets/web/index.html');
+    _screens = [
+      DashboardScreen(onNavigate: _onDestinationSelected),
+      const PosScreen(),
+      const CashScreen(),
+      const ProjectsScreen(),
+      const ProductsScreen(),
+      const ClientsScreen(),
+      const SettingsScreen(),
+    ];
+    DebugLogger.instance.info('MARTK POS nativo en Flutter iniciado con éxito.');
+    BcvService.instance.init();
+  }
+
+  void _onDestinationSelected(int index) {
+    if (index >= 0 && index < _screens.length) {
+      setState(() {
+        _currentIndex = index;
+      });
+      DebugLogger.instance.info('Navegando a: ${_titles[index]}');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        if (await _controller.canGoBack()) {
-          await _controller.goBack();
-        } else {
-          if (context.mounted) {
-            SystemNavigator.pop();
-          }
-        }
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8F9FF),
-        body: SafeArea(
-          bottom: false,
-          child: Stack(
-            children: [
-              WebViewWidget(controller: _controller),
-              if (_isLoading)
-                const Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFF6366F1),
-                  ),
-                ),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_titles[_currentIndex]),
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu),
+            tooltip: 'Menú Principal',
+            onPressed: () {
+              Scaffold.of(ctx).openDrawer();
+            },
           ),
+        ),
+        actions: [
+          // Pill con la Tasa Oficial BCV del Día
+          ValueListenableBuilder<BcvRates>(
+            valueListenable: BcvService.instance.ratesNotifier,
+            builder: (context, rates, _) {
+              return ValueListenableBuilder<bool>(
+                valueListenable: BcvService.instance.isLoading,
+                builder: (context, loading, _) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: loading ? null : () => BcvService.instance.fetchRates(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F172A),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: rates.isLive ? const Color(0xFF10B981).withValues(alpha: 0.5) : const Color(0xFF334155),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (loading)
+                              const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)),
+                              )
+                            else
+                              Icon(
+                                Icons.circle,
+                                size: 8,
+                                color: rates.isLive ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                              ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'BCV: Bs. ${rates.usd.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Actualizar Tasa BCV',
+            onPressed: () {
+              BcvService.instance.fetchRates();
+              setState(() {});
+              DebugLogger.instance.info('Actualizando datos y tasa BCV.');
+            },
+          ),
+        ],
+      ),
+      drawer: AppDrawer(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: _onDestinationSelected,
+      ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
+      floatingActionButton: const FloatingDebugButton(),
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          backgroundColor: const Color(0xFF0F172A),
+          indicatorColor: const Color(0xFF6366F1).withValues(alpha: 0.25),
+          labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>(
+            (Set<WidgetState> states) {
+              if (states.contains(WidgetState.selected)) {
+                return const TextStyle(color: Color(0xFF818CF8), fontSize: 11, fontWeight: FontWeight.bold);
+              }
+              return const TextStyle(color: Color(0xFF64748B), fontSize: 11);
+            },
+          ),
+          iconTheme: WidgetStateProperty.resolveWith<IconThemeData>(
+            (Set<WidgetState> states) {
+              if (states.contains(WidgetState.selected)) {
+                return const IconThemeData(color: Color(0xFF818CF8), size: 22);
+              }
+              return const IconThemeData(color: Color(0xFF64748B), size: 22);
+            },
+          ),
+        ),
+        child: NavigationBar(
+          selectedIndex: _currentIndex > 3 ? 0 : _currentIndex,
+          onDestinationSelected: _onDestinationSelected,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard),
+              label: 'Inicio',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.point_of_sale_outlined),
+              selectedIcon: Icon(Icons.point_of_sale),
+              label: 'POS',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.account_balance_wallet_outlined),
+              selectedIcon: Icon(Icons.account_balance_wallet),
+              label: 'Caja',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.folder_outlined),
+              selectedIcon: Icon(Icons.folder),
+              label: 'Proyectos',
+            ),
+          ],
         ),
       ),
     );

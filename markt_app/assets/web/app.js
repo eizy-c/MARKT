@@ -5061,7 +5061,6 @@ Organizado con MARKT POS`);
 
   // Launch App
   init();
-});
 
 
   // ==========================================================================
@@ -6615,4 +6614,127 @@ Le informamos sobre su pedido *${proj.title}*:
         if (target) switchView(target);
       });
     });
+
+    // ==========================================================================
+    // SISTEMA DE CONSOLA DE DIAGNOSTICO FLOTANTE & VISOR DE ERRORES
+    // ==========================================================================
+    const btnToggleDebug = document.getElementById('btn-toggle-debug');
+    const debugModal = document.getElementById('debug-modal');
+    const debugModalOverlay = document.getElementById('debug-modal-overlay');
+    const btnCloseDebug = document.getElementById('btn-close-debug');
+    const btnClearDebug = document.getElementById('btn-clear-debug-logs');
+    const btnCopyDebug = document.getElementById('btn-copy-debug-logs');
+    const debugBadge = document.getElementById('debug-badge-count');
+    const debugLogContainer = document.getElementById('debug-log-container');
+
+    function renderDebugLogs() {
+      if (!debugLogContainer) return;
+      if (debugConsoleLogs.length === 0) {
+        debugLogContainer.innerHTML = '<div class="text-slate-500 italic">Sin errores detectados. Sistema listo.</div>';
+        if (debugBadge) debugBadge.classList.add('hidden');
+        return;
+      }
+
+      const errorsCount = debugConsoleLogs.filter(l => l.type === 'error').length;
+      if (debugBadge) {
+        if (errorsCount > 0) {
+          debugBadge.textContent = errorsCount;
+          debugBadge.classList.remove('hidden');
+        } else {
+          debugBadge.classList.add('hidden');
+        }
+      }
+
+      debugLogContainer.innerHTML = debugConsoleLogs.map(l => {
+        let color = 'text-slate-300';
+        let bg = 'bg-slate-900/60';
+        let icon = 'info';
+        if (l.type === 'error') {
+          color = 'text-rose-400';
+          bg = 'bg-rose-950/40 border border-rose-900/40';
+          icon = 'error';
+        } else if (l.type === 'warn') {
+          color = 'text-amber-300';
+          bg = 'bg-amber-950/40 border border-amber-900/40';
+          icon = 'warning';
+        }
+
+        const detailsHtml = l.details ? '<pre class="mt-1 text-[10px] text-slate-400 overflow-x-auto whitespace-pre-wrap">' + l.details + '</pre>' : '';
+
+        return '<div class="p-2 rounded ' + bg + ' ' + color + ' text-xs font-mono break-all">' +
+          '<div class="flex items-center justify-between text-[10px] opacity-75 mb-1">' +
+            '<span class="font-bold uppercase flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">' + icon + '</span> ' + l.type + '</span>' +
+            '<span>' + l.time + '</span>' +
+          '</div>' +
+          '<div>' + l.message + '</div>' +
+          detailsHtml +
+        '</div>';
+      }).join('');
+    }
+
+    window.updateDebugConsoleUI = renderDebugLogs;
+
+    function openDebugModal() {
+      if (debugModal) debugModal.classList.remove('hidden');
+      if (debugModalOverlay) debugModalOverlay.classList.remove('hidden');
+      renderDebugLogs();
+    }
+
+    function closeDebugModal() {
+      if (debugModal) debugModal.classList.add('hidden');
+      if (debugModalOverlay) debugModalOverlay.classList.add('hidden');
+    }
+
+    if (btnToggleDebug) {
+      btnToggleDebug.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (debugModal && !debugModal.classList.contains('hidden')) {
+          closeDebugModal();
+        } else {
+          openDebugModal();
+        }
+      });
+    }
+
+    if (btnCloseDebug) btnCloseDebug.addEventListener('click', closeDebugModal);
+    if (debugModalOverlay) debugModalOverlay.addEventListener('click', closeDebugModal);
+
+    if (btnClearDebug) {
+      btnClearDebug.addEventListener('click', () => {
+        debugConsoleLogs.length = 0;
+        renderDebugLogs();
+        if (window.showToast) window.showToast('Logs limpiados', 'info');
+      });
+    }
+
+    if (btnCopyDebug) {
+      btnCopyDebug.addEventListener('click', () => {
+        const text = debugConsoleLogs.map(l => '[' + l.time + '] [' + l.type.toUpperCase() + '] ' + l.message + ' ' + (l.details || '')).join('\n');
+        navigator.clipboard.writeText(text).then(() => {
+          if (window.showToast) window.showToast('Logs copiados al portapapeles', 'success');
+        }).catch(() => {
+          if (window.showToast) window.showToast('Error al copiar logs', 'error');
+        });
+      });
+    }
+
+    // Interceptar console.error y console.warn para agregarlos automaticamente al debug console
+    const origConsoleError = console.error;
+    console.error = function(...args) {
+      origConsoleError.apply(console, args);
+      const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+      window.logDebug('error', msg);
+    };
+
+    const origConsoleWarn = console.warn;
+    console.warn = function(...args) {
+      origConsoleWarn.apply(console, args);
+      const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+      window.logDebug('warn', msg);
+    };
+
+    // Renderizar estado inicial
+    renderDebugLogs();
+    window.logDebug('info', 'Consola de diagnostico y captura de errores MARTK lista');
   }
+});
