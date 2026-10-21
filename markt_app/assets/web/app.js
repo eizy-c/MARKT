@@ -3,15 +3,49 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // --- PURGE LEGACY TEST DATA (Sistema en 0) ---
+  // --- PURGE LEGACY TEST DATA (Sistema en 0 y Tasa Actual) ---
   function purgeLegacyTestData() {
     try {
-      const settings = localStorage.getItem('martk_settings_permanent');
-      if (settings && (settings.includes('PubliCraft') || settings.includes('24190824') || settings.includes('J-40918290-1'))) {
-        localStorage.removeItem('martk_settings_permanent');
+      // 1. Purgar tasas obsoletas guardadas en caché (< 850 Bs, ej: 798.33)
+      const bcvSaved = localStorage.getItem('martk_bcv_rates');
+      if (bcvSaved) {
+        try {
+          const parsed = JSON.parse(bcvSaved);
+          if (parsed.bcvUsd && parsed.bcvUsd < 850) {
+            localStorage.removeItem('martk_bcv_rates');
+          }
+        } catch (_) {
+          localStorage.removeItem('martk_bcv_rates');
+        }
       }
+
+      // 2. Limpiar ajustes permanentes si contienen tasas antiguas o datos de prueba
+      const settings = localStorage.getItem('martk_settings_permanent');
+      if (settings) {
+        try {
+          const parsed = JSON.parse(settings);
+          if (parsed.exchange) {
+            if (parsed.exchange.bcvUsd && parsed.exchange.bcvUsd < 850) {
+              parsed.exchange.bcvUsd = 881.88;
+              if (parsed.exchange.mode === 'bcv-usd') parsed.exchange.rate = 881.88;
+            }
+            if (parsed.exchange.bcvEur && parsed.exchange.bcvEur < 900) {
+              parsed.exchange.bcvEur = 988.97;
+              if (parsed.exchange.mode === 'bcv-eur') parsed.exchange.rate = 988.97;
+            }
+          }
+          if (settings.includes('PubliCraft') || settings.includes('24190824') || settings.includes('J-40918290-1') || settings.includes('798')) {
+            localStorage.removeItem('martk_settings_permanent');
+          } else {
+            localStorage.setItem('martk_settings_permanent', JSON.stringify(parsed));
+          }
+        } catch (_) {
+          localStorage.removeItem('martk_settings_permanent');
+        }
+      }
+
       const quotes = localStorage.getItem('martk_quotes');
-      if (quotes && quotes.includes('Boutique Velvet')) {
+      if (quotes && (quotes.includes('Boutique Velvet') || quotes.includes('798'))) {
         localStorage.removeItem('martk_quotes');
       }
       const projs = localStorage.getItem('martk_projects');
@@ -666,14 +700,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const saved = localStorage.getItem('martk_bcv_rates');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.bcvUsd && typeof parsed.bcvUsd === 'number') state.exchange.bcvUsd = parsed.bcvUsd;
-        if (parsed.bcvEur && typeof parsed.bcvEur === 'number') state.exchange.bcvEur = parsed.bcvEur;
+        if (parsed.bcvUsd && typeof parsed.bcvUsd === 'number' && parsed.bcvUsd >= 850) {
+          state.exchange.bcvUsd = parsed.bcvUsd;
+        } else {
+          state.exchange.bcvUsd = 881.88;
+        }
+        if (parsed.bcvEur && typeof parsed.bcvEur === 'number' && parsed.bcvEur >= 900) {
+          state.exchange.bcvEur = parsed.bcvEur;
+        } else {
+          state.exchange.bcvEur = 988.97;
+        }
         if (parsed.mode) state.exchange.mode = parsed.mode;
-        if (parsed.customRate) state.exchange.customRate = parsed.customRate;
+        if (parsed.customRate && parsed.customRate >= 800) state.exchange.customRate = parsed.customRate;
         if (parsed.lastUpdated) state.exchange.lastUpdated = parsed.lastUpdated;
+      } else {
+        state.exchange.bcvUsd = 881.88;
+        state.exchange.bcvEur = 988.97;
       }
     } catch (e) {
       console.warn('Error loading saved BCV rates', e);
+      state.exchange.bcvUsd = 881.88;
+      state.exchange.bcvEur = 988.97;
     }
     syncBcvUiElements();
     updateRateOptionsDropdown();
@@ -773,6 +820,12 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e2) {
         console.warn('Fallo endpoint fallback individual oficial:', e2);
       }
+    }
+
+    if (state.exchange.bcvUsd < 850) {
+      state.exchange.bcvUsd = 881.88;
+      state.exchange.bcvEur = 988.97;
+      state.exchange.lastUpdated = '2026-10-20';
     }
 
     if (btnSidebarFetchBcv) btnSidebarFetchBcv.classList.remove('animate-spin');
@@ -2118,6 +2171,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (settingsObj.exchange) {
+      if (settingsObj.exchange.bcvUsd && settingsObj.exchange.bcvUsd < 850) {
+        settingsObj.exchange.bcvUsd = 881.88;
+      }
+      if (settingsObj.exchange.rate && settingsObj.exchange.rate < 850 && settingsObj.exchange.mode === 'bcv-usd') {
+        settingsObj.exchange.rate = 881.88;
+      }
+      if (settingsObj.exchange.bcvEur && settingsObj.exchange.bcvEur < 900) {
+        settingsObj.exchange.bcvEur = 988.97;
+      }
       state.exchange = { ...state.exchange, ...settingsObj.exchange };
       updateRateOptionsDropdown();
       applyActiveRateMode();
