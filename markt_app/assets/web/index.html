@@ -125,7 +125,7 @@
             <span class="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></span>
             <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">MARKT</span>
           </div>
-          <span id="current-view-title" class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">Terminal POS</span>
+          <span id="current-view-title" class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">Panel Principal</span>
         </div>
       </div>
 
@@ -182,6 +182,10 @@
 
     <!-- Drawer Navigation Links -->
     <div class="flex-1 overflow-y-auto p-3 space-y-1">
+      <button class="drawer-nav-item active" data-view="view-dashboard" type="button">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span>Inicio (Dashboard)</span>
+      </button>
       <button class="drawer-nav-item active" data-view="view-pos" type="button">
         <span class="material-symbols-outlined">point_of_sale</span>
         <span>Terminal POS</span>
@@ -278,9 +282,130 @@
   <main class="flex-1 flex flex-col relative w-full pt-20 sm:pt-24 pb-24 px-3 sm:px-6 max-w-7xl mx-auto">
 
     <!-- ==========================================================================
+         VISTA PRINCIPAL: DASHBOARD & PIPELINE DE PROYECTOS (VISTA DE INICIO)
+         ========================================================================== -->
+    <section id="view-dashboard" class="app-view active w-full flex flex-col pb-8 space-y-4">
+      
+      <!-- Encabezado de Bienvenida & Filtro Rápido -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-surface-container-low border border-surface-container">
+        <div>
+          <span class="text-[11px] font-bold text-secondary uppercase tracking-wider">Panel Principal</span>
+          <h2 id="dash-greeting-name" class="font-headline-sm font-bold text-on-surface text-lg leading-tight">Resumen del Negocio</h2>
+          <p class="text-xs text-on-surface-variant mt-0.5">Métricas financieras y estado de pedidos en tiempo real</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <select id="dash-period-filter" class="h-10 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-xs font-bold border border-surface-container focus:outline-none">
+            <option value="today">Hoy</option>
+            <option value="week">Esta Semana</option>
+            <option value="month" selected>Este Mes</option>
+            <option value="all">Todo el Historial</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tarjetas Financieras (KPIs de Analítica en Vivo) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <!-- Ventas del Mes -->
+        <div class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between cursor-pointer hover:bg-surface-container/60 transition-colors" data-view="view-pos">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-on-surface-variant">Ventas</span>
+            <span class="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <span class="material-symbols-outlined text-[15px]">payments</span>
+            </span>
+          </div>
+          <div class="mt-2">
+            <div id="dash-sales-usd" class="font-mono text-xl font-extrabold text-on-surface leading-tight">$0.00</div>
+            <div id="dash-sales-bs" class="font-mono text-[10px] text-on-surface-variant font-bold mt-0.5">0.00 Bs.</div>
+          </div>
+        </div>
+
+        <!-- Utilidad Neta Real -->
+        <div class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between cursor-pointer hover:bg-surface-container/60 transition-colors" data-view="view-reportes">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-secondary">Utilidad Neta</span>
+            <span class="w-6 h-6 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+              <span class="material-symbols-outlined text-[15px]">verified</span>
+            </span>
+          </div>
+          <div class="mt-2">
+            <div id="dash-profit-usd" class="font-mono text-xl font-extrabold text-secondary leading-tight">$0.00</div>
+            <div id="dash-profit-margin" class="text-[10px] text-on-surface-variant font-bold mt-0.5">Margen: 0%</div>
+          </div>
+        </div>
+
+        <!-- Cuentas por Cobrar (Quién me debe) -->
+        <div class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between cursor-pointer hover:bg-surface-container/60 transition-colors" data-view="view-cobranzas">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-amber-600 dark:text-amber-400">Por Cobrar</span>
+            <span class="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <span class="material-symbols-outlined text-[15px]">pending_actions</span>
+            </span>
+          </div>
+          <div class="mt-2">
+            <div id="dash-cxc-usd" class="font-mono text-xl font-extrabold text-amber-600 dark:text-amber-400 leading-tight">$0.00</div>
+            <div id="dash-cxc-count" class="text-[10px] text-on-surface-variant font-bold mt-0.5">0 cuentas pendientes</div>
+          </div>
+        </div>
+
+        <!-- Saldo en Caja -->
+        <div class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between cursor-pointer hover:bg-surface-container/60 transition-colors" data-view="view-caja">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-on-surface-variant">Saldo en Caja</span>
+            <span class="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+              <span class="material-symbols-outlined text-[15px]">account_balance_wallet</span>
+            </span>
+          </div>
+          <div class="mt-2">
+            <div id="dash-caja-usd" class="font-mono text-xl font-extrabold text-primary leading-tight">$0.00</div>
+            <div id="dash-caja-bs" class="font-mono text-[10px] text-on-surface-variant font-bold mt-0.5">0.00 Bs.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección de Proyectos & Pedidos (Pipeline Operativo: En espera, En proceso, Por cobrar) -->
+      <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-container space-y-3.5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-surface-container pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-[22px]">pending_actions</span>
+            <div>
+              <h3 class="font-headline-sm font-bold text-on-surface text-base">Proyectos & Pedidos Activos</h3>
+              <p class="text-[11px] text-on-surface-variant">En espera, en proceso de trabajo y por cobrar</p>
+            </div>
+          </div>
+          <button id="btn-dash-new-project" class="h-9 px-3.5 bg-primary text-on-primary rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform font-bold text-xs self-start sm:self-auto" type="button">
+            <span class="material-symbols-outlined text-[16px]">add</span>
+            <span>Nuevo Pedido</span>
+          </button>
+        </div>
+
+        <!-- Filtros de Estado del Pipeline -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button class="dash-proj-pill active px-3 py-1.5 rounded-xl bg-secondary text-on-secondary font-bold text-xs transition-colors" data-status="all" type="button">Todos</button>
+          <button class="dash-proj-pill px-3 py-1.5 rounded-xl bg-surface-container text-on-surface font-semibold text-xs transition-colors" data-status="espera" type="button">En Espera</button>
+          <button class="dash-proj-pill px-3 py-1.5 rounded-xl bg-surface-container text-on-surface font-semibold text-xs transition-colors" data-status="proceso" type="button">En Proceso</button>
+          <button class="dash-proj-pill px-3 py-1.5 rounded-xl bg-surface-container text-on-surface font-semibold text-xs transition-colors" data-status="cobrar" type="button">Por Cobrar</button>
+          <button class="dash-proj-pill px-3 py-1.5 rounded-xl bg-surface-container text-on-surface font-semibold text-xs transition-colors" data-status="listo" type="button">Listos</button>
+        </div>
+
+        <!-- Lista de Proyectos / Cards -->
+        <div id="dash-projects-container" class="space-y-2.5 pt-1">
+        </div>
+
+        <!-- Estado Vacío -->
+        <div id="dash-projects-empty" class="p-6 text-center text-on-surface-variant hidden">
+          <span class="material-symbols-outlined text-3xl mb-1 text-outline">assignment</span>
+          <p class="font-bold text-xs">No hay pedidos registrados en este estado</p>
+          <p class="text-[11px] text-outline mt-0.5">Usa "+ Nuevo Pedido" para ingresar trabajos de clientes.</p>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ==========================================================================
          VISTA 1: TERMINAL POS (Flujo Rapido, Des-encajonado)
          ========================================================================== -->
-    <section id="view-pos" class="app-view active w-full flex flex-col pb-6 space-y-4">
+    <section id="view-pos" class="app-view hidden w-full flex flex-col pb-6 space-y-4">
       <!-- Banner Informativo MARKT v4.0 -->
       <div id="v4-welcome-banner" class="hidden p-3.5 rounded-2xl bg-secondary/10 border border-secondary/20 flex flex-wrap items-center justify-between gap-3 shadow-sm">
         <div class="flex items-center gap-2.5">
@@ -2714,33 +2839,89 @@
 
     </section>
 
+
+  <!-- BOTTOM QUICK ACTION SHEET (Desplegable Central: Vender / Ingreso / Gasto) -->
+  <div id="quick-action-overlay" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden transition-opacity"></div>
+  <div id="quick-action-sheet" class="fixed bottom-20 inset-x-4 max-w-sm mx-auto z-50 bg-surface-container-lowest rounded-3xl p-4 shadow-2xl border border-surface-container hidden transition-all transform duration-200">
+    <div class="flex items-center justify-between pb-2 border-b border-surface-container mb-3">
+      <span class="font-bold text-on-surface text-sm">Operaciones Rápidas</span>
+      <button id="btn-close-quick-action" class="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+        <span class="material-symbols-outlined text-[16px]">close</span>
+      </button>
+    </div>
+    <div class="grid grid-cols-1 gap-2.5">
+      <!-- 1. Vender en POS -->
+      <button id="btn-qa-pos" class="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-surface-container text-left transition-colors" type="button">
+        <div class="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-[22px]">point_of_sale</span>
+        </div>
+        <div>
+          <div class="font-bold text-on-surface text-sm">Nueva Venta en POS</div>
+          <div class="text-[11px] text-on-surface-variant">Generar ticket, cobrar en efectivo, tarjeta o Pago Móvil</div>
+        </div>
+      </button>
+
+      <!-- 2. Añadir Dinero / Ingreso -->
+      <button id="btn-qa-income" class="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-surface-container text-left transition-colors" type="button">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-[22px]">arrow_downward</span>
+        </div>
+        <div>
+          <div class="font-bold text-emerald-700 dark:text-emerald-300 text-sm">Añadir Dinero / Ingreso</div>
+          <div class="text-[11px] text-on-surface-variant">Aporte de capital, abono o entrada directa a Caja</div>
+        </div>
+      </button>
+
+      <!-- 3. Registrar Gasto / Egreso -->
+      <button id="btn-qa-expense" class="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-surface-container text-left transition-colors" type="button">
+        <div class="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-[22px]">arrow_upward</span>
+        </div>
+        <div>
+          <div class="font-bold text-rose-700 dark:text-rose-300 text-sm">Registrar Gasto / Factura</div>
+          <div class="text-[11px] text-on-surface-variant">Pago a proveedor, insumos o tomar foto a recibo</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
   </main>
 
 
   <!-- ==========================================================================
        FIXED BOTTOM NAVIGATION BAR (Stitch 1:1)
        ========================================================================== -->
-  <nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/95 backdrop-blur-xl shadow-[0_-4px_16px_rgba(11,28,48,0.06)] border-t border-surface-container" data-active-classes="text-secondary">
-    <div class="flex justify-around items-center h-16 max-w-lg mx-auto px-1">
-      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[60px] min-h-[48px] px-2 py-1 transition-colors text-secondary" data-view="view-pos" type="button">
-        <span class="material-symbols-outlined text-[22px]">point_of_sale</span>
-        <span class="font-label-sm text-label-sm mt-0.5 font-bold">POS</span>
+    <nav class="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface/95 backdrop-blur-xl shadow-[0_-4px_16px_rgba(11,28,48,0.08)] border-t border-surface-container" data-active-classes="text-secondary">
+    <div class="flex justify-around items-center h-16 max-w-lg mx-auto px-2 relative">
+      <!-- 1. Inicio -->
+      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[56px] py-1 text-secondary font-bold" data-view="view-dashboard" type="button">
+        <span class="material-symbols-outlined text-[22px]">dashboard</span>
+        <span class="font-label-sm text-[10px] mt-0.5">Inicio</span>
       </button>
-      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[60px] min-h-[48px] px-2 py-1 text-on-surface-variant transition-colors hover:text-on-surface" data-view="view-ticket" type="button">
-        <span class="material-symbols-outlined text-[22px]">receipt_long</span>
-        <span class="font-label-sm text-label-sm mt-0.5 font-bold">Ticket</span>
+
+      <!-- 2. Caja -->
+      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[56px] py-1 text-on-surface-variant hover:text-on-surface" data-view="view-caja" type="button">
+        <span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
+        <span class="font-label-sm text-[10px] mt-0.5">Caja</span>
       </button>
-      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[60px] min-h-[48px] px-2 py-1 text-on-surface-variant transition-colors hover:text-on-surface" data-view="view-cotizaciones" type="button">
-        <span class="material-symbols-outlined text-[22px]">request_quote</span>
-        <span class="font-label-sm text-label-sm mt-0.5 font-bold">Cotizar</span>
-      </button>
-      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[60px] min-h-[48px] px-2 py-1 text-on-surface-variant transition-colors hover:text-on-surface" data-view="view-proyectos" type="button">
+
+      <!-- 3. BOTÓN CENTRAL FLOTANTE (+) -->
+      <div class="relative -top-5 flex items-center justify-center">
+        <button id="btn-quick-action-center" class="w-14 h-14 rounded-full bg-primary text-on-primary shadow-xl flex items-center justify-center active:scale-90 transition-transform border-4 border-surface cursor-pointer" type="button" title="Acción Rápida: Vender / Ingreso / Gasto">
+          <span class="material-symbols-outlined text-[30px]">add</span>
+        </button>
+      </div>
+
+      <!-- 4. Por Cobrar -->
+      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[56px] py-1 text-on-surface-variant hover:text-on-surface" data-view="view-cobranzas" type="button">
         <span class="material-symbols-outlined text-[22px]">pending_actions</span>
-        <span class="font-label-sm text-label-sm mt-0.5 font-bold">Proyectos</span>
+        <span class="font-label-sm text-[10px] mt-0.5">Por Cobrar</span>
       </button>
-      <button class="stitch-nav-item flex flex-col items-center justify-center min-w-[60px] min-h-[48px] px-2 py-1 text-on-surface-variant transition-colors hover:text-on-surface" data-view="view-ajustes" type="button">
-        <span class="material-symbols-outlined text-[22px]">storefront</span>
-        <span class="font-label-sm text-label-sm mt-0.5 font-bold">Negocio</span>
+
+      <!-- 5. Menú Más -->
+      <button id="btn-bottom-menu-toggle" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-on-surface-variant hover:text-on-surface cursor-pointer" type="button">
+        <span class="material-symbols-outlined text-[22px]">menu</span>
+        <span class="font-label-sm text-[10px] mt-0.5">Menú</span>
       </button>
     </div>
   </nav>

@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- MODO 100% STANDALONE WEB & MOBILE (Sin Base de Datos / LocalStorage) ---
 
   const state = {
-    activeView: 'view-pos',
+    activeView: 'view-dashboard',
     docType: 'venta', // 'venta' | 'ingreso' | 'egreso'
     folioCounter: 1,
     business: {
@@ -146,6 +146,8 @@ document.addEventListener('DOMContentLoaded', () => {
     cajaTypeFilter: 'all',
     cxcStatusFilter: 'pending',
     reportPeriodFilter: 'month',
+    dashPeriodFilter: 'month',
+    dashProjectFilter: 'all',
     history: [],
     cotizaciones: [],
     proyectos: [],
@@ -394,32 +396,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- INITIALIZATION ---
   function init() {
-    purgeLegacyTestData();
-    loadSavedSettingsAndBusiness();
-    loadProductsFromStorage();
-    loadServicesFromStorage();
-    loadMaterialsFromStorage();
-    loadSuppliersFromStorage();
-    loadSellersFromStorage();
-    loadClientsFromStorage();
-    loadCashMovementsFromStorage();
-    loadCxcFromStorage();
-    loadHistoryFromStorage();
-    loadCotizacionesFromStorage();
-    loadProyectosFromStorage();
-    loadGaleriaFromStorage();
-    loadSavedBcvRates();
-    setupNavigation();
-    setupSubtabsSystem();
-    setupDocTypeSelector();
-    setupEventListeners();
-    setupNewModulesEventListeners();
-    setupPhases2to6EventListeners();
-    setDefaultDateAndTime();
-    renderItemsList();
-    initActiveQuote();
-    fetchBcvRatesFromApi();
-    updateCalculationsAndPreview();
+    const safeRun = (fn, name) => {
+      try { fn(); } catch (err) { console.warn(`Error en ${name}:`, err); }
+    };
+
+    safeRun(purgeLegacyTestData, 'purgeLegacyTestData');
+    safeRun(loadSavedSettingsAndBusiness, 'loadSavedSettingsAndBusiness');
+    safeRun(loadProductsFromStorage, 'loadProductsFromStorage');
+    safeRun(loadServicesFromStorage, 'loadServicesFromStorage');
+    safeRun(loadMaterialsFromStorage, 'loadMaterialsFromStorage');
+    safeRun(loadSuppliersFromStorage, 'loadSuppliersFromStorage');
+    safeRun(loadSellersFromStorage, 'loadSellersFromStorage');
+    safeRun(loadClientsFromStorage, 'loadClientsFromStorage');
+    safeRun(loadCashMovementsFromStorage, 'loadCashMovementsFromStorage');
+    safeRun(loadCxcFromStorage, 'loadCxcFromStorage');
+    safeRun(loadHistoryFromStorage, 'loadHistoryFromStorage');
+    safeRun(loadCotizacionesFromStorage, 'loadCotizacionesFromStorage');
+    safeRun(loadProyectosFromStorage, 'loadProyectosFromStorage');
+    safeRun(loadGaleriaFromStorage, 'loadGaleriaFromStorage');
+    safeRun(loadSavedBcvRates, 'loadSavedBcvRates');
+    safeRun(setupNavigation, 'setupNavigation');
+    safeRun(setupSubtabsSystem, 'setupSubtabsSystem');
+    safeRun(setupDocTypeSelector, 'setupDocTypeSelector');
+    safeRun(setupEventListeners, 'setupEventListeners');
+    safeRun(setupNewModulesEventListeners, 'setupNewModulesEventListeners');
+    safeRun(setupPhases2to6EventListeners, 'setupPhases2to6EventListeners');
+    safeRun(setupDashboardAndFloatingAction, 'setupDashboardAndFloatingAction');
+    safeRun(setDefaultDateAndTime, 'setDefaultDateAndTime');
+    safeRun(renderItemsList, 'renderItemsList');
+    safeRun(initActiveQuote, 'initActiveQuote');
+    safeRun(fetchBcvRatesFromApi, 'fetchBcvRatesFromApi');
+    safeRun(updateCalculationsAndPreview, 'updateCalculationsAndPreview');
+    safeRun(renderDashboard, 'renderDashboard');
   }
 
   function setDefaultDateAndTime() {
@@ -488,9 +496,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    if (btnNextStep1) btnNextStep1.addEventListener('click', () => switchSubtabByStepRef(2));
+    if (btnNextStep1) if (btnNextStep1) btnNextStep1.addEventListener('click', () => switchSubtabByStepRef(2));
     if (btnNextStep2) {
-      btnNextStep2.addEventListener('click', () => {
+      if (btnNextStep2) btnNextStep2.addEventListener('click', () => {
         if (state.options.showQR) {
           switchSubtabByStepRef(3);
         } else {
@@ -498,8 +506,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
-    if (btnPrevStep2) btnPrevStep2.addEventListener('click', () => switchSubtabByStepRef(1));
-    if (btnPrevStep3) btnPrevStep3.addEventListener('click', () => switchSubtabByStepRef(2));
+    if (btnPrevStep2) if (btnPrevStep2) btnPrevStep2.addEventListener('click', () => switchSubtabByStepRef(1));
+    if (btnPrevStep3) if (btnPrevStep3) btnPrevStep3.addEventListener('click', () => switchSubtabByStepRef(2));
 
     switchSubtabByStepRef(1);
   }
@@ -530,7 +538,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const currentViewTitle = document.getElementById('current-view-title');
       if (currentViewTitle) {
-        if (targetView === 'view-pos') currentViewTitle.textContent = 'Terminal POS';
+        if (targetView === 'view-dashboard') currentViewTitle.textContent = 'Panel Principal';
+        else if (targetView === 'view-pos') currentViewTitle.textContent = 'Terminal POS';
         else if (targetView === 'view-ticket') currentViewTitle.textContent = 'Ticket Oficial';
         else if (targetView === 'view-cotizaciones') currentViewTitle.textContent = 'Cotizaciones';
         else if (targetView === 'view-cotizacion-detalle') currentViewTitle.textContent = 'Presupuesto Formal';
@@ -551,7 +560,10 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (targetView === 'view-privacidad') currentViewTitle.textContent = 'Políticas de Privacidad';
       }
 
-      if (targetView === 'view-pos') {
+      if (targetView === 'view-dashboard') {
+        if (pageTitleText) pageTitleText.textContent = 'Panel Principal';
+        renderDashboard();
+      } else if (targetView === 'view-pos') {
         if (pageTitleText) pageTitleText.textContent = 'Terminal POS';
       } else if (targetView === 'view-ticket') {
         updateCalculationsAndPreview();
@@ -650,7 +662,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnOpenThermalModal = document.getElementById('btn-open-thermal-modal');
     if (btnOpenThermalModal) {
-      btnOpenThermalModal.addEventListener('click', () => {
+      if (btnOpenThermalModal) btnOpenThermalModal.addEventListener('click', () => {
         switchView('view-ticket');
       });
     }
@@ -1008,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (sidebarBcvEur) {
     sidebarBcvEur.style.cursor = 'pointer';
-    sidebarBcvEur.addEventListener('click', () => {
+    if (sidebarBcvEur) sidebarBcvEur.addEventListener('click', () => {
       state.exchange.mode = 'bcv-eur';
       applyActiveRateMode();
       autoSaveSettings();
@@ -1109,26 +1121,26 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    inputClientName.addEventListener('input', e => { state.client.name = cleanInputText(e.target.value); updateCalculationsAndPreview(); });
-    inputClientName.addEventListener('blur', e => { e.target.value = cleanInputText(e.target.value); });
+    if (inputClientName) inputClientName.addEventListener('input', e => { state.client.name = cleanInputText(e.target.value); updateCalculationsAndPreview(); });
+    if (inputClientName) inputClientName.addEventListener('blur', e => { e.target.value = cleanInputText(e.target.value); });
 
-    inputClientId.addEventListener('input', e => { 
+    if (inputClientId) inputClientId.addEventListener('input', e => { 
       const cleanVal = cleanIdentificacionInput(e.target.value);
       state.client.id = cleanVal; 
       e.target.value = cleanVal;
       updateCalculationsAndPreview(); 
     });
-    inputClientId.addEventListener('keyup', e => { if (e.key === 'Enter') performCedulaLookup(); });
+    if (inputClientId) inputClientId.addEventListener('keyup', e => { if (e.key === 'Enter') performCedulaLookup(); });
     if (btnSearchCedula) btnSearchCedula.addEventListener('click', performCedulaLookup);
 
-    inputClientPhone.addEventListener('input', e => { 
+    if (inputClientPhone) inputClientPhone.addEventListener('input', e => { 
       const cleanVal = cleanPhoneInput(e.target.value);
       state.client.phone = cleanVal; 
       e.target.value = cleanVal;
     });
 
-    inputClientCity.addEventListener('input', e => { state.client.city = cleanInputText(e.target.value); updateCalculationsAndPreview(); });
-    inputClientCity.addEventListener('blur', e => { e.target.value = cleanInputText(e.target.value); });
+    if (inputClientCity) inputClientCity.addEventListener('input', e => { state.client.city = cleanInputText(e.target.value); updateCalculationsAndPreview(); });
+    if (inputClientCity) inputClientCity.addEventListener('blur', e => { e.target.value = cleanInputText(e.target.value); });
 
     selectPaymentForm.addEventListener('change', e => {
       if (e.target.value === 'custom') {
@@ -1273,11 +1285,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnOpenCatalogPicker.addEventListener('click', openProductPickerModal);
-    btnCloseProductPicker.addEventListener('click', () => modalProductPicker.classList.add('hidden'));
+    if (btnCloseProductPicker) btnCloseProductPicker.addEventListener('click', () => modalProductPicker.classList.add('hidden'));
     if (pickerSearchProduct) pickerSearchProduct.addEventListener('input', renderProductPickerGrid);
 
     btnOpenSelectClientModal.addEventListener('click', openClientPickerModal);
-    btnCloseClientPicker.addEventListener('click', () => modalClientPicker.classList.add('hidden'));
+    if (btnCloseClientPicker) btnCloseClientPicker.addEventListener('click', () => modalClientPicker.classList.add('hidden'));
     if (pickerSearchClient) pickerSearchClient.addEventListener('input', renderClientPickerList);
 
     btnShowAddProductForm.addEventListener('click', () => {
@@ -1293,7 +1305,7 @@ document.addEventListener('DOMContentLoaded', () => {
       formClient.reset();
       clientFormBox.classList.remove('hidden');
     });
-    btnCancelClient.addEventListener('click', () => clientFormBox.classList.add('hidden'));
+    if (btnCancelClient) btnCancelClient.addEventListener('click', () => clientFormBox.classList.add('hidden'));
     formClient.addEventListener('submit', handleSaveClient);
     if (searchClients) searchClients.addEventListener('input', renderClientsTable);
 
@@ -4488,7 +4500,7 @@ ${bankArea.value.trim()}
 
     const btnResetProjectFilter = document.getElementById('reset-filter-btn');
     if (btnResetProjectFilter) {
-      btnResetProjectFilter.addEventListener('click', () => {
+      if (btnResetProjectFilter) btnResetProjectFilter.addEventListener('click', () => {
         state.projectFilter = 'all';
         document.querySelectorAll('#stage-stepper .phase-chip').forEach(c => {
           c.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'border-secondary');
@@ -4544,7 +4556,7 @@ ${bankArea.value.trim()}
     // Close Quote Sheet modal button
     const btnCloseQuoteSheet = document.getElementById('btn-close-quote-sheet');
     if (btnCloseQuoteSheet) {
-      btnCloseQuoteSheet.addEventListener('click', () => {
+      if (btnCloseQuoteSheet) btnCloseQuoteSheet.addEventListener('click', () => {
         document.getElementById('modal-quote-sheet')?.classList.add('hidden');
       });
     }
@@ -4598,7 +4610,7 @@ ${bankArea.value.trim()}
 
     const btnPreviewQ = document.getElementById('btn-preview-quote-client');
     if (btnPreviewQ) {
-      btnPreviewQ.addEventListener('click', () => {
+      if (btnPreviewQ) btnPreviewQ.addEventListener('click', () => {
         if (state.activeQuote) openQuoteSheetModal(state.activeQuote);
       });
     }
@@ -4725,7 +4737,7 @@ Organizado con MARKT POS`);
 
     const btnCloseQSheet = document.getElementById('btn-close-quote-sheet');
     if (btnCloseQSheet) {
-      btnCloseQSheet.addEventListener('click', () => {
+      if (btnCloseQSheet) btnCloseQSheet.addEventListener('click', () => {
         document.getElementById('modal-quote-sheet').classList.add('hidden');
       });
     }
@@ -4749,11 +4761,11 @@ Organizado con MARKT POS`);
     }
 
     const btnPrintQSheet = document.getElementById('btn-print-quote-sheet');
-    if (btnPrintQSheet) btnPrintQSheet.addEventListener('click', () => window.print());
+    if (btnPrintQSheet) if (btnPrintQSheet) btnPrintQSheet.addEventListener('click', () => window.print());
 
     const btnShareQWaModal = document.getElementById('btn-share-quote-sheet-wa');
     if (btnShareQWaModal) {
-      btnShareQWaModal.addEventListener('click', () => {
+      if (btnShareQWaModal) btnShareQWaModal.addEventListener('click', () => {
         if (state.activeQuote) shareQuoteViaWhatsapp(state.activeQuote);
       });
     }
@@ -4773,12 +4785,12 @@ Organizado con MARKT POS`);
     if (searchP) searchP.addEventListener('input', renderProjectsPipeline);
 
     const btnSavePStatus = document.getElementById('btn-save-project-status');
-    if (btnSavePStatus) btnSavePStatus.addEventListener('click', saveProjectStatus);
+    if (btnSavePStatus) if (btnSavePStatus) btnSavePStatus.addEventListener('click', saveProjectStatus);
 
     const btnClosePStatus = document.getElementById('btn-close-project-status');
     const btnCancelPStatus = document.getElementById('btn-cancel-project-status');
-    if (btnClosePStatus) btnClosePStatus.addEventListener('click', () => document.getElementById('modal-project-status').classList.add('hidden'));
-    if (btnCancelPStatus) btnCancelPStatus.addEventListener('click', () => document.getElementById('modal-project-status').classList.add('hidden'));
+    if (btnClosePStatus) if (btnClosePStatus) btnClosePStatus.addEventListener('click', () => document.getElementById('modal-project-status').classList.add('hidden'));
+    if (btnCancelPStatus) if (btnCancelPStatus) btnCancelPStatus.addEventListener('click', () => document.getElementById('modal-project-status').classList.add('hidden'));
 
     // Formulario Nuevo Proyecto
     const btnShowAddP = document.getElementById('btn-show-add-project');
@@ -4799,7 +4811,7 @@ Organizado con MARKT POS`);
 
     const btnClosePForm = document.getElementById('btn-close-project-form');
     const btnCancelPForm = document.getElementById('btn-cancel-project-form');
-    if (btnClosePForm) btnClosePForm.addEventListener('click', () => modalPForm.classList.add('hidden'));
+    if (btnClosePForm) if (btnClosePForm) btnClosePForm.addEventListener('click', () => modalPForm.classList.add('hidden'));
     if (btnCancelPForm) btnCancelPForm.addEventListener('click', () => modalPForm.classList.add('hidden'));
 
     const btnSavePForm = document.getElementById('btn-save-project-form');
@@ -4848,17 +4860,17 @@ Organizado con MARKT POS`);
 
     // Modal Notas
     const btnClosePNotes = document.getElementById('btn-close-project-notes');
-    if (btnClosePNotes) btnClosePNotes.addEventListener('click', () => document.getElementById('modal-project-notes').classList.add('hidden'));
+    if (btnClosePNotes) if (btnClosePNotes) btnClosePNotes.addEventListener('click', () => document.getElementById('modal-project-notes').classList.add('hidden'));
     const btnAddPNote = document.getElementById('btn-add-project-note');
-    if (btnAddPNote) btnAddPNote.addEventListener('click', addProjectNote);
+    if (btnAddPNote) if (btnAddPNote) btnAddPNote.addEventListener('click', addProjectNote);
 
     // Modal Fotos Proyecto
     const btnClosePPhotos = document.getElementById('btn-close-project-photos');
-    if (btnClosePPhotos) btnClosePPhotos.addEventListener('click', () => document.getElementById('modal-project-photos').classList.add('hidden'));
+    if (btnClosePPhotos) if (btnClosePPhotos) btnClosePPhotos.addEventListener('click', () => document.getElementById('modal-project-photos').classList.add('hidden'));
 
     const inputUploadPPhoto = document.getElementById('input-upload-project-photo');
     if (inputUploadPPhoto) {
-      inputUploadPPhoto.addEventListener('change', e => {
+      if (inputUploadPPhoto) inputUploadPPhoto.addEventListener('change', e => {
         const file = e.target.files[0];
         if (!file) return;
         const projId = document.getElementById('photos-modal-project-id').value;
@@ -4894,13 +4906,13 @@ Organizado con MARKT POS`);
 
     const btnCloseGalUpload = document.getElementById('btn-close-gallery-upload');
     const btnCancelGalUpload = document.getElementById('btn-cancel-gallery-photo');
-    if (btnCloseGalUpload) btnCloseGalUpload.addEventListener('click', () => modalGalUpload.classList.add('hidden'));
-    if (btnCancelGalUpload) btnCancelGalUpload.addEventListener('click', () => modalGalUpload.classList.add('hidden'));
+    if (btnCloseGalUpload) if (btnCloseGalUpload) btnCloseGalUpload.addEventListener('click', () => modalGalUpload.classList.add('hidden'));
+    if (btnCancelGalUpload) if (btnCancelGalUpload) btnCancelGalUpload.addEventListener('click', () => modalGalUpload.classList.add('hidden'));
 
     let tempGalPhotoUrl = '';
     const galFileInput = document.getElementById('gal-input-file');
     if (galFileInput) {
-      galFileInput.addEventListener('change', e => {
+      if (galFileInput) galFileInput.addEventListener('change', e => {
         const file = e.target.files[0];
         if (!file) return;
         compressImageFile(file, 1000, 1000, 0.8, function(dataUrl) {
@@ -4913,7 +4925,7 @@ Organizado con MARKT POS`);
 
     const btnSaveGalPhoto = document.getElementById('btn-save-gallery-photo');
     if (btnSaveGalPhoto) {
-      btnSaveGalPhoto.addEventListener('click', () => {
+      if (btnSaveGalPhoto) btnSaveGalPhoto.addEventListener('click', () => {
         const title = cleanInputText(document.getElementById('gal-input-title').value);
         const category = document.getElementById('gal-select-cat').value;
         const client = cleanInputText(document.getElementById('gal-input-client').value);
@@ -4954,8 +4966,8 @@ Organizado con MARKT POS`);
     // 4. Visor de Imagen Full
     const btnCloseViewer = document.getElementById('btn-close-image-viewer');
     const btnCloseViewerAlt = document.getElementById('btn-close-viewer-alt');
-    if (btnCloseViewer) btnCloseViewer.addEventListener('click', () => document.getElementById('modal-image-viewer').classList.add('hidden'));
-    if (btnCloseViewerAlt) btnCloseViewerAlt.addEventListener('click', () => document.getElementById('modal-image-viewer').classList.add('hidden'));
+    if (btnCloseViewer) if (btnCloseViewer) btnCloseViewer.addEventListener('click', () => document.getElementById('modal-image-viewer').classList.add('hidden'));
+    if (btnCloseViewerAlt) if (btnCloseViewerAlt) btnCloseViewerAlt.addEventListener('click', () => document.getElementById('modal-image-viewer').classList.add('hidden'));
   }
 
   function resetToFactoryDefaults() {
@@ -6213,4 +6225,312 @@ Generado por MARKT Universal OS`;
         });
       }
     }
+  }
+
+
+  // ==========================================================================
+  // MÓDULO: DASHBOARD PRINCIPAL & ACCIONES RÁPIDAS (VISTA INICIAL)
+  // ==========================================================================
+  function renderDashboard() {
+    const greetingEl = document.getElementById('dash-greeting-name');
+    if (greetingEl) {
+      greetingEl.textContent = state.business.name ? state.business.name : 'Resumen del Negocio';
+    }
+
+    const period = state.dashPeriodFilter || 'month';
+    const now = new Date();
+
+    const isMatchDate = (dStr) => {
+      if (!dStr) return false;
+      const d = new Date(dStr);
+      if (isNaN(d.getTime())) return false;
+      if (period === 'today') return d.toDateString() === now.toDateString();
+      if (period === 'week') {
+        const diff = (now - d) / (1000 * 60 * 60 * 24);
+        return diff >= 0 && diff <= 7;
+      }
+      if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      return true; // 'all'
+    };
+
+    let totalSalesUsd = 0;
+    let totalCogsUsd = 0;
+    state.history.forEach(rec => {
+      const recDate = rec.doc_date || (rec.uuid ? new Date(Number(rec.uuid)).toISOString() : null);
+      if (!isMatchDate(recDate)) return;
+      const grand = Number(rec.total_principal) || 0;
+      totalSalesUsd += grand;
+
+      if (rec.items && Array.isArray(rec.items)) {
+        rec.items.forEach(it => {
+          const qty = Number(it.qty) || Number(it.cant) || 1;
+          const pCat = state.productsCatalog.find(p => (p.codigo && p.codigo === it.code) || (p.nombre && p.nombre.toLowerCase() === (it.desc || it.name || '').toLowerCase()));
+          const unitCost = pCat ? (Number(pCat.costo_usd) || 0) : 0;
+          totalCogsUsd += (unitCost * qty);
+        });
+      }
+    });
+
+    let totalExpensesUsd = 0;
+    let cashNetUsd = 0;
+    state.cashMovements.forEach(m => {
+      const usd = Number(m.amountUsd) || 0;
+      if (m.type === 'income') cashNetUsd += usd;
+      else {
+        cashNetUsd -= usd;
+        if (isMatchDate(m.date)) totalExpensesUsd += usd;
+      }
+    });
+
+    let totalDebtUsd = 0;
+    let pendingCount = 0;
+    state.cuentasPorCobrar.forEach(c => {
+      const bal = Number(c.balanceUsd) || 0;
+      if (bal > 0.01) {
+        totalDebtUsd += bal;
+        pendingCount++;
+      }
+    });
+
+    const netProfitUsd = (totalSalesUsd - totalCogsUsd) - totalExpensesUsd;
+    const netMarginPct = totalSalesUsd > 0 ? (netProfitUsd / totalSalesUsd) * 100 : 0;
+    const rate = state.exchange.rate || 1;
+
+    // Update Dashboard KPIs
+    const elSalesUsd = document.getElementById('dash-sales-usd');
+    const elSalesBs = document.getElementById('dash-sales-bs');
+    const elProfitUsd = document.getElementById('dash-profit-usd');
+    const elProfitMargin = document.getElementById('dash-profit-margin');
+    const elCxcUsd = document.getElementById('dash-cxc-usd');
+    const elCxcCount = document.getElementById('dash-cxc-count');
+    const elCajaUsd = document.getElementById('dash-caja-usd');
+    const elCajaBs = document.getElementById('dash-caja-bs');
+
+    if (elSalesUsd) elSalesUsd.textContent = `$${totalSalesUsd.toFixed(2)}`;
+    if (elSalesBs) elSalesBs.textContent = `${(totalSalesUsd * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
+    if (elProfitUsd) {
+      elProfitUsd.textContent = `${netProfitUsd >= 0 ? '$' : '-$'}${Math.abs(netProfitUsd).toFixed(2)}`;
+      elProfitUsd.className = `font-mono text-xl font-extrabold ${netProfitUsd >= 0 ? 'text-secondary' : 'text-rose-600 dark:text-rose-400'}`;
+    }
+    if (elProfitMargin) {
+      elProfitMargin.textContent = `Margen: ${netMarginPct.toFixed(1)}%`;
+      elProfitMargin.className = `text-[10px] font-bold ${netMarginPct >= 0 ? 'text-on-surface-variant' : 'text-rose-600 dark:text-rose-400'}`;
+    }
+    if (elCxcUsd) elCxcUsd.textContent = `$${totalDebtUsd.toFixed(2)}`;
+    if (elCxcCount) elCxcCount.textContent = `${pendingCount} cuenta${pendingCount === 1 ? '' : 's'} pendiente${pendingCount === 1 ? '' : 's'}`;
+    if (elCajaUsd) {
+      elCajaUsd.textContent = `${cashNetUsd >= 0 ? '$' : '-$'}${Math.abs(cashNetUsd).toFixed(2)}`;
+      elCajaUsd.className = `font-mono text-xl font-extrabold ${cashNetUsd >= 0 ? 'text-primary' : 'text-rose-600 dark:text-rose-400'}`;
+    }
+    if (elCajaBs) elCajaBs.textContent = `${(cashNetUsd * rate).toLocaleString('es-VE', { maximumFractionDigits: 0 })} Bs.`;
+
+    renderDashboardProjects();
+  }
+
+  function renderDashboardProjects() {
+    const container = document.getElementById('dash-projects-container');
+    const emptyState = document.getElementById('dash-projects-empty');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const filter = state.dashProjectFilter || 'all';
+
+    let list = state.proyectos || [];
+    if (filter === 'espera') {
+      list = list.filter(p => (p.status || '').toLowerCase().includes('presupuesto') || (p.status || '').toLowerCase().includes('espera'));
+    } else if (filter === 'proceso') {
+      list = list.filter(p => (p.status || '').toLowerCase().includes('diseño') || (p.status || '').toLowerCase().includes('corte') || (p.status || '').toLowerCase().includes('fabricación') || (p.status || '').toLowerCase().includes('armado') || (p.status || '').toLowerCase().includes('proceso'));
+    } else if (filter === 'cobrar') {
+      list = list.filter(p => (p.status || '').toLowerCase().includes('cobrar') || (Number(p.saldoPendiente) > 0));
+    } else if (filter === 'listo') {
+      list = list.filter(p => (p.status || '').toLowerCase().includes('listo') || (p.status || '').toLowerCase().includes('entregado'));
+    }
+
+    if (list.length === 0) {
+      if (emptyState) emptyState.classList.remove('hidden');
+      return;
+    }
+    if (emptyState) emptyState.classList.add('hidden');
+
+    const rate = state.exchange.rate || 1;
+
+    list.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'p-3.5 rounded-2xl bg-surface-container-lowest border border-surface-container flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-secondary/30 transition-all';
+
+      const sLower = (p.status || '').toLowerCase();
+      let badgeBg = 'bg-amber-500/10 text-amber-600 dark:text-amber-400';
+      if (sLower.includes('listo') || sLower.includes('entregado')) {
+        badgeBg = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
+      } else if (sLower.includes('proceso') || sLower.includes('corte') || sLower.includes('diseño')) {
+        badgeBg = 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
+      } else if (sLower.includes('cobrar')) {
+        badgeBg = 'bg-rose-500/10 text-rose-600 dark:text-rose-400';
+      }
+
+      const totalUsd = Number(p.totalPrice || p.montoUsd || 0);
+
+      card.innerHTML = `
+        <div class="flex items-start gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-secondary font-bold text-xs flex-shrink-0 mt-0.5">
+            <span class="material-symbols-outlined text-[18px]">assignment</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-bold text-on-surface text-sm">${p.title || 'Proyecto sin título'}</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeBg}">${p.status || 'En Espera'}</span>
+            </div>
+            <div class="text-xs text-on-surface-variant mt-0.5">
+              <span>Cliente: <strong>${p.clientName || 'Cliente General'}</strong></span>
+              ${p.clientPhone ? `<span class="ml-2 font-mono text-[10px] text-outline">${p.clientPhone}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-0 border-surface-container">
+          <div class="text-left sm:text-right">
+            <div class="font-mono text-base font-extrabold text-secondary leading-tight">$${totalUsd.toFixed(2)}</div>
+            <div class="font-mono text-[10px] text-on-surface-variant font-bold">${(totalUsd * rate).toLocaleString('es-VE', { maximumFractionDigits: 0 })} Bs.</div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            ${p.clientPhone ? `
+              <button class="btn-dash-wa w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-500/25 active:scale-95 transition-all" data-id="${p.id}" title="WhatsApp">
+                <i class="fa-brands fa-whatsapp text-[15px]"></i>
+              </button>
+            ` : ''}
+            <button class="btn-dash-goto-proj px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-bold active:scale-95 transition-all" data-id="${p.id}">
+              Ver Detalle
+            </button>
+          </div>
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+
+    container.querySelectorAll('.btn-dash-wa').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const proj = (state.proyectos || []).find(x => x.id === id);
+        if (proj && proj.clientPhone) {
+          const biz = state.business.name || 'Nuestro Negocio';
+          const msg = `Hola estimado(a) ${proj.clientName}, le saludamos de *${biz}*.
+Le informamos sobre su pedido *${proj.title}*:
+- *Estado actual:* ${proj.status}
+- *Total:* $${Number(proj.totalPrice || 0).toFixed(2)}
+¡Muchas gracias por su preferencia!`;
+          const clean = proj.clientPhone.replace(/[^0-9]/g, '');
+          window.open(`https://wa.me/${clean}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+      });
+    });
+
+    container.querySelectorAll('.btn-dash-goto-proj').forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchView('view-proyectos');
+      });
+    });
+  }
+
+  function setupDashboardAndFloatingAction() {
+    // 1. Botón Central Flotante (+) y Action Sheet
+    const btnCenter = document.getElementById('btn-quick-action-center');
+    const sheet = document.getElementById('quick-action-sheet');
+    const overlay = document.getElementById('quick-action-overlay');
+    const btnClose = document.getElementById('btn-close-quick-action');
+
+    const toggleQuickSheet = () => {
+      if (!sheet) return;
+      const isHidden = sheet.classList.contains('hidden');
+      if (isHidden) {
+        sheet.classList.remove('hidden');
+        if (overlay) overlay.classList.remove('hidden');
+      } else {
+        sheet.classList.add('hidden');
+        if (overlay) overlay.classList.add('hidden');
+      }
+    };
+
+    if (btnCenter) btnCenter.addEventListener('click', toggleQuickSheet);
+    if (btnClose) btnClose.addEventListener('click', toggleQuickSheet);
+    if (overlay) overlay.addEventListener('click', toggleQuickSheet);
+
+    // Opciones del Quick Action Sheet
+    const btnQaPos = document.getElementById('btn-qa-pos');
+    if (btnQaPos) {
+      btnQaPos.addEventListener('click', () => {
+        toggleQuickSheet();
+        switchView('view-pos');
+      });
+    }
+
+    const btnQaIncome = document.getElementById('btn-qa-income');
+    if (btnQaIncome) {
+      btnQaIncome.addEventListener('click', () => {
+        toggleQuickSheet();
+        switchView('view-caja');
+        setTimeout(() => openNewMovementForm('income'), 100);
+      });
+    }
+
+    const btnQaExpense = document.getElementById('btn-qa-expense');
+    if (btnQaExpense) {
+      btnQaExpense.addEventListener('click', () => {
+        toggleQuickSheet();
+        switchView('view-caja');
+        setTimeout(() => openNewMovementForm('expense'), 100);
+      });
+    }
+
+    // Toggle de Menú en la barra inferior (Tab 5)
+    const btnBottomMenu = document.getElementById('btn-bottom-menu-toggle');
+    const sysDrawer = document.getElementById('system-drawer');
+    const drawerOv = document.getElementById('drawer-overlay');
+    if (btnBottomMenu) {
+      btnBottomMenu.addEventListener('click', () => {
+        if (sysDrawer) sysDrawer.classList.add('drawer-open');
+        if (drawerOv) drawerOv.classList.remove('hidden');
+      });
+    }
+
+    // Filtro de período en Dashboard
+    const dashFilter = document.getElementById('dash-period-filter');
+    if (dashFilter) {
+      dashFilter.addEventListener('change', (e) => {
+        state.dashPeriodFilter = e.target.value;
+        renderDashboard();
+      });
+    }
+
+    // Pills de estado de proyectos en Dashboard
+    document.querySelectorAll('.dash-proj-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.dash-proj-pill').forEach(p => {
+          p.classList.remove('active', 'bg-secondary', 'text-on-secondary');
+          p.classList.add('bg-surface-container', 'text-on-surface');
+        });
+        pill.classList.add('active', 'bg-secondary', 'text-on-secondary');
+        pill.classList.remove('bg-surface-container', 'text-on-surface');
+        state.dashProjectFilter = pill.getAttribute('data-status') || 'all';
+        renderDashboardProjects();
+      });
+    });
+
+    // Botón "+ Nuevo Pedido" en Dashboard
+    const btnDashNewProj = document.getElementById('btn-dash-new-project');
+    if (btnDashNewProj) {
+      btnDashNewProj.addEventListener('click', () => {
+        switchView('view-proyectos');
+        const showFormBtn = document.getElementById('btn-show-project-form');
+        if (showFormBtn) showFormBtn.click();
+      });
+    }
+
+    // Clicks en las tarjetas de KPIs para navegar a su vista
+    document.querySelectorAll('#view-dashboard [data-view]').forEach(card => {
+      card.addEventListener('click', () => {
+        const target = card.getAttribute('data-view');
+        if (target) switchView(target);
+      });
+    });
   }
