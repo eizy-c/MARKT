@@ -729,13 +729,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function saveBcvRatesToStorage() {
     try {
-      localStorage.setItem('martk_bcv_rates', JSON.stringify({
+      const data = {
         bcvUsd: state.exchange.bcvUsd,
         bcvEur: state.exchange.bcvEur,
         mode: state.exchange.mode,
         customRate: state.exchange.customRate,
         lastUpdated: state.exchange.lastUpdated || new Date().toISOString()
-      }));
+      };
+      if (window.MarktNativeStorage) {
+        window.MarktNativeStorage.setItem('martk_bcv_rates', data);
+      } else {
+        localStorage.setItem('martk_bcv_rates', JSON.stringify(data));
+      }
     } catch (e) {
       console.warn('Error saving BCV rates', e);
     }
@@ -1287,8 +1292,12 @@ document.addEventListener('DOMContentLoaded', () => {
       options: state.options
     };
 
-    localStorage.setItem('martk_settings_permanent', JSON.stringify(settingsObj));
-    if (showNotification) showToast('Ajustes guardados correctamente en este navegador', 'success');
+    if (window.MarktNativeStorage) {
+      window.MarktNativeStorage.setItem('martk_settings_permanent', settingsObj);
+    } else {
+      localStorage.setItem('martk_settings_permanent', JSON.stringify(settingsObj));
+    }
+    if (showNotification) showToast('Ajustes guardados en la memoria del teléfono', 'success');
   }
 
   // --- ITEMS LIST RENDERER IN POS ---
@@ -1917,7 +1926,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         state.productsCatalog = state.productsCatalog.filter(p => String(p.id) !== String(id));
-        localStorage.setItem('martk_products', JSON.stringify(state.productsCatalog));
+        if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_products', state.productsCatalog); } else { localStorage.setItem('martk_products', JSON.stringify(state.productsCatalog)); }
         renderProductsTable();
         showToast('Producto eliminado.', 'info');
       });
@@ -1949,7 +1958,7 @@ document.addEventListener('DOMContentLoaded', () => {
       state.productsCatalog.unshift({ id: Date.now(), ...prodObj });
     }
 
-    localStorage.setItem('martk_products', JSON.stringify(state.productsCatalog));
+    if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_products', state.productsCatalog); } else { localStorage.setItem('martk_products', JSON.stringify(state.productsCatalog)); }
     renderProductsTable();
     productFormBox.classList.add('hidden');
     formProduct.reset();
@@ -2068,7 +2077,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         state.clientsCatalog = state.clientsCatalog.filter(c => String(c.id) !== String(id));
-        localStorage.setItem('martk_clients', JSON.stringify(state.clientsCatalog));
+        if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_clients', state.clientsCatalog); } else { localStorage.setItem('martk_clients', JSON.stringify(state.clientsCatalog)); }
         renderClientsTable();
         showToast('Cliente eliminado del directorio.', 'info');
       });
@@ -2093,7 +2102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const clientObj = { id: Date.now(), identificacion, nombre, telefono, direccion };
     state.clientsCatalog.unshift(clientObj);
 
-    localStorage.setItem('martk_clients', JSON.stringify(state.clientsCatalog));
+    if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_clients', state.clientsCatalog); } else { localStorage.setItem('martk_clients', JSON.stringify(state.clientsCatalog)); }
     renderClientsTable();
     clientFormBox.classList.add('hidden');
     formClient.reset();
@@ -2300,7 +2309,7 @@ document.addEventListener('DOMContentLoaded', () => {
             telefono: state.client.phone || '',
             direccion: state.client.city || ''
           });
-          localStorage.setItem('martk_clients', JSON.stringify(state.clientsCatalog));
+          if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_clients', state.clientsCatalog); } else { localStorage.setItem('martk_clients', JSON.stringify(state.clientsCatalog)); }
           renderClientsTable();
         }
       }
@@ -2319,7 +2328,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (posDocNumber) posDocNumber.textContent = state.business.docNumber;
     if (inputDocNumber) inputDocNumber.value = state.business.docNumber;
     if (inputFolioCounter) inputFolioCounter.value = state.folioCounter;
-    localStorage.setItem('martk_folio_counter', state.folioCounter.toString());
+    if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_folio_counter', state.folioCounter.toString()); } else { localStorage.setItem('martk_folio_counter', state.folioCounter.toString()); }
   }
 
   function renderHistoryTable() {
@@ -2430,7 +2439,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function saveHistoryToStorage() {
-    localStorage.setItem('martk_history_records', JSON.stringify(state.history));
+    if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_history_records', state.history); } else { localStorage.setItem('martk_history_records', JSON.stringify(state.history)); }
     if (sidebarHistoryCount) sidebarHistoryCount.textContent = state.history.length;
   }
 
@@ -2717,7 +2726,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (data.folioCounter) {
           state.folioCounter = parseInt(data.folioCounter) || 1;
-          localStorage.setItem('martk_folio_counter', state.folioCounter.toString());
+          if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_folio_counter', state.folioCounter.toString()); } else { localStorage.setItem('martk_folio_counter', state.folioCounter.toString()); }
         }
 
         if (data.settings && typeof data.settings === 'object') {
@@ -2965,7 +2974,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function saveCotizacionesToStorage() {
-    localStorage.setItem('martk_quotes', JSON.stringify(state.cotizaciones));
+    if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_quotes', state.cotizaciones); } else { localStorage.setItem('martk_quotes', JSON.stringify(state.cotizaciones)); }
     updateQuoteKPIs();
   }
 
@@ -3611,7 +3620,7 @@ ${bankArea.value.trim()}
             photos: []
           }
         ];
-        localStorage.setItem('martk_projects', JSON.stringify(state.proyectos));
+        if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_projects', state.proyectos); } else { localStorage.setItem('martk_projects', JSON.stringify(state.proyectos)); }
       }
       renderProjectsPipeline();
       updateProjectKPIs();
@@ -3621,7 +3630,7 @@ ${bankArea.value.trim()}
   }
 
   function saveProyectosToStorage() {
-    localStorage.setItem('martk_projects', JSON.stringify(state.proyectos));
+    if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_projects', state.proyectos); } else { localStorage.setItem('martk_projects', JSON.stringify(state.proyectos)); }
     updateProjectKPIs();
   }
 
@@ -4067,7 +4076,7 @@ ${bankArea.value.trim()}
             url: 'https://images.unsplash.com/photo-1542744095-fcf48d80b0fd?w=600&auto=format&fit=crop&q=80'
           }
         ];
-        localStorage.setItem('martk_gallery', JSON.stringify(state.galeria));
+        if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_gallery', state.galeria); } else { localStorage.setItem('martk_gallery', JSON.stringify(state.galeria)); }
       }
       renderGallery();
     } catch (e) {
@@ -4076,7 +4085,7 @@ ${bankArea.value.trim()}
   }
 
   function saveGaleriaToStorage() {
-    localStorage.setItem('martk_gallery', JSON.stringify(state.galeria));
+    if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_gallery', state.galeria); } else { localStorage.setItem('martk_gallery', JSON.stringify(state.galeria)); }
   }
 
   function renderGallery() {
