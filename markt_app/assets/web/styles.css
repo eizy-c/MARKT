@@ -184,7 +184,7 @@ body {
 .font-label-numeric { font-family: var(--font-body); font-size: 0.875rem; font-weight: 600; line-height: 1.25rem; }
 
 /* Interactive touch active feedback */
-button, .btn, .stitch-nav-item, .phase-chip, .cat-pill {
+button, .btn, .stitch-nav-item, .phase-chip, .cat-pill, .doc-type-btn {
   touch-action: manipulation;
   user-select: none;
 }
@@ -249,6 +249,98 @@ button, .btn, .stitch-nav-item, .phase-chip, .cat-pill {
   gap: 0.75rem;
   padding: 1rem 1.25rem;
   border-top: 1px solid var(--surface-container);
+}
+
+/* Slide-Over Drawer Navigation */
+.system-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 320px;
+  max-width: 85vw;
+  background: var(--surface-container-lowest);
+  box-shadow: var(--shadow-xl);
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-right: 1px solid var(--surface-container);
+}
+
+.system-drawer.drawer-open {
+  transform: translateX(0);
+}
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 28, 48, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 105;
+}
+
+.drawer-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-xl);
+  color: var(--on-surface-variant);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.drawer-nav-item:hover, .drawer-nav-item.active {
+  background: var(--surface-container-low);
+  color: var(--secondary);
+}
+
+.drawer-nav-item .material-symbols-outlined {
+  font-size: 20px;
+}
+
+/* Stitch Flat Unboxed Data Table */
+.stitch-table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-xl);
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--surface-container);
+}
+
+.stitch-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.stitch-table th {
+  padding: 0.75rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--on-surface-variant);
+  background: var(--surface-container-low);
+  border-bottom: 1px solid var(--surface-container);
+}
+
+.stitch-table td {
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  color: var(--on-surface);
+  border-bottom: 1px solid var(--surface-container-low);
+  vertical-align: middle;
+}
+
+.stitch-table tbody tr:hover td {
+  background: var(--surface-container-low);
 }
 
 /* Toast notifications */
@@ -326,16 +418,23 @@ button, .btn, .stitch-nav-item, .phase-chip, .cat-pill {
   user-select: none;
 }
 
-/* Thermal receipt printable block (for backward compatibility) */
+/* Thermal receipt printable block (Stitch Flat Unboxed receipt) */
 .thermal-receipt-paper {
   background: #FFFFFF;
-  color: #000000;
-  font-family: 'Space Mono', monospace;
-  padding: 1.5rem 1rem;
-  max-width: 320px;
+  color: #0F172A;
+  font-family: var(--font-body);
+  padding: 1.5rem 1.25rem;
+  max-width: 360px;
   margin: 0 auto;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 16px rgba(11,28,48,0.08);
+  border: 1px solid var(--surface-container);
+}
+
+.thermal-receipt-paper hr {
+  border: none;
+  border-top: 1px dashed var(--outline-variant);
+  margin: 0.75rem 0;
 }
 
 /* Print Rules */
@@ -344,7 +443,7 @@ button, .btn, .stitch-nav-item, .phase-chip, .cat-pill {
     background: #FFFFFF !important;
     color: #000000 !important;
   }
-  header, nav, .stitch-nav-item, .modal-footer, .no-print {
+  header, nav, .stitch-nav-item, .modal-footer, .no-print, .system-drawer, .drawer-overlay {
     display: none !important;
   }
   .modal-overlay {
@@ -357,7 +456,7 @@ button, .btn, .stitch-nav-item, .phase-chip, .cat-pill {
     border: none !important;
     max-width: 100% !important;
   }
-  .quote-printable-sheet {
+  .quote-printable-sheet, .thermal-receipt-paper {
     box-shadow: none !important;
     border: none !important;
     padding: 0 !important;

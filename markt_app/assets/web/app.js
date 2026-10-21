@@ -483,6 +483,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (adminSidebar) adminSidebar.classList.remove('mobile-open');
       if (sidebarOverlay) sidebarOverlay.classList.remove('mobile-open');
+      const drawerEl = document.getElementById('system-drawer');
+      const drawerOv = document.getElementById('drawer-overlay');
+      if (drawerEl) drawerEl.classList.remove('drawer-open');
+      if (drawerOv) drawerOv.classList.add('hidden');
     };
 
     navItems.forEach(item => {
@@ -492,6 +496,67 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.stitch-nav-item, .mobile-nav-btn').forEach(btn => {
       btn.addEventListener('click', () => switchView(btn.getAttribute('data-view')));
     });
+
+    const systemDrawer = document.getElementById('system-drawer');
+    const drawerOverlay = document.getElementById('drawer-overlay');
+    const btnToggleMenu = document.getElementById('btn-toggle-menu');
+    const btnCloseDrawer = document.getElementById('btn-close-drawer');
+
+    const openDrawer = () => {
+      if (systemDrawer) systemDrawer.classList.add('drawer-open');
+      if (drawerOverlay) drawerOverlay.classList.remove('hidden');
+    };
+
+    const closeDrawer = () => {
+      if (systemDrawer) systemDrawer.classList.remove('drawer-open');
+      if (drawerOverlay) drawerOverlay.classList.add('hidden');
+    };
+
+    if (btnToggleMenu) btnToggleMenu.addEventListener('click', openDrawer);
+    if (btnCloseDrawer) btnCloseDrawer.addEventListener('click', closeDrawer);
+    if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
+
+    document.querySelectorAll('.drawer-nav-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const v = btn.getAttribute('data-view');
+        if (v) switchView(v);
+        closeDrawer();
+      });
+    });
+
+    const btnOpenThermalModal = document.getElementById('btn-open-thermal-modal');
+    const modalThermalTicket = document.getElementById('modal-thermal-ticket');
+    const btnCloseThermalModal = document.getElementById('btn-close-thermal-modal');
+
+    if (btnOpenThermalModal && modalThermalTicket) {
+      btnOpenThermalModal.addEventListener('click', () => {
+        updateCalculationsAndPreview();
+        modalThermalTicket.classList.remove('hidden');
+      });
+    }
+
+    if (btnCloseThermalModal && modalThermalTicket) {
+      btnCloseThermalModal.addEventListener('click', () => {
+        modalThermalTicket.classList.add('hidden');
+      });
+    }
+
+    const btnDrawerExportBackup = document.getElementById('btn-drawer-export-backup');
+    if (btnDrawerExportBackup) {
+      btnDrawerExportBackup.addEventListener('click', () => {
+        exportDataBackup();
+        closeDrawer();
+      });
+    }
+
+    const btnDrawerImportBackup = document.getElementById('btn-drawer-import-backup');
+    if (btnDrawerImportBackup) {
+      btnDrawerImportBackup.addEventListener('click', () => {
+        const fileInput = document.getElementById('input-import-backup');
+        if (fileInput) fileInput.click();
+        closeDrawer();
+      });
+    }
 
     if (btnToggleSidebar) {
       btnToggleSidebar.addEventListener('click', () => {
@@ -1272,11 +1337,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (state.options.notes && state.options.notes.trim() !== '') {
-      viewNotesWrapper.classList.remove('hidden');
-      viewNotesText.textContent = state.options.notes;
+      if (viewNotesWrapper) viewNotesWrapper.classList.remove('hidden');
+      if (viewNotesText) viewNotesText.textContent = state.options.notes;
     } else {
-      viewNotesWrapper.classList.add('hidden');
+      if (viewNotesWrapper) viewNotesWrapper.classList.add('hidden');
     }
+
+    // Update POS Header and Floating Active Client Info
+    const activeClientName = document.getElementById('pos-active-client-name');
+    if (activeClientName) activeClientName.textContent = state.client.name || 'Cliente Mostrador';
+    const activeClientPhone = document.getElementById('pos-active-client-phone');
+    if (activeClientPhone) activeClientPhone.textContent = state.client.phone || state.client.id || 'Mostrador General';
+
+    const chargeBtnText = document.getElementById('stitch-charge-btn-text');
+    if (chargeBtnText) chargeBtnText.textContent = `Cobrar $${grandTotalMain.toFixed(2)}`;
   }
 
   // --- SUICHE 7B QR GENERATOR ---
@@ -1814,6 +1888,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- SAVE RECEIPT TO HISTORY ---
+  const saveCurrentDocumentToHistory = () => saveCurrentReceiptToHistory();
+
   function saveCurrentReceiptToHistory() {
     const rate = state.exchange.rate || 1;
     const totalBs = state.totals.grandTotal * rate;
