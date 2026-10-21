@@ -506,6 +506,330 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 20),
+
+          // 5. Políticas de Privacidad & Registro de Cambios (V4 Planificación)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.shield_outlined, color: Color(0xFF38BDF8), size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Acerca del Sistema & Privacidad',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                InkWell(
+                  onTap: () => _showPrivacyPolicyModal(context, isDark),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.privacy_tip_outlined, color: Color(0xFF10B981), size: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Políticas de Privacidad (Cero Rastreo)',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              '100% de datos en memoria física del dispositivo',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, size: 20, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                    ],
+                  ),
+                ),
+                const Divider(height: 20),
+                InkWell(
+                  onTap: () => _showChangelogModal(context, isDark),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF818CF8).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.history_toggle_off, color: Color(0xFF818CF8), size: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Registro de Cambios (Changelog v4.0.0)',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              'Ver novedades de cada fase implementada',
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, size: 20, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyPolicyModal(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.privacy_tip, color: Color(0xFF10B981), size: 22),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Políticas de Privacidad',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: Icon(Icons.close, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.lock_outline, color: Color(0xFF10B981), size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Declaración de Cero Rastreo (Zero Analytics, Zero Telemetry).',
+                      style: TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              '1. Almacenamiento 100% Local y Físico:\n'
+              'Toda la información del negocio (ventas, catálogo de productos, cuentas por cobrar, clientes y tasas) se almacena exclusivamente en la memoria física interna de su dispositivo mediante MarktNativeStorage.\n\n'
+              '2. Sin Servidores Externos Obligatorios:\n'
+              'MARKT POS no envía sus registros financieros, márgenes de ganancia ni datos de sus clientes a ninguna base de datos remota ni entidad externa.\n\n'
+              '3. Tasa Oficial BCV:\n'
+              'La aplicación únicamente realiza solicitudes de lectura pública para consultar las tasas oficiales de referencia del Banco Central de Venezuela.\n\n'
+              '4. Listo para Tiendas Oficiales:\n'
+              'Cumple con los estándares de privacidad exigidos por Google Play Store y Apple App Store para aplicaciones de gestión empresarial offline-first.',
+              style: TextStyle(
+                color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6366F1),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Entendido', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showChangelogModal(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.history_edu, color: Color(0xFF818CF8), size: 22),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Registro de Cambios',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: Icon(Icons.close, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Versión 4.0.0 • Sistema Operativo Universal de Negocios',
+              style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12),
+            ),
+            const Divider(height: 20),
+            Expanded(
+              child: ListView(
+                children: [
+                  _buildChangelogSection('Fase 1: Catálogos Universales con Costos y Márgenes', [
+                    'Costos (\$ USD) y precios con cálculo de margen % en vivo.',
+                    'Control de Stock mínimo con alertas visuales inmediatas.',
+                  ], isDark),
+                  _buildChangelogSection('Fase 2: Libro de Caja & Movimientos Integrados', [
+                    'Registro automático de cada cobro POS en el Libro de Caja.',
+                    'Desglose por método de pago (Pago Móvil, Efectivo USD, Zelle).',
+                  ], isDark),
+                  _buildChangelogSection('Fase 3: Cuentas por Cobrar ("Quién me debe")', [
+                    'Gestión de ventas a crédito y cuentas por cobrar.',
+                    'Abonos parciales que alimentan automáticamente la caja.',
+                    'Recordatorio amable formateado para enviar por WhatsApp en 1 clic.',
+                  ], isDark),
+                  _buildChangelogSection('Fase 4: Perfil de Negocio & Factura Legal', [
+                    'Datos de empresa (RIF, Teléfono, Dirección fiscal).',
+                    'Opciones de impresión: QR Suiche 7B, Código de barras, Firma y desglose IVA.',
+                    'Selección de vendedor y captura automática de fecha y hora.',
+                  ], isDark),
+                  _buildChangelogSection('Fase 5: Analítica Financiera & Reportes Gerenciales', [
+                    'Filtro por períodos (Hoy, Semana, Mes, Histórico).',
+                    'Cálculo de COGS (Costo de Mercancía) y Utilidad Neta Real.',
+                    'Rendimiento y comisiones ganadas por vendedores.',
+                    'Exportación de balance financiero a WhatsApp.',
+                  ], isDark),
+                  _buildChangelogSection('Arquitectura 100% Nativa Flutter', [
+                    'Eliminación de dependencias de JavaScript y WebViews en UI.',
+                    'Doble Tema: Dark AMOLED y Claro adaptables con persistencia.',
+                  ], isDark),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChangelogSection(String title, List<String> items, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(color: Color(0xFF6366F1), fontSize: 13, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          ...items.map((it) => Padding(
+                padding: const EdgeInsets.only(left: 6, bottom: 2),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('• ', style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
+                    Expanded(
+                      child: Text(
+                        it,
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )),
         ],
       ),
     );
