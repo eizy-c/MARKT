@@ -312,9 +312,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
               const SizedBox(width: 8),
 
-              // Botón Tienda / POS Azul Claro
+              // Botón Cobranzas / Recordar Deuda (WhatsApp)
               InkWell(
-                onTap: () => _onDestinationSelected(1), // Ir al POS
+                onTap: () => _onDestinationSelected(3), // Ir a Cuentas por Cobrar
                 borderRadius: BorderRadius.circular(14),
                 child: Container(
                   width: 44,
@@ -324,7 +324,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
                   ),
-                  child: const Icon(Icons.storefront_outlined, color: Color(0xFF2563EB), size: 20),
+                  child: const Icon(Icons.mark_chat_unread_outlined, color: Color(0xFF10B981), size: 20),
                 ),
               ),
             ],

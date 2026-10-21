@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/app_models.dart';
 import '../services/bcv_service.dart';
 import '../services/debug_logger.dart';
@@ -465,22 +466,45 @@ class _ReceivablesScreenState extends State<ReceivablesScreen> {
     }
   }
 
-  void _shareReminderWhatsApp(ReceivableAccount acc) {
+  Future<void> _shareReminderWhatsApp(ReceivableAccount acc) async {
     final rate = BcvService.instance.currentRates.usd;
     final totalBs = acc.remainingBalanceUsd * rate;
-    final text = 'Hola estimado/a ${acc.clientName}, le saludamos cordialmente. '
+    final text = 'Hola estimado/a ${acc.clientName}, le saludamos cordialmente de parte de nuestro equipo. '
         'Le recordamos amablemente su saldo pendiente de *\$${acc.remainingBalanceUsd.toStringAsFixed(2)}* '
         '(aprox. Bs. ${totalBs.toStringAsFixed(2)}) correspondiente a: "${acc.concept}". '
-        'Agradecemos su gestión. ¡Feliz día!';
+        'Agradecemos su valioso apoyo y gestión. ¡Quedamos a su entera disposición!';
 
-    Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Recordatorio copiado al portapapeles para WhatsApp a ${acc.clientName}'),
-        backgroundColor: const Color(0xFF10B981),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    // Limpiar número de teléfono
+    String cleanPhone = acc.clientPhone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanPhone.startsWith('0')) {
+      cleanPhone = '58${cleanPhone.substring(1)}';
+    } else if (cleanPhone.length == 10 && !cleanPhone.startsWith('58')) {
+      cleanPhone = '58$cleanPhone';
+    }
+
+    final encodedText = Uri.encodeComponent(text);
+    final whatsappUrl = cleanPhone.isNotEmpty
+        ? Uri.parse('https://wa.me/$cleanPhone?text=$encodedText')
+        : Uri.parse('https://api.whatsapp.com/send?text=$encodedText');
+
+    try {
+      if (await canLaunchUrl(whatsappUrl)) {
+        await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback: Portapapeles
+    await Clipboard.setData(ClipboardData(text: text));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Recordatorio copiado al portapapeles para WhatsApp a ${acc.clientName}'),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -689,11 +713,20 @@ class _ReceivablesScreenState extends State<ReceivablesScreen> {
                                   Row(
                                     children: [
                                       if (acc.clientPhone.isNotEmpty)
-                                        IconButton(
-                                          icon: const Icon(Icons.chat_outlined, color: Color(0xFF10B981), size: 18),
-                                          tooltip: 'Cobrar por WhatsApp',
-                                          onPressed: () => _shareReminderWhatsApp(acc),
-                                          visualDensity: VisualDensity.compact,
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 6),
+                                          child: OutlinedButton.icon(
+                                            onPressed: () => _shareReminderWhatsApp(acc),
+                                            icon: const Icon(Icons.chat, color: Color(0xFF10B981), size: 14),
+                                            label: const Text('Recordar Deuda', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold)),
+                                            style: OutlinedButton.styleFrom(
+                                              side: const BorderSide(color: Color(0xFF10B981)),
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              minimumSize: Size.zero,
+                                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                            ),
+                                          ),
                                         ),
                                       if (!isPaid)
                                         ElevatedButton.icon(
