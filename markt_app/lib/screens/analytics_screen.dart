@@ -183,16 +183,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final profitBs = _netProfitRealUsd * rate;
 
     final report = '''
-📊 *REPORTE GERENCIAL MARKT POS*
+*REPORTE GERENCIAL MARKT POS*
 Periodo: ${_period.toUpperCase()}
 -----------------------------------
-💰 *Ventas Facturadas:* \$${_totalBilledUsd.toStringAsFixed(2)} (~Bs. ${totalBs.toStringAsFixed(2)})
-📦 *Costo Mercancía (COGS):* \$${_totalCogsUsd.toStringAsFixed(2)}
-📉 *Gastos Operativos Caja:* \$${_operatingExpensesUsd.toStringAsFixed(2)}
+*Ventas Facturadas:* \$${_totalBilledUsd.toStringAsFixed(2)} (~Bs. ${totalBs.toStringAsFixed(2)})
+*Costo Mercancía (COGS):* \$${_totalCogsUsd.toStringAsFixed(2)}
+*Gastos Operativos Caja:* \$${_operatingExpensesUsd.toStringAsFixed(2)}
 -----------------------------------
-💵 *Utilidad Neta Real:* \$${_netProfitRealUsd.toStringAsFixed(2)} (~Bs. ${profitBs.toStringAsFixed(2)})
-📈 *Margen Operativo:* ${_profitMarginPercent.toStringAsFixed(1)}%
-🧾 *Tickets Emitidos:* ${_filteredInvoices.length}
+*Utilidad Neta Real:* \$${_netProfitRealUsd.toStringAsFixed(2)} (~Bs. ${profitBs.toStringAsFixed(2)})
+*Margen Operativo:* ${_profitMarginPercent.toStringAsFixed(1)}%
+*Tickets Emitidos:* ${_filteredInvoices.length}
 -----------------------------------
 _Generado automáticamente por MARKT POS._
 ''';

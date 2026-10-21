@@ -1521,13 +1521,13 @@ class _PosScreenState extends State<PosScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildVoucherChip('factura', '🧾 Venta', const Color(0xFF10B981)),
+                _buildVoucherChip('factura', 'Venta', const Color(0xFF10B981)),
                 const SizedBox(width: 6),
-                _buildVoucherChip('cotizacion', '📋 Cotización', const Color(0xFF38BDF8)),
+                _buildVoucherChip('cotizacion', 'Cotización', const Color(0xFF38BDF8)),
                 const SizedBox(width: 6),
-                _buildVoucherChip('egreso', '💸 Egreso', const Color(0xFFEF4444)),
+                _buildVoucherChip('egreso', 'Egreso', const Color(0xFFEF4444)),
                 const SizedBox(width: 6),
-                _buildVoucherChip('abono', '💰 Abono', const Color(0xFFF59E0B)),
+                _buildVoucherChip('abono', 'Abono', const Color(0xFFF59E0B)),
               ],
             ),
           ),
