@@ -438,52 +438,58 @@ document.addEventListener('DOMContentLoaded', () => {
         else item.classList.remove('active');
       });
 
-      mobileNavBtns.forEach(btn => {
-        if (btn.getAttribute('data-view') === targetView) btn.classList.add('active');
-        else btn.classList.remove('active');
+      document.querySelectorAll('.stitch-nav-item, .mobile-nav-btn').forEach(btn => {
+        if (btn.getAttribute('data-view') === targetView) {
+          btn.classList.add('text-secondary');
+          btn.classList.remove('text-on-surface-variant');
+        } else {
+          btn.classList.remove('text-secondary');
+          btn.classList.add('text-on-surface-variant');
+        }
       });
 
-      if (targetView === 'view-pos') {
-        pageTitleText.textContent = 'Punto de Venta POS';
-        pageSubtitleText.textContent = 'Emisión y vista previa interactiva de facturas, recibos y egresos';
-      } else if (targetView === 'view-cotizaciones') {
-        pageTitleText.textContent = 'Cotizaciones & Presupuestos';
-        pageSubtitleText.textContent = 'Presupuestos de avisos LED, corpóreos, stickers y análisis de utilidad';
-        renderQuotesHistory();
-      } else if (targetView === 'view-proyectos') {
-        pageTitleText.textContent = 'Gestión de Proyectos & Agenda';
-        pageSubtitleText.textContent = 'Seguimiento de ciclo de vida del trabajo, bitácora y Google Calendar';
-        renderProjectsPipeline();
-      } else if (targetView === 'view-galeria') {
-        pageTitleText.textContent = 'Galería de Trabajos Culminados';
-        pageSubtitleText.textContent = 'Portafolio fotográfico de avisos LED, corpóreos y publicidad terminada';
-        renderGallery();
-      } else if (targetView === 'view-productos') {
-        pageTitleText.textContent = 'Catálogo de Productos';
-        pageSubtitleText.textContent = 'Gestiona tus productos o servicios con precios en $ USD';
-        renderProductsTable();
-      } else if (targetView === 'view-clientes') {
-        pageTitleText.textContent = 'Directorio de Clientes';
-        pageSubtitleText.textContent = 'Consulta y administra el directorio de tus clientes';
-        renderClientsTable();
-      } else if (targetView === 'view-historial') {
-        pageTitleText.textContent = 'Historial de Comprobantes';
-        pageSubtitleText.textContent = 'Registro completo de comprobantes emitidos';
-        renderHistoryTable();
-      } else if (targetView === 'view-ajustes') {
-        pageTitleText.textContent = 'Ajustes & Preferencias Permanentes';
-        pageSubtitleText.textContent = 'Configura el logo, datos y opciones de impresión';
+      const currentViewTitle = document.getElementById('current-view-title');
+      if (currentViewTitle) {
+        if (targetView === 'view-pos') currentViewTitle.textContent = 'Terminal Pos';
+        else if (targetView === 'view-cotizaciones') currentViewTitle.textContent = 'Cotizaciones';
+        else if (targetView === 'view-proyectos') currentViewTitle.textContent = 'Proyectos';
+        else if (targetView === 'view-galeria') currentViewTitle.textContent = 'Archivos Y Carga';
+        else if (targetView === 'view-ajustes') currentViewTitle.textContent = 'Mi Negocio';
+        else if (targetView === 'view-productos') currentViewTitle.textContent = 'Catálogo';
+        else if (targetView === 'view-clientes') currentViewTitle.textContent = 'Clientes';
+        else if (targetView === 'view-historial') currentViewTitle.textContent = 'Historial';
       }
 
-      adminSidebar.classList.remove('mobile-open');
-      sidebarOverlay.classList.remove('mobile-open');
+      if (targetView === 'view-pos') {
+        if (pageTitleText) pageTitleText.textContent = 'Terminal Pos';
+      } else if (targetView === 'view-cotizaciones') {
+        if (pageTitleText) pageTitleText.textContent = 'Cotizaciones';
+        renderQuotesHistory();
+      } else if (targetView === 'view-proyectos') {
+        if (pageTitleText) pageTitleText.textContent = 'Proyectos';
+        renderProjectsPipeline();
+      } else if (targetView === 'view-galeria') {
+        if (pageTitleText) pageTitleText.textContent = 'Archivos Y Carga';
+        renderGallery();
+      } else if (targetView === 'view-productos') {
+        renderProductsTable();
+      } else if (targetView === 'view-clientes') {
+        renderClientsTable();
+      } else if (targetView === 'view-historial') {
+        renderHistoryTable();
+      } else if (targetView === 'view-ajustes') {
+        if (pageTitleText) pageTitleText.textContent = 'Mi Negocio';
+      }
+
+      if (adminSidebar) adminSidebar.classList.remove('mobile-open');
+      if (sidebarOverlay) sidebarOverlay.classList.remove('mobile-open');
     };
 
     navItems.forEach(item => {
       item.addEventListener('click', () => switchView(item.getAttribute('data-view')));
     });
 
-    mobileNavBtns.forEach(btn => {
+    document.querySelectorAll('.stitch-nav-item, .mobile-nav-btn').forEach(btn => {
       btn.addEventListener('click', () => switchView(btn.getAttribute('data-view')));
     });
 
@@ -964,29 +970,37 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderItemsList() {
     itemsListContainer.innerHTML = '';
 
+    if (!state.items || state.items.length === 0) {
+      itemsListContainer.innerHTML = `
+        <div class="text-center py-6 text-on-surface-variant font-body-sm">
+          <span class="material-symbols-outlined text-[32px] text-outline opacity-60 block mx-auto mb-1">shopping_cart</span>
+          El ticket está vacío. Toca un producto de Venta Rápida.
+        </div>
+      `;
+      return;
+    }
+
     state.items.forEach(item => {
       const card = document.createElement('div');
-      card.className = 'item-row-card';
+      card.className = 'flex items-center justify-between p-2.5 rounded-xl bg-surface-container-low border border-surface-container';
+      const rowTotal = ((parseFloat(item.cant) || 0) * (parseFloat(item.unitPrice) || 0)).toFixed(2);
+      
       card.innerHTML = `
-        <div class="item-row-header">
-          <input type="text" class="item-desc-input" placeholder="Descripción del producto o servicio..." value="${escapeHtml(item.desc)}" data-id="${item.id}" data-field="desc">
-          <button type="button" class="btn-remove-item" data-id="${item.id}" title="Eliminar ítem">
-            <i class="fa-solid fa-trash"></i>
-          </button>
+        <div class="flex flex-col min-w-0 pr-2 flex-1">
+          <input type="text" class="font-label-md text-label-md text-on-surface font-semibold bg-transparent border-0 outline-none truncate w-full" value="${escapeHtml(item.desc || '')}" data-id="${item.id}" data-field="desc" placeholder="Descripción del producto..."/>
+          <span class="font-body-sm text-body-sm text-on-surface-variant">$${parseFloat(item.unitPrice || 0).toFixed(2)} c/u</span>
         </div>
-        <div class="item-row-details">
-          <div>
-            <label>Cant.</label>
-            <input type="number" min="1" step="1" value="${item.cant}" data-id="${item.id}" data-field="cant">
+        <div class="flex items-center gap-2 shrink-0">
+          <div class="flex items-center bg-surface-container-lowest rounded-lg shadow-sm border border-surface-container">
+            <button class="btn-step-down w-7 h-7 flex items-center justify-center text-on-surface-variant hover:text-error active:scale-95 transition-all" data-id="${item.id}" type="button" title="${item.cant <= 1 ? 'Eliminar' : 'Disminuir'}">
+              <span class="material-symbols-outlined text-[16px]">${item.cant <= 1 ? 'delete' : 'remove'}</span>
+            </button>
+            <span class="w-6 text-center font-label-numeric text-label-numeric text-on-surface font-bold">${item.cant}</span>
+            <button class="btn-step-up w-7 h-7 flex items-center justify-center text-on-surface-variant hover:text-secondary active:scale-95 transition-all" data-id="${item.id}" type="button" title="Aumentar">
+              <span class="material-symbols-outlined text-[16px]">add</span>
+            </button>
           </div>
-          <div>
-            <label>Subtexto / Nota</label>
-            <input type="text" placeholder="Ej: Garantía 6 meses" value="${escapeHtml(item.subtext || '')}" data-id="${item.id}" data-field="subtext">
-          </div>
-          <div>
-            <label>Precio ($ USD)</label>
-            <input type="number" min="0" step="0.01" value="${item.unitPrice || ''}" placeholder="0.00 $" data-id="${item.id}" data-field="unitPrice">
-          </div>
+          <span class="font-label-numeric text-label-numeric text-on-surface font-bold text-right min-w-[65px]">$${rowTotal}</span>
         </div>
       `;
 
@@ -999,26 +1013,37 @@ document.addEventListener('DOMContentLoaded', () => {
         const field = e.target.getAttribute('data-field');
         const item = state.items.find(i => i.id === id);
         if (item) {
-          if (field === 'cant' || field === 'unitPrice') {
-            item[field] = parseFloat(e.target.value) || 0;
-          } else {
-            item[field] = cleanInputText(e.target.value);
-          }
+          item[field] = cleanInputText(e.target.value);
           updateCalculationsAndPreview();
         }
       });
     });
 
-    itemsListContainer.querySelectorAll('.btn-remove-item').forEach(btn => {
+    itemsListContainer.querySelectorAll('.btn-step-down').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
-        if (state.items.length <= 1) {
-          showToast('Debe haber al menos un ítem.', 'info');
-          return;
+        const idx = state.items.findIndex(i => i.id === id);
+        if (idx !== -1) {
+          if (state.items[idx].cant > 1) {
+            state.items[idx].cant -= 1;
+          } else {
+            state.items.splice(idx, 1);
+          }
+          renderItemsList();
+          updateCalculationsAndPreview();
         }
-        state.items = state.items.filter(i => i.id !== id);
-        renderItemsList();
-        updateCalculationsAndPreview();
+      });
+    });
+
+    itemsListContainer.querySelectorAll('.btn-step-up').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const item = state.items.find(i => i.id === id);
+        if (item) {
+          item.cant = (parseFloat(item.cant) || 0) + 1;
+          renderItemsList();
+          updateCalculationsAndPreview();
+        }
       });
     });
   }
@@ -3597,483 +3622,6 @@ ${bankArea.value.trim()}
   }
 
   // ==========================================================================
-  // MÓDULO 7: GESTIÓN DE PROYECTOS, PIPELINE & AGENDA GOOGLE CALENDAR (STITCH)
-  // ==========================================================================
-
-  function updateProjectKPIs() {
-    let activeCount = 0;
-    let pendingMoney = 0;
-    let siteCount = 0;
-
-    state.proyectos.forEach(p => {
-      if (p.status !== 'culminado') {
-        activeCount++;
-        const saldo = Math.max(0, (p.total || 0) - (p.abono || 0));
-        pendingMoney += saldo;
-      }
-      if (p.status === 'instalacion') {
-        siteCount++;
-      }
-    });
-
-    const elActives = document.getElementById('kpi-proj-active-count');
-    const elMoney = document.getElementById('kpi-proj-pending-money');
-    const elSite = document.getElementById('kpi-proj-site-count');
-
-    if (elActives) elActives.textContent = activeCount;
-    if (elMoney) elMoney.textContent = `$${pendingMoney.toFixed(2)}`;
-    if (elSite) elSite.textContent = siteCount;
-  }
-
-  function loadProyectosFromStorage() {
-    try {
-      const saved = localStorage.getItem('martk_projects');
-      if (saved) {
-        state.proyectos = JSON.parse(saved);
-      } else {
-        state.proyectos = [
-          {
-            id: 2001,
-            code: 'PRJ-001',
-            title: 'Aviso Corpóreo Acrílico 3D con Luz Neón Flex',
-            clientName: 'Boutique Velvet & Co.',
-            clientPhone: '584141234567',
-            address: 'Las Mercedes, Calle París, Local 4',
-            dateStart: new Date().toISOString().split('T')[0],
-            dateDeadline: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
-            total: 485.00,
-            abono: 242.50,
-            status: 'produccion',
-            pauseReason: '',
-            notes: [
-              { date: '16/10/2026, 09:30', text: 'Anticipo del 50% recibido por Pago Móvil.' },
-              { date: '17/10/2026, 14:00', text: 'Corte de acrílico terminado. Iniciando armado de mangueras LED.' }
-            ],
-            photos: [
-              {
-                date: '17/10/2026',
-                url: 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?auto=format&fit=crop&w=600&q=80'
-              }
-            ]
-          },
-          {
-            id: 2002,
-            code: 'PRJ-002',
-            title: 'Letras Corpóreas 3D en Acrílico con Luz Frontal',
-            clientName: 'Dra. Mariana Rivas (Clínica Dental)',
-            clientPhone: '584249876543',
-            address: 'Torre Empresarial, Piso 3',
-            dateStart: new Date().toISOString().split('T')[0],
-            dateDeadline: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
-            total: 480.00,
-            abono: 240.00,
-            status: 'detenido',
-            pauseReason: 'Esperando confirmación final del cliente sobre el tono exacto de azul para el logo de la clínica.',
-            notes: [
-              { date: '15/10/2026, 11:20', text: 'Proyecto detenido: Se enviaron muestras de azul al cliente vía WhatsApp. Pendiente respuesta.' }
-            ],
-            photos: []
-          }
-        ];
-        localStorage.setItem('martk_projects', JSON.stringify(state.proyectos));
-      }
-      renderProjectsPipeline();
-      updateProjectKPIs();
-    } catch (e) {
-      state.proyectos = [];
-    }
-  }
-
-  function saveProyectosToStorage() {
-    localStorage.setItem('martk_projects', JSON.stringify(state.proyectos));
-    updateProjectKPIs();
-  }
-
-  function renderProjectsPipeline() {
-    const container = document.getElementById('projects-pipeline-container');
-    if (!container) return;
-    const search = document.getElementById('search-projects');
-    const qStr = (search ? search.value : '').toLowerCase().trim();
-    container.innerHTML = '';
-
-    const badgeCounts = document.getElementById('sidebar-projects-count');
-    const countAll = document.getElementById('count-all-projects');
-    if (countAll) countAll.textContent = state.proyectos.length;
-    if (badgeCounts) badgeCounts.textContent = state.proyectos.filter(p => p.status !== 'culminado').length;
-
-    const filtered = state.proyectos.filter(p => {
-      if (state.projectFilter !== 'all' && p.status !== state.projectFilter) return false;
-      if (!qStr) return true;
-      return (p.title || '').toLowerCase().includes(qStr) ||
-             (p.clientName || '').toLowerCase().includes(qStr) ||
-             (p.code || '').toLowerCase().includes(qStr);
-    });
-
-    if (filtered.length === 0) {
-      container.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:3rem; color:#94A3B8; background:#FFFFFF; border-radius:var(--radius-lg); border:1px dashed #CBD5E1;">
-        <i class="fa-solid fa-folder-open" style="font-size:2.5rem; margin-bottom:0.75rem;"></i>
-        <p style="font-size:1rem; font-weight:700;">No se encontraron proyectos en este estado.</p>
-      </div>`;
-      return;
-    }
-
-    filtered.forEach(p => {
-      const card = document.createElement('div');
-      card.className = 'project-card';
-
-      const statusLabels = {
-        'presupuesto': { label: '1 · Presupuesto', cls: 'status-presupuesto' },
-        'aprobado': { label: '1 · Aprobado', cls: 'status-aprobado' },
-        'abono': { label: '2 · Anticipo Pendiente', cls: 'status-abono' },
-        'produccion': { label: '3 · Armado Taller CNC', cls: 'status-produccion' },
-        'envio': { label: '4 · Envío / Listo', cls: 'status-envio' },
-        'instalacion': { label: '4 · En Sitio / Montaje', cls: 'status-instalacion' },
-        'culminado': { label: '5 · Liquidado & Culminado', cls: 'status-culminado' },
-        'detenido': { label: 'DETENIDO / EN PAUSA', cls: 'status-detenido' }
-      };
-
-      const st = statusLabels[p.status] || { label: p.status, cls: 'status-presupuesto' };
-      const saldo = Math.max(0, (p.total || 0) - (p.abono || 0));
-      const pctPagado = p.total > 0 ? Math.min(100, Math.round(((p.abono || 0) / p.total) * 100)) : 0;
-
-      let pauseAlertHtml = '';
-      if (p.status === 'detenido') {
-        pauseAlertHtml = `
-          <div class="project-pause-alert">
-            <div class="project-pause-alert-title"><i class="fa-solid fa-circle-exclamation"></i> Proyecto en Pausa / Detenido:</div>
-            <div class="project-pause-alert-text">${escapeHtml(p.pauseReason || 'Sin razón especificada. Toca "Cambiar Estado" para actualizar.')}</div>
-          </div>
-        `;
-      }
-
-      card.innerHTML = `
-        <div class="project-card-header">
-          <span class="project-code-tag">${escapeHtml(p.code)}</span>
-          <span class="status-badge ${st.cls}">${st.label}</span>
-        </div>
-
-        <div>
-          <h3 class="project-title">${escapeHtml(p.title)}</h3>
-          <div class="project-client-line">
-            <i class="fa-solid fa-user"></i> <strong>${escapeHtml(p.clientName || 'Cliente')}</strong>
-            ${p.clientPhone ? `<a href="https://api.whatsapp.com/send?phone=${p.clientPhone.replace(/[^0-9]/g, '')}" target="_blank" style="color:#25D366; margin-left:0.25rem;"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
-          </div>
-          ${p.address ? `<div style="font-size:0.75rem; color:#64748B; margin-top:0.2rem;"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(p.address)}</div>` : ''}
-        </div>
-
-        ${pauseAlertHtml}
-
-        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#475569; background:#F8FAFC; padding:0.4rem 0.6rem; border-radius:var(--radius-sm);">
-          <span><strong>Inicio:</strong> ${p.dateStart || '-'}</span>
-          <span><strong>Entrega:</strong> <span style="color:#E11D48; font-weight:800;">${p.dateDeadline || '-'}</span></span>
-        </div>
-
-        <div class="project-financials">
-          <div class="project-financials-row">
-            <span>Total: <strong>$${(p.total || 0).toFixed(2)}</strong></span>
-            <span>Anticipo: <strong style="color:#059669;">$${(p.abono || 0).toFixed(2)}</strong> (${pctPagado}%)</span>
-          </div>
-          <div class="financial-progress-track">
-            <div class="financial-progress-bar" style="width:${pctPagado}%;"></div>
-          </div>
-          <div style="font-size:0.75rem; color:#64748B; text-align:right; margin-top:0.15rem;">
-            Saldo Pendiente: <strong style="color:${saldo > 0 ? '#DC2626' : '#059669'};">$${saldo.toFixed(2)} USD</strong>
-          </div>
-        </div>
-
-        <div class="project-card-actions">
-          <button type="button" class="btn btn-sm btn-outline btn-p-status" data-id="${p.id}"><i class="fa-solid fa-arrows-spin"></i> Estado</button>
-          <button type="button" class="btn btn-sm btn-outline btn-p-notes" data-id="${p.id}"><i class="fa-solid fa-clipboard-list"></i> Notas (${(p.notes || []).length})</button>
-          <button type="button" class="btn btn-sm btn-outline btn-p-photos" data-id="${p.id}"><i class="fa-solid fa-camera"></i> Fotos (${(p.photos || []).length})</button>
-          <button type="button" class="btn btn-sm btn-calendar btn-p-calendar" data-id="${p.id}"><i class="fa-solid fa-calendar-days"></i> Agendar</button>
-        </div>
-
-        ${saldo > 0 ? `
-          <button type="button" class="btn btn-sm btn-primary btn-p-charge mt-1" data-id="${p.id}">
-            <i class="fa-solid fa-cart-shopping"></i> Cobrar Saldo ($${saldo.toFixed(2)}) en POS
-          </button>
-        ` : ''}
-      `;
-
-      container.appendChild(card);
-    });
-
-    container.querySelectorAll('.btn-p-status').forEach(b => {
-      b.addEventListener('click', () => openProjectStatusModal(b.dataset.id));
-    });
-    container.querySelectorAll('.btn-p-notes').forEach(b => {
-      b.addEventListener('click', () => openProjectNotesModal(b.dataset.id));
-    });
-    container.querySelectorAll('.btn-p-photos').forEach(b => {
-      b.addEventListener('click', () => openProjectPhotosModal(b.dataset.id));
-    });
-    container.querySelectorAll('.btn-p-calendar').forEach(b => {
-      b.addEventListener('click', () => {
-        const p = state.proyectos.find(item => item.id == b.dataset.id);
-        if (p) agendarEnGoogleCalendar(p);
-      });
-    });
-    container.querySelectorAll('.btn-p-charge').forEach(b => {
-      b.addEventListener('click', () => {
-        const p = state.proyectos.find(item => item.id == b.dataset.id);
-        if (p) preloadProjectInPos(p);
-      });
-    });
-  }
-
-  function agendarEnGoogleCalendar(p) {
-    if (!p) return;
-    const title = encodeURIComponent(`Montaje e Instalación: ${p.title} (${p.code})`);
-    const details = encodeURIComponent(`Cliente: ${p.clientName}
-Teléfono: ${p.clientPhone}
-Dirección: ${p.address || 'En sitio'}
-Total: $${p.total} USD
-Saldo restante: $${(p.total - p.abono).toFixed(2)} USD
-Cuadrilla: Técnico CNC + 2 Montajistas
-
-Organizado con MARKT POS`);
-    const location = encodeURIComponent(p.address || 'Taller / Obra en Sitio');
-
-    let startDateStr = p.dateDeadline || new Date().toISOString().split('T')[0];
-    const cleanDate = startDateStr.replace(/-/g, '');
-    const dates = `${cleanDate}T130000Z/${cleanDate}T160000Z`;
-
-    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${dates}`;
-    window.open(gcalUrl, '_blank');
-  }
-
-  function openProjectStatusModal(projId) {
-    const p = state.proyectos.find(item => item.id == projId);
-    if (!p) return;
-
-    document.getElementById('status-modal-project-id').value = p.id;
-    const select = document.getElementById('select-project-pipeline-status');
-    const pauseWrapper = document.getElementById('pause-reason-wrapper');
-    const pauseInput = document.getElementById('input-pause-reason');
-
-    if (select) select.value = p.status;
-    if (pauseInput) pauseInput.value = p.pauseReason || '';
-
-    if (p.status === 'detenido') {
-      pauseWrapper.classList.remove('hidden');
-    } else {
-      pauseWrapper.classList.add('hidden');
-    }
-
-    select.onchange = () => {
-      if (select.value === 'detenido') {
-        pauseWrapper.classList.remove('hidden');
-        pauseInput.focus();
-      } else {
-        pauseWrapper.classList.add('hidden');
-      }
-    };
-
-    document.getElementById('modal-project-status').classList.remove('hidden');
-  }
-
-  function saveProjectStatus() {
-    const projId = document.getElementById('status-modal-project-id').value;
-    const select = document.getElementById('select-project-pipeline-status');
-    const pauseInput = document.getElementById('input-pause-reason');
-    const p = state.proyectos.find(item => item.id == projId);
-    if (!p || !select) return;
-
-    const newStatus = select.value;
-    const pauseReason = cleanInputText(pauseInput ? pauseInput.value : '');
-
-    if (newStatus === 'detenido' && !pauseReason) {
-      showToast('Por favor escribe la razón de por qué está detenido.', 'info');
-      if (pauseInput) pauseInput.focus();
-      return;
-    }
-
-    const prevStatus = p.status;
-    p.status = newStatus;
-    p.pauseReason = newStatus === 'detenido' ? pauseReason : '';
-
-    if (!p.notes) p.notes = [];
-    p.notes.push({
-      date: new Date().toLocaleString('es-ES'),
-      text: `Estado cambiado de "${prevStatus}" a "${newStatus}"${newStatus === 'detenido' ? ': ' + pauseReason : '.'}`
-    });
-
-    saveProyectosToStorage();
-    renderProjectsPipeline();
-    document.getElementById('modal-project-status').classList.add('hidden');
-    showToast(`Estado de ${p.code} actualizado.`, 'success');
-  }
-
-  function openProjectNotesModal(projId) {
-    const p = state.proyectos.find(item => item.id == projId);
-    if (!p) return;
-
-    document.getElementById('notes-modal-project-id').value = p.id;
-    document.getElementById('notes-modal-project-subtitle').textContent = `${p.code} - ${p.title}`;
-
-    const container = document.getElementById('notes-timeline-container');
-    container.innerHTML = '';
-
-    (p.notes || []).forEach(n => {
-      const div = document.createElement('div');
-      div.className = 'note-item';
-      div.innerHTML = `
-        <div class="note-meta">
-          <span><i class="fa-solid fa-clock"></i> ${n.date}</span>
-        </div>
-        <div class="note-content">${escapeHtml(n.text)}</div>
-      `;
-      container.appendChild(div);
-    });
-
-    document.getElementById('input-new-project-note').value = '';
-    document.getElementById('modal-project-notes').classList.remove('hidden');
-  }
-
-  function addProjectNote() {
-    const projId = document.getElementById('notes-modal-project-id').value;
-    const input = document.getElementById('input-new-project-note');
-    const text = cleanInputText(input.value);
-    if (!text) return;
-
-    const p = state.proyectos.find(item => item.id == projId);
-    if (!p) return;
-
-    if (!p.notes) p.notes = [];
-    p.notes.push({
-      date: new Date().toLocaleString('es-ES'),
-      text: text
-    });
-
-    saveProyectosToStorage();
-    renderProjectsPipeline();
-    openProjectNotesModal(projId);
-    showToast('Acotación guardada.', 'success');
-  }
-
-  function openProjectPhotosModal(projId) {
-    const p = state.proyectos.find(item => item.id == projId);
-    if (!p) return;
-
-    document.getElementById('photos-modal-project-id').value = p.id;
-    document.getElementById('photos-modal-project-subtitle').textContent = `${p.code} - ${p.title}`;
-
-    renderProjectPhotosGrid(p);
-    document.getElementById('modal-project-photos').classList.remove('hidden');
-  }
-
-  function renderProjectPhotosGrid(p) {
-    const grid = document.getElementById('project-photos-grid');
-    if (!grid) return;
-    grid.innerHTML = '';
-
-    if (!p.photos || p.photos.length === 0) {
-      grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#94A3B8; padding:1.5rem;">No hay fotos registradas para este proyecto.</p>`;
-      return;
-    }
-
-    p.photos.forEach((photo, idx) => {
-      const card = document.createElement('div');
-      card.className = 'gallery-card';
-      card.innerHTML = `
-        <div class="gallery-img-container" style="height:140px;">
-          <img src="${photo.url}" alt="Foto">
-        </div>
-        <div style="padding:0.5rem; display:flex; justify-content:space-between; align-items:center; background:#FFFFFF;">
-          <small style="color:#64748B;">${photo.date || 'Foto'}</small>
-          <div>
-            <button class="btn btn-sm btn-outline btn-photo-view" data-url="${photo.url}"><i class="fa-solid fa-eye"></i></button>
-            <button class="btn btn-sm btn-danger-outline btn-photo-del" data-idx="${idx}"><i class="fa-solid fa-trash"></i></button>
-          </div>
-        </div>
-      `;
-      grid.appendChild(card);
-    });
-
-    grid.querySelectorAll('.btn-photo-view').forEach(b => {
-      b.addEventListener('click', () => openImageViewerModal(b.dataset.url, p.title));
-    });
-    grid.querySelectorAll('.btn-photo-del').forEach(b => {
-      b.addEventListener('click', () => {
-        p.photos.splice(parseInt(b.dataset.idx), 1);
-        saveProyectosToStorage();
-        renderProjectPhotosGrid(p);
-        renderProjectsPipeline();
-        showToast('Foto eliminada.', 'info');
-      });
-    });
-  }
-
-  // --- GOOGLE CALENDAR & .ICS EXPORTER ---
-  function agendarEnGoogleCalendar(proj) {
-    if (!proj) return;
-    const deadline = proj.dateDeadline ? new Date(proj.dateDeadline) : new Date();
-    const deadlineStr = deadline.toISOString().replace(/-|:|\.\d\d\d/g, '').split('T')[0];
-    const startStr = `${deadlineStr}T130000Z`;
-    const endStr = `${deadlineStr}T170000Z`;
-
-    const gCalTitle = `Entrega/Instalación: ${proj.title}`;
-    const gCalDetails = `Cliente: ${proj.clientName}\nTeléfono: ${proj.clientPhone || 'N/A'}\nSaldo Pendiente: $${Math.max(0, (proj.total || 0) - (proj.abono || 0)).toFixed(2)} USD\nEstado actual: ${proj.status.toUpperCase()}\n\nAgendado desde MARKT POS.`;
-    const gCalLocation = proj.address || 'Ubicación del cliente';
-
-    // 1. Abrir Google Calendar Web
-    const gCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(gCalTitle)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(gCalDetails)}&location=${encodeURIComponent(gCalLocation)}`;
-    window.open(gCalUrl, '_blank');
-
-    // 2. Generar archivo .ics para compatibilidad offline/móvil
-    const icsContent = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//MARKT POS//ES',
-      'BEGIN:VEVENT',
-      `SUMMARY:${gCalTitle}`,
-      `DESCRIPTION:${gCalDetails.replace(/\n/g, '\\n')}`,
-      `LOCATION:${gCalLocation}`,
-      `DTSTART:${startStr}`,
-      `DTEND:${endStr}`,
-      'STATUS:CONFIRMED',
-      'END:VEVENT',
-      'END:VCALENDAR'
-    ].join('\r\n');
-
-    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `MARKT_${proj.code}_Agenda.ics`;
-    link.click();
-
-    showToast('Abriendo Google Calendar y descargando cita...', 'success');
-  }
-
-  function preloadProjectInPos(proj) {
-    const saldo = Math.max(0, (proj.total || 0) - (proj.abono || 0));
-    state.docType = 'venta';
-    state.client.name = proj.clientName || '';
-    state.client.phone = proj.clientPhone || '';
-    state.items = [
-      {
-        id: Date.now().toString(),
-        cant: 1,
-        desc: `Saldo Restante: ${proj.title} (${proj.code})`,
-        subtext: 'Cancelación contra entrega/instalación',
-        taxRate: 0,
-        unitPrice: saldo
-      }
-    ];
-
-    if (inputClientName) inputClientName.value = state.client.name;
-    if (inputClientPhone) inputClientPhone.value = state.client.phone;
-
-    renderItemsList();
-    updateCalculationsAndPreview();
-
-    // Navegar al POS
-    const navPos = document.querySelector('[data-view="view-pos"]');
-    if (navPos) navPos.click();
-    showToast(`Saldo de ${proj.code} cargado en el POS para facturación.`, 'info');
-  }
-
-  // ==========================================================================
   // MÓDULO 8: GALERÍA DE PORTAFOLIO & VISOR DE IMÁGENES
   // ==========================================================================
 
@@ -4187,6 +3735,172 @@ Organizado con MARKT POS`);
   // CONFIGURACIÓN DE EVENT LISTENERS DE LOS NUEVOS MÓDULOS
   // ==========================================================================
   function setupNewModulesEventListeners() {
+    // Stitch POS Quick Add Buttons
+    document.querySelectorAll('.btn-stitch-quick-add').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const desc = btn.getAttribute('data-desc') || 'Producto';
+        const sub = btn.getAttribute('data-sub') || '';
+        const price = parseFloat(btn.getAttribute('data-price')) || 0;
+        
+        const existing = state.items.find(i => i.desc === desc);
+        if (existing) {
+          existing.cant = (parseFloat(existing.cant) || 0) + 1;
+        } else {
+          state.items.push({
+            id: Date.now().toString(),
+            cant: 1,
+            desc: desc,
+            subtext: sub,
+            taxRate: 16,
+            unitPrice: price
+          });
+        }
+        renderItemsList();
+        updateCalculationsAndPreview();
+        showToast(`Añadido al ticket: ${desc}`, 'success');
+      });
+    });
+
+    // Stitch POS Charge Button
+    const btnStitchCharge = document.getElementById('btn-stitch-charge');
+    if (btnStitchCharge) {
+      btnStitchCharge.addEventListener('click', () => {
+        if (!state.items || state.items.length === 0) {
+          showToast('El ticket está vacío.', 'info');
+          return;
+        }
+        saveCurrentDocumentToHistory();
+        showToast('Venta cobrada y registrada en historial.', 'success');
+      });
+    }
+
+    // Stitch POS Save as Quote Button
+    const btnStitchSaveQuote = document.getElementById('btn-stitch-save-quote');
+    if (btnStitchSaveQuote) {
+      btnStitchSaveQuote.addEventListener('click', () => {
+        if (!state.items || state.items.length === 0) {
+          showToast('Añade productos al ticket primero.', 'info');
+          return;
+        }
+        const newFolio = `COT-${new Date().getFullYear()}-${String(state.cotizaciones.length + 1).padStart(3, '0')}`;
+        const newQ = {
+          id: Date.now(),
+          folio: newFolio,
+          title: state.items.map(i => i.desc).slice(0, 2).join(' + ') || 'Presupuesto Comercial',
+          clientName: state.client.name || 'Cliente Asignado',
+          clientPhone: state.client.phone || '',
+          date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
+          validityDays: 15,
+          status: 'Borrador',
+          items: JSON.parse(JSON.stringify(state.items)),
+          subtotal: state.totals.subtotal,
+          totalClient: state.totals.grandTotal,
+          anticipoUsd: state.totals.grandTotal * 0.5,
+          notes: 'Presupuesto formal emitido desde Terminal POS.'
+        };
+        state.cotizaciones.unshift(newQ);
+        saveCotizacionesToStorage();
+        renderQuotesHistory();
+        openQuoteSheetModal(newQ);
+        showToast('Cotización generada exitosamente.', 'success');
+      });
+    }
+
+    // Stitch Proyectos Stepper Filter
+    document.querySelectorAll('#stage-stepper .phase-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const stage = chip.getAttribute('data-stage');
+        document.querySelectorAll('#stage-stepper .phase-chip').forEach(c => {
+          c.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'border-secondary');
+          c.classList.add('bg-surface-container-lowest', 'text-on-surface');
+          const numBadge = c.querySelector('div:first-child');
+          if (numBadge) {
+            numBadge.className = 'w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-numeric text-label-numeric font-bold text-on-surface';
+          }
+        });
+
+        chip.classList.remove('bg-surface-container-lowest', 'text-on-surface');
+        chip.classList.add('bg-secondary-container', 'text-on-secondary-container', 'border-secondary');
+        const activeBadge = chip.querySelector('div:first-child');
+        if (activeBadge) {
+          activeBadge.className = 'w-6 h-6 rounded-full bg-surface-container-lowest flex items-center justify-center font-label-numeric text-label-numeric text-secondary font-bold';
+        }
+
+        const stageMap = {
+          '1': 'presupuesto',
+          '2': 'abono',
+          '3': 'produccion',
+          '4': 'instalacion',
+          '5': 'culminado'
+        };
+        state.projectFilter = stageMap[stage] || 'all';
+        renderProjectsPipeline();
+      });
+    });
+
+    const btnResetProjectFilter = document.getElementById('reset-filter-btn');
+    if (btnResetProjectFilter) {
+      btnResetProjectFilter.addEventListener('click', () => {
+        state.projectFilter = 'all';
+        document.querySelectorAll('#stage-stepper .phase-chip').forEach(c => {
+          c.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'border-secondary');
+          c.classList.add('bg-surface-container-lowest', 'text-on-surface');
+        });
+        renderProjectsPipeline();
+      });
+    }
+
+    // Stitch Cotizaciones Filter Chips
+    document.querySelectorAll('#quote-status-filter-group .quote-filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#quote-status-filter-group .quote-filter-chip').forEach(c => {
+          c.classList.remove('bg-primary', 'text-on-primary');
+          c.classList.add('bg-surface-container-lowest', 'text-on-surface-variant');
+        });
+        chip.classList.remove('bg-surface-container-lowest', 'text-on-surface-variant');
+        chip.classList.add('bg-primary', 'text-on-primary');
+
+        const st = chip.getAttribute('data-status');
+        state.quoteStatusFilter = (st === 'todas') ? 'all' : (st === 'aprobada' ? 'Aprobado' : (st === 'enviada' ? 'Enviada' : 'Borrador'));
+        renderQuotesHistory();
+      });
+    });
+
+    // Copy CLABE button
+    const btnCopyClabe = document.getElementById('btn-copy-clabe');
+    if (btnCopyClabe) {
+      btnCopyClabe.addEventListener('click', () => {
+        const text = document.getElementById('clabe-code-text')?.textContent || '0134 • V-24190824 • 04128421990';
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(() => {
+            showToast('Datos bancarios copiados al portapapeles.', 'success');
+          });
+        } else {
+          showToast('Copiado: ' + text, 'info');
+        }
+      });
+    }
+
+    // Google Calendar button
+    const btnGCal = document.getElementById('btn-quote-gcalendar');
+    if (btnGCal) {
+      btnGCal.addEventListener('click', () => {
+        const title = encodeURIComponent('Montaje Aviso Corpóreo - PubliCraft');
+        const details = encodeURIComponent('Cuadrilla: Técnico CNC + 2 Montajistas. Proyecto: Boutique Velvet & Co.');
+        const location = encodeURIComponent('Boutique Velvet & Co.');
+        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}`;
+        window.open(url, '_blank');
+      });
+    }
+
+    // Close Quote Sheet modal button
+    const btnCloseQuoteSheet = document.getElementById('btn-close-quote-sheet');
+    if (btnCloseQuoteSheet) {
+      btnCloseQuoteSheet.addEventListener('click', () => {
+        document.getElementById('modal-quote-sheet')?.classList.add('hidden');
+      });
+    }
+
     // 1. Cotizaciones
     const btnNewQ = document.getElementById('btn-new-quote');
     if (btnNewQ) btnNewQ.addEventListener('click', () => initActiveQuote());
