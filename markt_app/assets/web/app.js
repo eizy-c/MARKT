@@ -135,6 +135,10 @@ document.addEventListener('DOMContentLoaded', () => {
       notes: 'Montos calculados según tasa oficial de referencia BCV.\nGracias por su compra.'
     },
     productsCatalog: [],
+    servicesCatalog: [],
+    materialsCatalog: [],
+    suppliersCatalog: [],
+    sellersCatalog: [],
     clientsCatalog: [],
     history: [],
     cotizaciones: [],
@@ -387,6 +391,10 @@ document.addEventListener('DOMContentLoaded', () => {
     purgeLegacyTestData();
     loadSavedSettingsAndBusiness();
     loadProductsFromStorage();
+    loadServicesFromStorage();
+    loadMaterialsFromStorage();
+    loadSuppliersFromStorage();
+    loadSellersFromStorage();
     loadClientsFromStorage();
     loadHistoryFromStorage();
     loadCotizacionesFromStorage();
@@ -519,10 +527,16 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (targetView === 'view-cotizacion-detalle') currentViewTitle.textContent = 'Presupuesto Formal';
         else if (targetView === 'view-proyectos') currentViewTitle.textContent = 'Proyectos';
         else if (targetView === 'view-galeria') currentViewTitle.textContent = 'Archivos CNC';
-        else if (targetView === 'view-productos') currentViewTitle.textContent = 'Catalogo';
+        else if (targetView === 'view-productos') currentViewTitle.textContent = 'Productos';
+        else if (targetView === 'view-servicios') currentViewTitle.textContent = 'Servicios';
+        else if (targetView === 'view-materiales') currentViewTitle.textContent = 'Materiales & Insumos';
+        else if (targetView === 'view-proveedores') currentViewTitle.textContent = 'Proveedores';
+        else if (targetView === 'view-vendedores') currentViewTitle.textContent = 'Vendedores & Comisiones';
         else if (targetView === 'view-clientes') currentViewTitle.textContent = 'Clientes';
         else if (targetView === 'view-historial') currentViewTitle.textContent = 'Historial';
         else if (targetView === 'view-ajustes') currentViewTitle.textContent = 'Mi Negocio';
+        else if (targetView === 'view-changelog') currentViewTitle.textContent = 'Historial de Versiones';
+        else if (targetView === 'view-privacidad') currentViewTitle.textContent = 'Políticas de Privacidad';
       }
 
       if (targetView === 'view-pos') {
@@ -546,12 +560,28 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGallery();
       } else if (targetView === 'view-productos') {
         renderProductsTable();
+      } else if (targetView === 'view-servicios') {
+        if (pageTitleText) pageTitleText.textContent = 'Servicios';
+        renderServicesTable();
+      } else if (targetView === 'view-materiales') {
+        if (pageTitleText) pageTitleText.textContent = 'Materiales & Insumos';
+        renderMaterialsTable();
+      } else if (targetView === 'view-proveedores') {
+        if (pageTitleText) pageTitleText.textContent = 'Proveedores';
+        renderSuppliersTable();
+      } else if (targetView === 'view-vendedores') {
+        if (pageTitleText) pageTitleText.textContent = 'Vendedores & Comisiones';
+        renderVendorsTable();
       } else if (targetView === 'view-clientes') {
         renderClientsTable();
       } else if (targetView === 'view-historial') {
         renderHistoryTable();
       } else if (targetView === 'view-ajustes') {
         if (pageTitleText) pageTitleText.textContent = 'Mi Negocio';
+      } else if (targetView === 'view-changelog') {
+        if (pageTitleText) pageTitleText.textContent = 'Historial de Versiones';
+      } else if (targetView === 'view-privacidad') {
+        if (pageTitleText) pageTitleText.textContent = 'Políticas de Privacidad';
       }
 
       if (adminSidebar) adminSidebar.classList.remove('mobile-open');
@@ -1913,15 +1943,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     filtered.forEach(p => {
       const tr = document.createElement('tr');
+      const costo = parseFloat(p.costo_usd || 0);
+      const precio = parseFloat(p.precio_usd || 0);
+      const ganancia = precio - costo;
+      const margenPct = precio > 0 ? ((ganancia / precio) * 100).toFixed(0) : 0;
+      const stock = parseFloat(p.stock_actual || 0);
+      const stockMin = parseFloat(p.stock_min || 0);
+      const isLowStock = stockMin > 0 && stock <= stockMin;
+
       tr.innerHTML = `
-        <td><strong>${escapeHtml(p.codigo || '-')}</strong></td>
-        <td>${escapeHtml(p.nombre)}</td>
-        <td><strong style="color:#4F46E5;">$${parseFloat(p.precio_usd).toFixed(2)} USD</strong></td>
-        <td>${p.iva_porcentaje || 0}%</td>
-        <td><small>${escapeHtml(p.subtexto || '-')}</small></td>
+        <td><strong class="font-mono text-secondary">${escapeHtml(p.codigo || '-')}</strong></td>
         <td>
-          <button class="btn btn-sm btn-primary btn-add-prod-to-pos" data-id="${p.id}"><i class="fa-solid fa-cart-plus"></i> Usar en POS</button>
-          <button class="btn btn-sm btn-danger-outline btn-del-prod" data-id="${p.id}"><i class="fa-solid fa-trash"></i></button>
+          <div class="font-bold text-on-surface">${escapeHtml(p.nombre)}</div>
+          <small class="text-on-surface-variant">${escapeHtml(p.subtexto || p.unidad || '-')}</small>
+        </td>
+        <td class="font-mono font-semibold">$${costo.toFixed(2)}</td>
+        <td><strong class="font-mono text-secondary">$${precio.toFixed(2)}</strong></td>
+        <td>
+          <span class="px-2 py-0.5 rounded text-[11px] font-bold ${ganancia >= 0 ? 'bg-secondary/10 text-secondary' : 'bg-error/10 text-error'} font-mono">
+            +$${ganancia.toFixed(2)} (${margenPct}%)
+          </span>
+        </td>
+        <td>
+          <span class="px-2 py-0.5 rounded font-mono text-xs font-bold ${isLowStock ? 'bg-error/15 text-error animate-pulse' : 'bg-surface-container text-on-surface'}">
+            ${stock} ${escapeHtml(p.unidad || '')}
+          </span>
+        </td>
+        <td style="text-align:right;">
+          <button class="px-2.5 py-1 rounded-lg bg-surface-container text-secondary hover:bg-surface-container-high transition-colors font-label-sm text-xs font-bold btn-add-prod-to-pos" data-id="${p.id}" title="Usar en POS">
+            <span class="material-symbols-outlined text-[15px] align-middle">add_shopping_cart</span>
+          </button>
+          <button class="px-2 py-1 rounded-lg bg-error/10 text-error hover:bg-error hover:text-on-error transition-colors text-xs font-bold btn-del-prod ml-1" data-id="${p.id}" title="Eliminar">
+            <span class="material-symbols-outlined text-[15px] align-middle">delete</span>
+          </button>
         </td>
       `;
       productsTableBody.appendChild(tr);
@@ -1951,7 +2005,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const idVal = document.getElementById('prod-id').value;
     const codigo = cleanInputText(document.getElementById('prod-code').value).toUpperCase() || `PRD-${Date.now().toString().slice(-4)}`;
     const nombre = cleanInputText(document.getElementById('prod-name').value);
+    const costo_usd = parseFloat(document.getElementById('prod-cost') ? document.getElementById('prod-cost').value : 0) || 0;
     const precio_usd = parseFloat(document.getElementById('prod-price').value) || 0;
+    const stock_actual = parseFloat(document.getElementById('prod-stock') ? document.getElementById('prod-stock').value : 0) || 0;
+    const stock_min = parseFloat(document.getElementById('prod-stock-min') ? document.getElementById('prod-stock-min').value : 0) || 0;
+    const unidad = document.getElementById('prod-unit') ? document.getElementById('prod-unit').value : 'Unidad';
     const iva_porcentaje = parseFloat(document.getElementById('prod-tax').value) || 0;
     const subtexto = cleanInputText(document.getElementById('prod-subtext').value);
 
@@ -1959,7 +2017,11 @@ document.addEventListener('DOMContentLoaded', () => {
       id: idVal ? parseInt(idVal) : undefined,
       codigo,
       nombre,
+      costo_usd,
       precio_usd,
+      stock_actual,
+      stock_min,
+      unidad,
       iva_porcentaje,
       subtexto
     };
@@ -1973,9 +2035,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.MarktNativeStorage) { window.MarktNativeStorage.setItem('martk_products', state.productsCatalog); } else { localStorage.setItem('martk_products', JSON.stringify(state.productsCatalog)); }
     renderProductsTable();
-    productFormBox.classList.add('hidden');
+    renderPosQuickCatalog();
+    if (productFormBox) productFormBox.classList.add('hidden');
     formProduct.reset();
-    showToast('Producto guardado correctamente', 'success');
+    const marginDisp = document.getElementById('prod-margin-display');
+    if (marginDisp) marginDisp.textContent = 'Ganancia: $0.00 (0%)';
+    showToast('Producto y costo guardados correctamente', 'success');
   }
 
   function openProductPickerModal() {
