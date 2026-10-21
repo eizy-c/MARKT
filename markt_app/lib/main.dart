@@ -16,6 +16,7 @@ import 'screens/clients_screen.dart';
 import 'screens/settings_screen.dart';
 import 'models/app_models.dart';
 import 'services/storage_service.dart';
+import 'services/notification_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'widgets/app_drawer.dart';
 import 'widgets/floating_debug_button.dart';
@@ -160,6 +161,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ];
     DebugLogger.instance.info('MARTK POS nativo en Flutter iniciado con éxito.');
     BcvService.instance.init();
+    NotificationService.instance.initialize(onSelectNotification: (payload) {
+      if (payload == 'receivables') {
+        _onDestinationSelected(3);
+      } else if (payload == 'projects') {
+        _onDestinationSelected(5);
+      } else if (payload == 'inventory') {
+        _onDestinationSelected(6);
+      } else if (payload == 'invoices') {
+        _onDestinationSelected(1);
+      }
+    }).then((_) {
+      NotificationService.instance.runBusinessAlertsCheck();
+    });
   }
 
   void _onDestinationSelected(int index) {
@@ -548,7 +562,48 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ),
               ],
             ),
-            const Divider(height: 24),
+            const SizedBox(height: 12),
+            // Botón para probar/enviar alertas directamente al teléfono
+            InkWell(
+              onTap: () async {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Verificando y enviando alertas al teléfono...'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+                await NotificationService.instance.runBusinessAlertsCheck();
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.phone_android, size: 18, color: Color(0xFF2563EB)),
+                    SizedBox(width: 8),
+                    Text(
+                      'Enviar alertas de negocio a la barra del teléfono',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2563EB),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Divider(height: 20),
             Expanded(
               child: ListView(
                 children: [
