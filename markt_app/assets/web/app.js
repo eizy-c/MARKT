@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
       docTitle: 'FACTURA ELECTRÓNICA DE VENTA',
       docNumber: 'No. 001',
       currency: '$',
+      category: 'general',
       logo: null
     },
     client: {
@@ -623,6 +624,16 @@ document.addEventListener('DOMContentLoaded', () => {
         initActiveQuote();
         switchView('view-cotizacion-detalle');
       });
+    }
+
+    const btnBackChangelog = document.getElementById('btn-back-from-changelog');
+    if (btnBackChangelog) {
+      btnBackChangelog.addEventListener('click', () => switchView('view-ajustes'));
+    }
+
+    const btnBackPrivacidad = document.getElementById('btn-back-from-privacidad');
+    if (btnBackPrivacidad) {
+      btnBackPrivacidad.addEventListener('click', () => switchView('view-ajustes'));
     }
 
     const btnDrawerExportBackup = document.getElementById('btn-drawer-export-backup');
@@ -1271,6 +1282,8 @@ document.addEventListener('DOMContentLoaded', () => {
     state.business.id = cleanIdentificacionInput(inputBizId.value);
     state.business.phone = cleanInputText(inputBizPhone.value);
     state.business.address = cleanInputText(inputBizAddress.value);
+    const selectBizCat = document.getElementById('biz-category');
+    if (selectBizCat) state.business.category = selectBizCat.value;
     state.options.notes = cleanInputText(inputFooterNotes.value);
 
     state.options.logoSize = parseInt(logoSizeRange.value) || 220;
@@ -2177,6 +2190,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (inputBizId) inputBizId.value = state.business.id || '';
       if (inputBizPhone) inputBizPhone.value = state.business.phone || '';
       if (inputBizAddress) inputBizAddress.value = state.business.address || '';
+      const selectBizCat = document.getElementById('biz-category');
+      if (selectBizCat && state.business.category) selectBizCat.value = state.business.category;
     }
 
     if (settingsObj.exchange) {

@@ -199,8 +199,17 @@
         <span>Gestion de Proyectos</span>
       </button>
       <button class="drawer-nav-item" data-view="view-galeria" type="button">
-        <span class="material-symbols-outlined">precision_manufacturing</span>
-        <span>Archivos CNC y Taller</span>
+        <span class="material-symbols-outlined">photo_library</span>
+        <span>Galeria y Trabajos</span>
+      </button>
+      <div class="h-px bg-surface-container my-1"></div>
+      <button class="drawer-nav-item" data-view="view-changelog" type="button">
+        <span class="material-symbols-outlined">update</span>
+        <span>Novedades del Sistema</span>
+      </button>
+      <button class="drawer-nav-item" data-view="view-privacidad" type="button">
+        <span class="material-symbols-outlined">policy</span>
+        <span>Politicas de Privacidad</span>
       </button>
       <div class="h-px bg-surface-container my-2"></div>
       <button class="drawer-nav-item" data-view="view-productos" type="button">
@@ -1355,6 +1364,18 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div class="sm:col-span-2">
+            <label class="font-label-md text-label-md text-on-surface font-semibold block mb-1">Giro / Tipo de Negocio</label>
+            <select id="biz-category" class="w-full px-3 py-2.5 rounded-lg bg-surface-container-low border border-surface-container font-body-md text-body-md text-on-surface outline-none">
+              <option value="general" selected>Comercio General / Venta de Productos</option>
+              <option value="servicios">Servicios Profesionales / Tecnicos</option>
+              <option value="taller">Taller, Fabricacion & Reparaciones</option>
+              <option value="alimentos">Alimentos, Bebidas & Mini Market</option>
+              <option value="belleza">Belleza, Estetica & Cuidado Personal</option>
+              <option value="salud">Salud, Farmacia & Consultorios</option>
+              <option value="otro">Otro Rubro Comercial</option>
+            </select>
+          </div>
           <div>
             <label class="font-label-md text-label-md text-on-surface font-semibold block mb-1">Nombre Comercial / Razon Social</label>
             <input type="text" id="biz-name" class="w-full px-3 py-2.5 rounded-lg bg-surface-container-low border border-surface-container font-body-md text-body-md text-on-surface outline-none" value="" placeholder="Nombre comercial / Razon Social"/>
@@ -1578,12 +1599,151 @@
         </div>
       </div>
 
+      <!-- Informacion Legal, Novedades & Privacidad (Universal) -->
+      <div class="rounded-xl bg-surface-container-lowest p-4 shadow-sm border border-surface-container space-y-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
+            <span class="material-symbols-outlined text-[20px]">info</span>
+          </div>
+          <div>
+            <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Acerca de MARKT & Privacidad</h3>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Version 4.0.0 Universal Business OS</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+          <button class="stitch-nav-item py-2.5 px-3 rounded-lg bg-surface-container-low border border-surface-container text-xs font-semibold text-on-surface hover:bg-surface-container flex items-center justify-between transition-colors" data-view="view-changelog" type="button">
+            <span class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px] text-secondary">update</span>
+              <span>Ver Registro de Cambios (Changelog)</span>
+            </span>
+            <span class="material-symbols-outlined text-[16px] text-on-surface-variant">chevron_right</span>
+          </button>
+          <button class="stitch-nav-item py-2.5 px-3 rounded-lg bg-surface-container-low border border-surface-container text-xs font-semibold text-on-surface hover:bg-surface-container flex items-center justify-between transition-colors" data-view="view-privacidad" type="button">
+            <span class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px] text-secondary">policy</span>
+              <span>Politicas de Privacidad</span>
+            </span>
+            <span class="material-symbols-outlined text-[16px] text-on-surface-variant">chevron_right</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Boton Guardar Cambios -->
       <button id="btn-save-all-settings" class="w-full h-12 bg-primary text-on-primary rounded-xl font-label-md text-label-md font-bold flex items-center justify-center gap-2 shadow-md active:scale-98 transition-all" type="button">
         <span class="material-symbols-outlined text-[20px]">save</span>
         <span>Guardar Cambios de Mi Negocio</span>
       </button>
 
+    </section>
+
+  
+    <!-- ==========================================================================
+         VISTA 11: REGISTRO DE CAMBIOS / NOVEDADES (Changelog Full-Page)
+         ========================================================================== -->
+    <section id="view-changelog" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
+      <div class="flex items-center justify-between p-3 rounded-xl bg-surface-container border border-surface-container-high">
+        <button id="btn-back-from-changelog" class="text-xs font-bold text-secondary flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container-lowest border border-surface-container hover:bg-surface-container-low transition-all" type="button">
+          <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+          <span>Volver</span>
+        </button>
+        <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Novedades y Versiones</span>
+        <span class="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary font-mono text-[11px] font-bold">v4.0.0</span>
+      </div>
+
+      <div class="bg-surface-container-lowest p-5 rounded-2xl border border-surface-container shadow-sm space-y-5">
+        <div class="border-b border-surface-container pb-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-on-surface flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-secondary text-on-secondary font-mono text-xs font-bold">v4.0.0</span>
+              <span>Universal Business OS & Almacenamiento Nativo</span>
+            </h3>
+            <span class="text-xs text-on-surface-variant font-mono">2026-10-20</span>
+          </div>
+          <ul class="mt-3 space-y-1.5 text-xs text-on-surface-variant list-disc pl-5">
+            <li><strong>Memoria fisica del telefono:</strong> Datos guardados directamente en archivos JSON en tu telefono via canal nativo Flutter. Sin limites de 5MB.</li>
+            <li><strong>Negocio Universal:</strong> Adaptabilidad para cualquier tipo de negocio (retail, taller, servicios, comercio, alimentos).</li>
+            <li><strong>Politicas de Privacidad:</strong> Cumplimiento para Google Play Store y navegadores web.</li>
+            <li><strong>Changelog en la app:</strong> Consulta directa de las actualizaciones del sistema.</li>
+            <li><strong>Limpieza de arquitectura:</strong> Eliminacion de archivos residuales externos. Todo el codigo unificado en la app Flutter.</li>
+          </ul>
+        </div>
+
+        <div class="border-b border-surface-container pb-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-on-surface flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-mono text-xs font-bold">v3.0.0</span>
+              <span>Interfaz Unboxed & Cero Modales</span>
+            </h3>
+            <span class="text-xs text-on-surface-variant font-mono">2026-10-20</span>
+          </div>
+          <ul class="mt-3 space-y-1.5 text-xs text-on-surface-variant list-disc pl-5">
+            <li>Vistas completas para comprobantes y presupuestos con desplazamiento natural tactil.</li>
+            <li>Selector de comprobantes activos: Factura de Venta, Recibo de Caja y Comprobante de Egreso.</li>
+            <li>Edicion rapida de clientes y catalogo en tiempo real. Cero emojis unicode.</li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-on-surface flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-mono text-xs font-bold">v2.1.0</span>
+              <span>Autonomia Standalone & Suiche 7B</span>
+            </h3>
+            <span class="text-xs text-on-surface-variant font-mono">2026-09-04</span>
+          </div>
+          <ul class="mt-3 space-y-1.5 text-xs text-on-surface-variant list-disc pl-5">
+            <li>Generacion de codigo QR interoperable bajo norma Suiche 7B.</li>
+            <li>Exportacion e importacion de respaldos en archivo JSON.</li>
+            <li>Doble moneda USD y Bolivares con tasa oficial BCV.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         VISTA 12: POLITICAS DE PRIVACIDAD (Listo para Tiendas y Web)
+         ========================================================================== -->
+    <section id="view-privacidad" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
+      <div class="flex items-center justify-between p-3 rounded-xl bg-surface-container border border-surface-container-high">
+        <button id="btn-back-from-privacidad" class="text-xs font-bold text-secondary flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container-lowest border border-surface-container hover:bg-surface-container-low transition-all" type="button">
+          <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+          <span>Volver</span>
+        </button>
+        <span class="font-headline-sm text-headline-sm text-on-surface font-bold">Politica de Privacidad</span>
+        <span class="material-symbols-outlined text-secondary text-[20px]">shield</span>
+      </div>
+
+      <div class="bg-surface-container-lowest p-5 rounded-2xl border border-surface-container shadow-sm space-y-4 text-xs text-on-surface-variant leading-relaxed">
+        <div>
+          <h4 class="text-sm font-bold text-on-surface mb-1">1. Compromiso de Privacidad Total (Cero Rastreo)</h4>
+          <p>MARKT POS & Business OS ha sido disenado bajo el principio de <strong>privacidad por diseno</strong>. La aplicacion no recopila, no rastrea, no vende ni transmite informacion personal o comercial a ningun servidor de terceros.</p>
+        </div>
+
+        <div>
+          <h4 class="text-sm font-bold text-on-surface mb-1">2. Almacenamiento Local en tu Dispositivo</h4>
+          <p>Toda la informacion generada (productos, clientes, precios, ventas, gastos, cotizaciones y configuraciones bancarias) se almacena <strong>exclusivamente en la memoria interna de tu telefono o dispositivo</strong>. Nadie mas tiene acceso a tus numeros comerciales.</p>
+        </div>
+
+        <div>
+          <h4 class="text-sm font-bold text-on-surface mb-1">3. Permisos de la Aplicacion</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li><strong>Almacenamiento / Memoria:</strong> Utilizado unicamente para guardar tus catalogos, ventas y generar tus respaldos en archivo JSON.</li>
+            <li><strong>Camara / Imagenes:</strong> Utilizado unicamente cuando decides tomar una fotografia a un trabajo o escanear una factura/recibo. Ninguna foto sale de tu control.</li>
+            <li><strong>Internet:</strong> Utilizado exclusivamente para consultar las tasas oficiales de referencia del Banco Central de Venezuela (BCV) y generar enlaces directos de WhatsApp a solicitud tuya.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-sm font-bold text-on-surface mb-1">4. Control Total y Copias de Seguridad</h4>
+          <p>Eres el unico dueno de tu informacion. Puedes exportar una copia completa en formato JSON o restablecer la aplicacion a cero en cualquier momento desde la seccion Mi Negocio y Ajustes.</p>
+        </div>
+
+        <div class="pt-3 border-t border-surface-container flex items-center justify-between text-[11px]">
+          <span>Ultima actualizacion: Octubre 2026</span>
+          <span class="font-semibold text-secondary">MARKT Business OS v4.0</span>
+        </div>
+      </div>
     </section>
 
   </main>

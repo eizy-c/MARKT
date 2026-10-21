@@ -1,42 +1,66 @@
-# Registro de Cambios (Changelog) - MARKT POS
+# Registro de Cambios (Changelog) - MARKT POS & Business OS
 
-Todos los cambios notables en este proyecto serán documentados en este archivo.
-El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+Todos los cambios notables en este proyecto son documentados en este archivo.
+El formato esta basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+---
+
+## [4.0.0] - 2026-10-20
+### Plataforma Universal de Negocios & Almacenamiento Fisico Nativo
+
+Esta version marca la transformacion de MARKT en una aplicacion universal aplicable a cualquier tipo de comercio, taller, tienda minorista, servicios profesionales o industria.
+
+#### Anadido
+- **Almacenamiento Fisico Nativo en Telefono (`MarktNativeStorage`)**:
+  - Canal bidireccional Flutter-JavaScript via `path_provider` en Android/iOS.
+  - Almacenamiento directo en archivos fisicos `.json` en memoria interna sin limites de 5-10MB.
+  - Persistencia blindada: la informacion no se borra al limpiar el navegador o la cache del sistema.
+- **Politicas de Privacidad Integradas**:
+  - Seccion dedicada accesible desde Ajustes y lista para publicaciones en Google Play Store / Apple App Store.
+  - Declaracion explicita de Cero Rastreo (Zero Analytics, Zero Telemetry, 100% privacidad de datos en el dispositivo).
+- **Visor de Registro de Cambios (Changelog) en la App**:
+  - Visualizacion interactiva de las novedades de cada version directamente en Ajustes y al actualizar.
+- **Generalizacion Universal**:
+  - Eliminadas todas las menciones rigidas a un solo rubro (CNC/acrilico).
+  - Configuracion configurable de giro o rubro comercial (Comercio, Servicios, Taller, Retail, Alimentos, etc.).
+
+#### Modificado
+- Purgado definitivo del directorio `vista-stich` y archivos web sueltos en raiz: el proyecto ahora es exclusivamente la aplicacion Flutter `markt_app/`.
+- Sincronizacion de tasa oficial BCV blindada a 881.88 Bs./$ con fallback anti-tasas obsoletas.
+
+---
+
+## [3.0.0] - 2026-10-20
+### Interfaz Des-encajonada (Unboxed) & Cero Modales en Movil
+
+#### Anadido
+- Vistas dedicadas de pantalla completa para el Ticket (`view-ticket`) y Detalle de Cotizaciones (`view-cotizacion-detalle`) con scroll tactil natural, eliminando modales flotantes bloqueantes.
+- Selector de comprobante con cambio dinamico: Factura de Venta, Recibo de Caja (Cobro) y Comprobante de Egreso.
+- Panel en linea para edicion rapida de clientes en el Punto de Venta.
+
+#### Modificado
+- Diseno unboxed de 1 solo nivel de superficie inspirado en Material You / Stitch sin anidamiento de cajas.
+- 0 emojis unicode en toda la aplicacion; iconos vectoriales limpios via Material Symbols Outlined.
 
 ---
 
 ## [2.1.0] - 2026-09-04
-### 🚀 Edición Web Standalone & Mobile (Sin Base de Datos)
-Esta versión transforma a MARKT en una aplicación **100% Client-Side** diseñada para funcionar de forma autónoma desde cualquier navegador de teléfono móvil o computadora sin necesidad de instalar o configurar servidores MySQL.
+### Edicion Standalone & Mobile
 
-#### Añadido
-- **Persistencia 100% en Navegador (localStorage)**: Almacenamiento local e instantáneo para Catálogo de Productos, Directorio de Clientes, Historial de Comprobantes, Ajustes de Empresa y Contador de Folio.
-- **Auto-registro de Clientes**: Al emitir una factura con una cédula o RIF nuevo, el cliente se guarda automáticamente en el directorio sin pasos adicionales.
-- **Copia de Seguridad y Migración (JSON)**:
-  - Función de exportación de todos los datos a un archivo .json (MARTK_Respaldo_YYYY-MM-DD.json).
-  - Función de importación para restaurar y transferir datos fácilmente entre la computadora y el teléfono móvil.
-  - Opción de restablecimiento a valores de fábrica en la pestaña de Ajustes.
-- **Optimización para Teléfonos Móviles (PWA & Mobile-First)**:
-  - Etiquetas meta para PWA que permiten instalar la web como una App en la pantalla de inicio de Android y iPhone.
-  - Adaptación táctil y responsiva del visor del ticket para pantallas estrechas.
-  - Botón de eliminación directa de clientes en la tabla del directorio.
-- **Servidor Web Estático Ultra-ligero**: server.js detecta la IP local de tu computadora en la red Wi-Fi y muestra el enlace exacto para abrir la web directamente en tu teléfono móvil.
-
-#### Modificado
-- Desacopladas todas las llamadas bloqueantes a endpoints de MySQL.
-- Consulta directa de tasas oficiales del Banco Central de Venezuela (BCV) para Dólar y Euro vía API pública HTTPS (dolarapi.com).
+- Modo autonomo sin base de datos externa obligatoria.
+- Exportacion e importacion de respaldos en formato JSON.
+- Integracion de Suiche 7B para cobros con Pago Movil mediante codigo QR interoperable.
 
 ---
 
 ## [2.0.0] - 2026-09-01
-### 🏢 Panel de Administración POS & Integración MySQL
-- Interfaz renovada tipo Admin Panel con barra de navegación lateral y vistas dedicadas (POS, Productos, Clientes, Historial, Ajustes).
-- Dualidad monetaria automática ($ USD / Bs. BCV).
-- Generador de códigos QR bajo el estándar Pago Móvil Suiche 7B.
-- Formato de impresión térmica de tickets y descarga de comprobantes en imagen PNG.
+### Panel de Administracion & Multimoneda
+
+- Soporte dual USD ($) y Bolivares (Bs.) con tasa oficial BCV.
+- Formato de impresion termica y descarga en imagen PNG.
 
 ---
 
 ## [1.0.0] - 2026-08-15
-### 🐣 Versión Inicial (FacturaExpress)
-- Prototipo inicial de facturación rápida con vista previa de tickets e impresión básica.
+### Version Inicial
+- Prototipo inicial de facturacion rapida y emision de tickets.
