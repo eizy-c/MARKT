@@ -232,6 +232,18 @@
         <span class="material-symbols-outlined">local_shipping</span>
         <span>Proveedores</span>
       </button>
+      <button class="drawer-nav-item" data-view="view-caja" type="button">
+        <span class="material-symbols-outlined">payments</span>
+        <span>Libro de Caja & Gastos</span>
+      </button>
+      <button class="drawer-nav-item" data-view="view-cobranzas" type="button">
+        <span class="material-symbols-outlined">account_balance</span>
+        <span>Cuentas por Cobrar</span>
+      </button>
+      <button class="drawer-nav-item" data-view="view-reportes" type="button">
+        <span class="material-symbols-outlined">analytics</span>
+        <span>Analitica & Reportes</span>
+      </button>
       <button class="drawer-nav-item" data-view="view-vendedores" type="button">
         <span class="material-symbols-outlined">badge</span>
         <span>Vendedores & Comisiones</span>
@@ -2105,6 +2117,580 @@
       </div>
     </section>
 
+
+    <!-- ================================================================= -->
+    <!-- VIEW: CAJA & MOVIMIENTOS ILIMITADOS (FASE 2)                      -->
+    <!-- ================================================================= -->
+    <section id="view-caja" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
+      
+      <!-- Balance Cards (Tiempo Real) -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Saldo Neto en Caja</span>
+            <span class="w-7 h-7 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+              <span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+            </span>
+          </div>
+          <div class="mt-2">
+            <div id="caja-net-usd" class="font-mono text-2xl font-extrabold text-secondary leading-tight">$0.00</div>
+            <div id="caja-net-bs" class="font-mono text-xs text-on-surface-variant mt-0.5 font-bold">0.00 Bs.</div>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Total Ingresos</span>
+            <span class="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <span class="material-symbols-outlined text-[18px]">trending_up</span>
+            </span>
+          </div>
+          <div class="mt-2">
+            <div id="caja-income-usd" class="font-mono text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 leading-tight">+$0.00</div>
+            <div id="caja-income-bs" class="font-mono text-xs text-on-surface-variant mt-0.5 font-bold">+0.00 Bs.</div>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Total Egresos</span>
+            <span class="w-7 h-7 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400">
+              <span class="material-symbols-outlined text-[18px]">trending_down</span>
+            </span>
+          </div>
+          <div class="mt-2">
+            <div id="caja-expense-usd" class="font-mono text-2xl font-extrabold text-rose-600 dark:text-rose-400 leading-tight">-$0.00</div>
+            <div id="caja-expense-bs" class="font-mono text-xs text-on-surface-variant mt-0.5 font-bold">-0.00 Bs.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action & Filters Bar -->
+      <div class="flex flex-col sm:flex-row gap-2 pt-1">
+        <div class="relative flex-1">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+          <input id="search-caja" class="w-full h-12 pl-10 pr-4 bg-surface-container-lowest text-on-surface placeholder:text-outline rounded-xl text-body-md font-body-md focus:outline-none shadow-sm border border-surface-container transition-all" placeholder="Buscar por concepto, cliente, ref..." type="text"/>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <select id="filter-caja-periodo" class="h-12 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-xs font-bold border border-surface-container focus:outline-none">
+            <option value="today">Hoy</option>
+            <option value="week">Esta Semana</option>
+            <option value="month" selected>Este Mes</option>
+            <option value="all">Todo</option>
+          </select>
+          <select id="filter-caja-tipo" class="h-12 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-xs font-bold border border-surface-container focus:outline-none">
+            <option value="all">Todos</option>
+            <option value="income">Ingresos (+)</option>
+            <option value="expense">Egresos (-)</option>
+          </select>
+          <!-- Boton Foto a Factura (OCR) -->
+          <input type="file" id="input-caja-camera-ocr" accept="image/*" capture="environment" class="hidden">
+          <button id="btn-caja-scan-bill" class="h-12 px-3.5 bg-secondary/15 text-secondary rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform flex-shrink-0 font-bold hover:bg-secondary/25" type="button" title="Tomar foto a factura o recibo">
+            <span class="material-symbols-outlined text-[20px]">photo_camera</span>
+            <span class="font-label-md text-label-md whitespace-nowrap hidden sm:inline">Escanear</span>
+          </button>
+          <!-- Boton Nuevo Movimiento -->
+          <button id="btn-show-add-caja-form" class="h-12 px-4 bg-primary text-on-primary rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform flex-shrink-0 font-bold" type="button">
+            <span class="material-symbols-outlined text-[20px]">add</span>
+            <span class="font-label-md text-label-md whitespace-nowrap">Movimiento</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Notificacion OCR Estado -->
+      <div id="caja-ocr-status" class="hidden p-3 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center gap-2 text-xs font-bold text-secondary">
+        <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+        <span id="caja-ocr-status-text">Analizando imagen de factura con IA...</span>
+      </div>
+
+      <!-- Formulario Inline Nuevo Movimiento de Caja (Sin modal) -->
+      <div id="caja-form-box" class="hidden p-4 rounded-2xl bg-surface-container-low border border-surface-container space-y-4 transition-all">
+        <div class="flex items-center justify-between border-b border-surface-container pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-[22px]">payments</span>
+            <h3 class="font-headline-sm font-bold text-on-surface">Registrar Movimiento de Caja</h3>
+          </div>
+          <button id="btn-cancel-caja-form" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" type="button">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+
+        <form id="form-nuevo-movimiento" class="space-y-3.5">
+          <!-- Selector Tipo: Ingreso o Egreso -->
+          <div>
+            <label class="block text-xs font-bold text-on-surface-variant mb-1.5">Tipo de Movimiento *</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label id="caja-lbl-income" class="flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 cursor-pointer font-bold text-emerald-700 dark:text-emerald-300 text-sm transition-all">
+                <input type="radio" name="caja-tipo" value="income" checked class="hidden">
+                <span class="material-symbols-outlined text-[20px]">arrow_downward</span>
+                <span>Ingreso (+)</span>
+              </label>
+              <label id="caja-lbl-expense" class="flex items-center justify-center gap-2 p-2.5 rounded-xl border border-surface-container bg-surface-container-lowest cursor-pointer font-bold text-on-surface-variant text-sm transition-all">
+                <input type="radio" name="caja-tipo" value="expense" class="hidden">
+                <span class="material-symbols-outlined text-[20px]">arrow_upward</span>
+                <span>Egreso / Gasto (-)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Categoria y Concepto -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Categoria *</label>
+              <select id="caja-categoria" required class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Concepto o Detalle *</label>
+              <input id="caja-concepto" required type="text" placeholder="Ej: Cobro factura #102, Pago de nómina, etc." class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+            </div>
+          </div>
+
+          <!-- Monto USD y Bs -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Monto ($ USD) *</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold text-sm">$</span>
+                <input id="caja-monto-usd" required type="number" step="0.01" min="0.01" placeholder="0.00" class="w-full h-11 pl-8 pr-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md font-mono font-bold border border-surface-container focus:outline-none">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Equivalente (Bs.)</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold text-xs">Bs.</span>
+                <input id="caja-monto-bs" type="number" step="0.01" placeholder="0.00" class="w-full h-11 pl-9 pr-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md font-mono font-bold border border-surface-container focus:outline-none">
+              </div>
+            </div>
+          </div>
+
+          <!-- Metodo y Referencia -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Metodo de Pago / Cuenta *</label>
+              <select id="caja-metodo" required class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+                <option value="efectivo_usd">Efectivo ($ USD)</option>
+                <option value="efectivo_bs">Efectivo (Bs.)</option>
+                <option value="pago_movil">Pago Movil (Bs.)</option>
+                <option value="transferencia">Transferencia Bancaria</option>
+                <option value="punto_venta">Punto de Venta / Tarjeta</option>
+                <option value="zelle">Zelle (USD)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Referencia / Comprobante (Opcional)</label>
+              <input id="caja-referencia" type="text" placeholder="Ej: Ref 9845 o Fact #450" class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+            </div>
+          </div>
+
+          <!-- Tercero y Fecha -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label id="caja-label-tercero" class="block text-xs font-bold text-on-surface-variant mb-1">Cliente / Proveedor / Tercero (Opcional)</label>
+              <input id="caja-tercero" type="text" list="caja-terceros-datalist" placeholder="Nombre o razón social..." class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+              <datalist id="caja-terceros-datalist"></datalist>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Fecha y Hora</label>
+              <input id="caja-fecha" type="datetime-local" class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+            </div>
+          </div>
+
+          <div class="pt-2 flex justify-end gap-2">
+            <button id="btn-cancel-caja-form-2" type="button" class="h-11 px-4 rounded-xl bg-surface-container text-on-surface font-semibold text-xs transition-colors">Cancelar</button>
+            <button type="submit" class="h-11 px-5 rounded-xl bg-primary text-on-primary font-bold text-xs shadow-sm active:scale-95 transition-transform flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px]">check</span>
+              <span>Guardar Movimiento</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Resumen por Metodo de Pago (Arqueo) -->
+      <div class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-container space-y-2">
+        <div class="flex items-center justify-between text-xs font-bold text-on-surface">
+          <span class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-secondary">pie_chart</span>
+            <span>Desglose por Metodo de Pago en el Periodo</span>
+          </span>
+          <button id="btn-share-caja-summary" type="button" class="text-secondary hover:underline flex items-center gap-1 text-[11px]">
+            <span class="material-symbols-outlined text-[14px]">share</span>
+            <span>Compartir Arqueo</span>
+          </button>
+        </div>
+        <div id="caja-metodos-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1">
+        </div>
+      </div>
+
+      <!-- Tabla de Movimientos -->
+      <div class="rounded-2xl bg-surface-container-low border border-surface-container overflow-hidden">
+        <div class="p-3.5 border-b border-surface-container flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-[20px]">receipt</span>
+            <h3 class="font-headline-sm font-bold text-on-surface text-sm">Libro de Movimientos</h3>
+          </div>
+          <span id="caja-count-badge" class="px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-mono font-bold text-[11px]">0 registros</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-surface-container bg-surface-container/40 text-on-surface-variant font-semibold">
+                <th class="py-2.5 px-3">Fecha</th>
+                <th class="py-2.5 px-3">Tipo / Categoria</th>
+                <th class="py-2.5 px-3">Concepto & Tercero</th>
+                <th class="py-2.5 px-3">Metodo / Ref</th>
+                <th class="py-2.5 px-3 text-right">Monto ($ / Bs.)</th>
+                <th class="py-2.5 px-3 text-center">Accion</th>
+              </tr>
+            </thead>
+            <tbody id="caja-table-body" class="divide-y divide-surface-container font-medium">
+            </tbody>
+          </table>
+        </div>
+        <div id="caja-empty-state" class="p-8 text-center text-on-surface-variant hidden">
+          <span class="material-symbols-outlined text-4xl mb-1 text-outline">account_balance_wallet</span>
+          <p class="font-bold text-sm">No hay movimientos registrados</p>
+          <p class="text-xs text-outline mt-0.5">Usa el boton "Movimiento" o toma foto a una factura para registrar.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- VIEW: CUENTAS POR COBRAR (FASE 3 - QUIEN ME DEBE)                 -->
+    <!-- ================================================================= -->
+    <section id="view-cobranzas" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
+      
+      <!-- Metrics Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Total por Cobrar</span>
+            <span class="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <span class="material-symbols-outlined text-[18px]">pending_actions</span>
+            </span>
+          </div>
+          <div class="mt-2">
+            <div id="cxc-total-usd" class="font-mono text-2xl font-extrabold text-amber-600 dark:text-amber-400 leading-tight">$0.00</div>
+            <div id="cxc-total-bs" class="font-mono text-xs text-on-surface-variant mt-0.5 font-bold">0.00 Bs.</div>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Clientes con Deuda</span>
+            <span class="w-7 h-7 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+              <span class="material-symbols-outlined text-[18px]">group</span>
+            </span>
+          </div>
+          <div class="mt-2">
+            <div id="cxc-clients-count" class="font-mono text-2xl font-extrabold text-secondary leading-tight">0</div>
+            <div class="text-xs text-on-surface-variant mt-0.5 font-medium">Cuentas pendientes</div>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-container flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Cobrado en el Mes</span>
+            <span class="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            </span>
+          </div>
+          <div class="mt-2">
+            <div id="cxc-collected-usd" class="font-mono text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 leading-tight">+$0.00</div>
+            <div id="cxc-collected-bs" class="font-mono text-xs text-on-surface-variant mt-0.5 font-bold">+0.00 Bs.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action & Filters Bar -->
+      <div class="flex flex-col sm:flex-row gap-2 pt-1">
+        <div class="relative flex-1">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+          <input id="search-cxc" class="w-full h-12 pl-10 pr-4 bg-surface-container-lowest text-on-surface placeholder:text-outline rounded-xl text-body-md font-body-md focus:outline-none shadow-sm border border-surface-container transition-all" placeholder="Buscar por cliente, documento o folio..." type="text"/>
+        </div>
+        <div class="flex gap-2">
+          <select id="filter-cxc-status" class="h-12 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-xs font-bold border border-surface-container focus:outline-none">
+            <option value="pending" selected>Solo Pendientes</option>
+            <option value="paid">Saldadas</option>
+            <option value="all">Todas las Cuentas</option>
+          </select>
+          <button id="btn-show-add-cxc-form" class="h-12 px-4 bg-primary text-on-primary rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform flex-shrink-0 font-bold" type="button">
+            <span class="material-symbols-outlined text-[20px]">add</span>
+            <span class="font-label-md text-label-md whitespace-nowrap">Nueva Cuenta</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulario Inline Nueva Cuenta por Cobrar / Abono Directo (Sin modal) -->
+      <div id="cxc-form-box" class="hidden p-4 rounded-2xl bg-surface-container-low border border-surface-container space-y-4 transition-all">
+        <div class="flex items-center justify-between border-b border-surface-container pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-[22px]">account_balance</span>
+            <h3 id="cxc-form-title" class="font-headline-sm font-bold text-on-surface">Registrar Cuenta por Cobrar</h3>
+          </div>
+          <button id="btn-cancel-cxc-form" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" type="button">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+
+        <form id="form-nueva-cuenta-cobrar" class="space-y-3.5">
+          <input type="hidden" id="cxc-record-id">
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Cliente Deudor *</label>
+              <input id="cxc-client-name" required type="text" list="cxc-clients-datalist" placeholder="Nombre del cliente..." class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+              <datalist id="cxc-clients-datalist"></datalist>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Telefono (WhatsApp)</label>
+              <input id="cxc-client-phone" type="text" placeholder="Ej: +58 412 1234567" class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Folio / Doc Relacionado</label>
+              <input id="cxc-doc-ref" type="text" placeholder="Ej: Factura #0045" class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Monto Total Deuda ($ USD) *</label>
+              <input id="cxc-total-debt-usd" required type="number" step="0.01" min="0.01" placeholder="0.00" class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md font-mono font-bold border border-surface-container focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Abono Inicial Pagado ($ USD)</label>
+              <input id="cxc-initial-payment-usd" type="number" step="0.01" min="0" placeholder="0.00" class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md font-mono font-bold border border-surface-container focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Fecha Limite de Pago</label>
+              <input id="cxc-due-date" type="date" class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-on-surface-variant mb-1">Concepto / Descripcion de la Venta a Credito</label>
+            <input id="cxc-concept" type="text" placeholder="Ej: Servicios de corte y materiales entregados" class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+          </div>
+
+          <div class="pt-2 flex justify-end gap-2">
+            <button id="btn-cancel-cxc-form-2" type="button" class="h-11 px-4 rounded-xl bg-surface-container text-on-surface font-semibold text-xs transition-colors">Cancelar</button>
+            <button type="submit" class="h-11 px-5 rounded-xl bg-primary text-on-primary font-bold text-xs shadow-sm active:scale-95 transition-transform flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px]">check</span>
+              <span>Guardar Cuenta</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Formulario Inline Registrar Abono (Sin modal) -->
+      <div id="cxc-abono-box" class="hidden p-4 rounded-2xl bg-surface-container-low border border-surface-container space-y-4 transition-all">
+        <div class="flex items-center justify-between border-b border-surface-container pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-[22px]">add_card</span>
+            <h3 class="font-headline-sm font-bold text-on-surface">Registrar Abono a Deuda</h3>
+          </div>
+          <button id="btn-cancel-abono-box" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" type="button">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+
+        <div class="p-3 rounded-xl bg-surface-container-lowest border border-surface-container flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div id="abono-client-display" class="font-bold text-on-surface text-sm">Cliente</div>
+            <div id="abono-doc-display" class="text-xs text-on-surface-variant font-mono">Folio</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-on-surface-variant">Saldo Actual Pendiente</div>
+            <div id="abono-balance-display" class="font-mono font-bold text-rose-600 dark:text-rose-400 text-base">$0.00</div>
+          </div>
+        </div>
+
+        <form id="form-registrar-abono" class="space-y-3.5">
+          <input type="hidden" id="abono-cxc-id">
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Monto del Abono ($ USD) *</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold text-sm">$</span>
+                <input id="abono-monto-usd" required type="number" step="0.01" min="0.01" placeholder="0.00" class="w-full h-11 pl-8 pr-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md font-mono font-bold border border-surface-container focus:outline-none">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Equivalente (Bs.)</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold text-xs">Bs.</span>
+                <input id="abono-monto-bs" type="number" step="0.01" placeholder="0.00" class="w-full h-11 pl-9 pr-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md font-mono font-bold border border-surface-container focus:outline-none">
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Metodo de Pago Recibido *</label>
+              <select id="abono-metodo" required class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+                <option value="efectivo_usd">Efectivo ($ USD)</option>
+                <option value="efectivo_bs">Efectivo (Bs.)</option>
+                <option value="pago_movil">Pago Movil (Bs.)</option>
+                <option value="transferencia">Transferencia Bancaria</option>
+                <option value="punto_venta">Punto de Venta / Tarjeta</option>
+                <option value="zelle">Zelle (USD)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-on-surface-variant mb-1">Referencia Bancaria / Recibo</label>
+              <input id="abono-referencia" type="text" placeholder="Ej: Ref 4920" class="w-full h-11 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-body-md border border-surface-container focus:outline-none">
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 pt-1">
+            <input type="checkbox" id="abono-auto-caja" checked class="w-4 h-4 rounded text-primary focus:ring-primary border-surface-container">
+            <label for="abono-auto-caja" class="text-xs font-bold text-on-surface">Registrar automaticamente como Ingreso en el Libro de Caja</label>
+          </div>
+
+          <div class="pt-2 flex justify-end gap-2">
+            <button id="btn-cancel-abono-box-2" type="button" class="h-11 px-4 rounded-xl bg-surface-container text-on-surface font-semibold text-xs transition-colors">Cancelar</button>
+            <button type="submit" class="h-11 px-5 rounded-xl bg-primary text-on-primary font-bold text-xs shadow-sm active:scale-95 transition-transform flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px]">payments</span>
+              <span>Confirmar Abono y Actualizar Saldo</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tabla de Deudores -->
+      <div class="rounded-2xl bg-surface-container-low border border-surface-container overflow-hidden">
+        <div class="p-3.5 border-b border-surface-container flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-[20px]">group</span>
+            <h3 class="font-headline-sm font-bold text-on-surface text-sm">Estado de Cuentas por Cobrar</h3>
+          </div>
+          <span id="cxc-count-badge" class="px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-mono font-bold text-[11px]">0 cuentas</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-surface-container bg-surface-container/40 text-on-surface-variant font-semibold">
+                <th class="py-2.5 px-3">Cliente / Telefono</th>
+                <th class="py-2.5 px-3">Doc / Concepto</th>
+                <th class="py-2.5 px-3">Vencimiento</th>
+                <th class="py-2.5 px-3 text-right">Total Deuda</th>
+                <th class="py-2.5 px-3 text-right">Abonado</th>
+                <th class="py-2.5 px-3 text-right">Saldo Pendiente</th>
+                <th class="py-2.5 px-3 text-center">Estado</th>
+                <th class="py-2.5 px-3 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="cxc-table-body" class="divide-y divide-surface-container font-medium">
+            </tbody>
+          </table>
+        </div>
+        <div id="cxc-empty-state" class="p-8 text-center text-on-surface-variant hidden">
+          <span class="material-symbols-outlined text-4xl mb-1 text-outline">check_circle</span>
+          <p class="font-bold text-sm">No hay deudas pendientes</p>
+          <p class="text-xs text-outline mt-0.5">Todas las cuentas están al día o no se han emitido ventas a crédito.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- VIEW: ANALITICA & REPORTES (FASE 5)                               -->
+    <!-- ================================================================= -->
+    <section id="view-reportes" class="app-view hidden w-full flex flex-col pb-8 space-y-4">
+      
+      <!-- Date Filter Bar -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-surface-container-low border border-surface-container">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-secondary text-[22px]">calendar_today</span>
+          <span class="font-headline-sm font-bold text-on-surface text-sm">Periodo del Reporte:</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="report-period-filter" class="h-10 px-3 bg-surface-container-lowest text-on-surface rounded-xl text-xs font-bold border border-surface-container focus:outline-none">
+            <option value="today">Hoy</option>
+            <option value="week">Esta Semana</option>
+            <option value="month" selected>Este Mes</option>
+            <option value="last_month">Mes Anterior</option>
+            <option value="all">Historico Completo</option>
+          </select>
+          <button id="btn-share-report" type="button" class="h-10 px-3.5 rounded-xl bg-secondary/15 text-secondary font-bold text-xs flex items-center gap-1.5 hover:bg-secondary/25 transition-colors">
+            <span class="material-symbols-outlined text-[16px]">share</span>
+            <span>Compartir Informe</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Financial KPI Cards (Ventas, Costos, Gastos, Utilidad) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <!-- Total Facturado -->
+        <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-container">
+          <div class="flex items-center justify-between text-xs font-semibold text-on-surface-variant">
+            <span>Ventas Facturadas</span>
+            <span class="material-symbols-outlined text-[18px] text-emerald-500">payments</span>
+          </div>
+          <div id="rep-sales-usd" class="font-mono text-2xl font-extrabold text-on-surface mt-2">$0.00</div>
+          <div id="rep-sales-bs" class="font-mono text-xs text-on-surface-variant mt-0.5 font-bold">0.00 Bs.</div>
+        </div>
+
+        <!-- Costos de Mercancia -->
+        <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-container">
+          <div class="flex items-center justify-between text-xs font-semibold text-on-surface-variant">
+            <span>Costo de Mercancia</span>
+            <span class="material-symbols-outlined text-[18px] text-amber-500">inventory_2</span>
+          </div>
+          <div id="rep-costs-usd" class="font-mono text-2xl font-extrabold text-on-surface mt-2">$0.00</div>
+          <div id="rep-costs-bs" class="font-mono text-xs text-on-surface-variant mt-0.5 font-bold">0.00 Bs.</div>
+        </div>
+
+        <!-- Gastos Operativos de Caja -->
+        <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-container">
+          <div class="flex items-center justify-between text-xs font-semibold text-on-surface-variant">
+            <span>Gastos Operativos</span>
+            <span class="material-symbols-outlined text-[18px] text-rose-500">trending_down</span>
+          </div>
+          <div id="rep-expenses-usd" class="font-mono text-2xl font-extrabold text-rose-600 dark:text-rose-400 mt-2">$0.00</div>
+          <div id="rep-expenses-bs" class="font-mono text-xs text-on-surface-variant mt-0.5 font-bold">0.00 Bs.</div>
+        </div>
+
+        <!-- Utilidad Neta Real -->
+        <div class="p-4 rounded-2xl bg-surface-container-low border-2 border-secondary/30 bg-secondary/5">
+          <div class="flex items-center justify-between text-xs font-semibold text-secondary">
+            <span>Utilidad Neta del Negocio</span>
+            <span class="material-symbols-outlined text-[18px]">verified</span>
+          </div>
+          <div id="rep-profit-usd" class="font-mono text-2xl font-extrabold text-secondary mt-2">$0.00</div>
+          <div id="rep-profit-margin" class="text-xs font-bold text-on-surface-variant mt-0.5">Margen: 0.0%</div>
+        </div>
+      </div>
+
+      <!-- Detalle de Comisiones y Top Productos -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Top Productos -->
+        <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-container space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-[20px]">star</span>
+            <h4 class="font-headline-sm font-bold text-on-surface text-sm">Productos Mas Vendidos</h4>
+          </div>
+          <div id="rep-top-products-list" class="space-y-2 text-xs">
+            <p class="text-on-surface-variant text-center py-4">No hay ventas registradas en este periodo.</p>
+          </div>
+        </div>
+
+        <!-- Rendimiento de Vendedores & Comisiones -->
+        <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-container space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-[20px]">badge</span>
+            <h4 class="font-headline-sm font-bold text-on-surface text-sm">Comisiones por Vendedor</h4>
+          </div>
+          <div id="rep-sellers-list" class="space-y-2 text-xs">
+            <p class="text-on-surface-variant text-center py-4">No hay comisiones asignadas en este periodo.</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 
 
@@ -2164,6 +2750,7 @@
   <div id="picker-client-list" class="hidden"></div>
 
   <!-- SCRIPT PRINCIPAL -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="storage.js"></script>
   <script src="app.js"></script>
 

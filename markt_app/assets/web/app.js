@@ -140,6 +140,12 @@ document.addEventListener('DOMContentLoaded', () => {
     suppliersCatalog: [],
     sellersCatalog: [],
     clientsCatalog: [],
+    cashMovements: [],
+    cuentasPorCobrar: [],
+    cajaPeriodFilter: 'month',
+    cajaTypeFilter: 'all',
+    cxcStatusFilter: 'pending',
+    reportPeriodFilter: 'month',
     history: [],
     cotizaciones: [],
     proyectos: [],
@@ -396,6 +402,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSuppliersFromStorage();
     loadSellersFromStorage();
     loadClientsFromStorage();
+    loadCashMovementsFromStorage();
+    loadCxcFromStorage();
     loadHistoryFromStorage();
     loadCotizacionesFromStorage();
     loadProyectosFromStorage();
@@ -406,6 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDocTypeSelector();
     setupEventListeners();
     setupNewModulesEventListeners();
+    setupPhases2to6EventListeners();
     setDefaultDateAndTime();
     renderItemsList();
     initActiveQuote();
@@ -536,6 +545,9 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (targetView === 'view-historial') currentViewTitle.textContent = 'Historial';
         else if (targetView === 'view-ajustes') currentViewTitle.textContent = 'Mi Negocio';
         else if (targetView === 'view-changelog') currentViewTitle.textContent = 'Historial de Versiones';
+        else if (targetView === 'view-caja') currentViewTitle.textContent = 'Libro de Caja';
+        else if (targetView === 'view-cobranzas') currentViewTitle.textContent = 'Cuentas por Cobrar';
+        else if (targetView === 'view-reportes') currentViewTitle.textContent = 'Analítica & Reportes';
         else if (targetView === 'view-privacidad') currentViewTitle.textContent = 'Políticas de Privacidad';
       }
 
@@ -580,6 +592,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pageTitleText) pageTitleText.textContent = 'Mi Negocio';
       } else if (targetView === 'view-changelog') {
         if (pageTitleText) pageTitleText.textContent = 'Historial de Versiones';
+      } else if (targetView === 'view-caja') {
+        if (pageTitleText) pageTitleText.textContent = 'Libro de Caja';
+        renderCajaView();
+      } else if (targetView === 'view-cobranzas') {
+        if (pageTitleText) pageTitleText.textContent = 'Cuentas por Cobrar';
+        renderCxcView();
+      } else if (targetView === 'view-reportes') {
+        if (pageTitleText) pageTitleText.textContent = 'Analítica & Reportes';
+        renderFinancialReport();
       } else if (targetView === 'view-privacidad') {
         if (pageTitleText) pageTitleText.textContent = 'Políticas de Privacidad';
       }
@@ -2376,6 +2397,72 @@ document.addEventListener('DOMContentLoaded', () => {
     state.history.unshift(receiptRecord);
     saveHistoryToStorage();
 
+    // Integración Automática con Inventario: Descontar Stock
+    if (receiptRecord.items && Array.isArray(receiptRecord.items)) {
+      receiptRecord.items.forEach(it => {
+        const p = state.productsCatalog.find(prod => (prod.code && prod.code === it.code) || (prod.name && prod.name.toLowerCase() === (it.name || '').toLowerCase()));
+        if (p && typeof p.stock === 'number') {
+          p.stock = Math.max(0, p.stock - (Number(it.qty) || 1));
+        }
+      });
+      saveProductsToStorage();
+    }
+
+    // Integración Automática con Libro de Caja
+    const isCredit = (receiptRecord.forma_pago || '').toLowerCase().includes('crédito') || (receiptRecord.forma_pago || '').toLowerCase().includes('credito');
+    const prevBal = Number(receiptRecord.saldo_anterior) || 0;
+    const newBal = Number(receiptRecord.nuevo_saldo) || 0;
+    const initialPayment = isCredit ? Math.max(0, receiptRecord.total_principal - newBal) : receiptRecord.total_principal;
+
+    if (initialPayment > 0) {
+      const cashEntry = {
+        id: 'caja_' + receiptRecord.uuid,
+        date: new Date().toISOString(),
+        type: 'income',
+        category: isCredit ? 'Abono / Anticipo de Inicial' : 'Venta Directa POS',
+        concept: `${receiptRecord.doc_title || 'Comprobante'} #${receiptRecord.doc_number || ''} - ${receiptRecord.cliente_nombre}`,
+        amountUsd: initialPayment,
+        amountBs: initialPayment * (state.exchange.rate || 1),
+        method: mapPaymentFormToCajaMethod(receiptRecord.forma_pago),
+        reference: receiptRecord.referencia || receiptRecord.doc_number || '',
+        thirdParty: receiptRecord.cliente_nombre,
+        relatedReceiptId: receiptRecord.uuid,
+        salesperson: receiptRecord.vendedor || ''
+      };
+      state.cashMovements.unshift(cashEntry);
+      saveCashMovementsToStorage();
+    }
+
+    // Integración Automática con Cuentas por Cobrar si es a crédito
+    if (isCredit || newBal > 0) {
+      const debtAmount = newBal > 0 ? newBal : Math.max(0, receiptRecord.total_principal - initialPayment);
+      if (debtAmount > 0) {
+        const cxcRecord = {
+          id: 'cxc_' + receiptRecord.uuid,
+          receiptId: receiptRecord.uuid,
+          docNumber: receiptRecord.doc_number || 'N/A',
+          clientName: receiptRecord.cliente_nombre || 'Cliente General',
+          clientId: receiptRecord.cliente_identificacion || '',
+          clientPhone: receiptRecord.cliente_telefono || '',
+          date: receiptRecord.doc_date || new Date().toISOString().split('T')[0],
+          dueDate: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
+          totalDebtUsd: receiptRecord.total_principal,
+          paidUsd: initialPayment,
+          balanceUsd: debtAmount,
+          concept: `${receiptRecord.doc_title || 'Venta a Crédito'} #${receiptRecord.doc_number || ''}`,
+          status: debtAmount <= 0.01 ? 'paid' : 'pending',
+          abonos: initialPayment > 0 ? [{
+            date: new Date().toISOString(),
+            amountUsd: initialPayment,
+            method: receiptRecord.forma_pago,
+            reference: 'Inicial'
+          }] : []
+        };
+        state.cuentasPorCobrar.unshift(cxcRecord);
+        saveCxcToStorage();
+      }
+    }
+
     // Auto-registrar cliente en el directorio si tiene cédula y nombre válido
     if (state.client.id && state.client.name && state.client.name !== 'Cliente Mostrador') {
       const cleanNum = state.client.id.replace(/[^0-9]/g, '');
@@ -2752,6 +2839,12 @@ document.addEventListener('DOMContentLoaded', () => {
       cotizaciones: state.cotizaciones,
       proyectos: state.proyectos,
       galeria: state.galeria,
+      services: state.servicesCatalog,
+      materials: state.materialsCatalog,
+      suppliers: state.suppliersCatalog,
+      sellers: state.sellersCatalog,
+      cashMovements: state.cashMovements,
+      cuentasPorCobrar: state.cuentasPorCobrar,
       folioCounter: state.folioCounter
     };
 
@@ -4876,3 +4969,1191 @@ Organizado con MARKT POS`);
   // Launch App
   init();
 });
+
+
+  // ==========================================================================
+  // HELPER: MAP PAYMENT FORMS
+  // ==========================================================================
+  function mapPaymentFormToCajaMethod(forma) {
+    const f = (forma || '').toLowerCase();
+    if (f.includes('dólar') || f.includes('dolar') || f.includes('usd') || f.includes('efectivo $')) return 'efectivo_usd';
+    if (f.includes('móvil') || f.includes('movil')) return 'pago_movil';
+    if (f.includes('transferencia')) return 'transferencia';
+    if (f.includes('punto') || f.includes('tarjeta') || f.includes('débito') || f.includes('debito')) return 'punto_venta';
+    if (f.includes('zelle')) return 'zelle';
+    return 'efectivo_bs';
+  }
+
+  function getMethodLabel(method) {
+    switch (method) {
+      case 'efectivo_usd': return 'Efectivo ($ USD)';
+      case 'efectivo_bs': return 'Efectivo (Bs.)';
+      case 'pago_movil': return 'Pago Móvil (Bs.)';
+      case 'transferencia': return 'Transferencia';
+      case 'punto_venta': return 'Punto de Venta';
+      case 'zelle': return 'Zelle (USD)';
+      default: return method || 'General';
+    }
+  }
+
+  // ==========================================================================
+  // MÓDULO: LIBRO DE CAJA & MOVIMIENTOS ILIMITADOS (FASE 2)
+  // ==========================================================================
+  const cajaCategories = {
+    income: [
+      'Venta Directa POS',
+      'Cobro a Cliente / Abono Factura',
+      'Abono / Anticipo de Inicial',
+      'Aporte de Capital',
+      'Otro Ingreso'
+    ],
+    expense: [
+      'Pago a Proveedor',
+      'Compra de Mercancía / Insumos',
+      'Nómina / Comisiones a Vendedores',
+      'Servicios Básicos (Luz, Agua, Internet)',
+      'Alquiler / Arrendamiento',
+      'Flete / Transporte / Encomienda',
+      'Mantenimiento / Reparaciones',
+      'Publicidad / Marketing',
+      'Impuestos / Tasas Municipales',
+      'Otro Egreso Operativo'
+    ]
+  };
+
+  function loadCashMovementsFromStorage() {
+    if (window.MarktNativeStorage) {
+      window.MarktNativeStorage.load('cash_movements.json').then(data => {
+        if (data && Array.isArray(data)) state.cashMovements = data;
+      });
+    } else {
+      const saved = localStorage.getItem('markt_cash_movements');
+      if (saved) {
+        try { state.cashMovements = JSON.parse(saved); } catch (e) { state.cashMovements = []; }
+      }
+    }
+  }
+
+  function saveCashMovementsToStorage() {
+    if (window.MarktNativeStorage) {
+      window.MarktNativeStorage.save('cash_movements.json', state.cashMovements);
+    }
+    localStorage.setItem('markt_cash_movements', JSON.stringify(state.cashMovements));
+  }
+
+  function filterCashMovementsByPeriod(list, period) {
+    const now = new Date();
+    return list.filter(m => {
+      if (!m.date) return true;
+      const d = new Date(m.date);
+      if (isNaN(d.getTime())) return true;
+      if (period === 'today') {
+        return d.toDateString() === now.toDateString();
+      } else if (period === 'week') {
+        const diffDays = (now - d) / (1000 * 60 * 60 * 24);
+        return diffDays >= 0 && diffDays <= 7;
+      } else if (period === 'month') {
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }
+      return true; // 'all'
+    });
+  }
+
+  function renderCajaView() {
+    renderCajaSummary();
+    renderCajaTable();
+    updateCajaCategoryDropdown('income');
+  }
+
+  function renderCajaSummary() {
+    const period = state.cajaPeriodFilter || 'month';
+    const filtered = filterCashMovementsByPeriod(state.cashMovements, period);
+
+    let incUsd = 0;
+    let incBs = 0;
+    let expUsd = 0;
+    let expBs = 0;
+
+    const rate = state.exchange.rate || 1;
+    const methodTotals = {
+      efectivo_usd: 0,
+      efectivo_bs: 0,
+      pago_movil: 0,
+      transferencia: 0,
+      punto_venta: 0,
+      zelle: 0
+    };
+
+    filtered.forEach(m => {
+      const usd = Number(m.amountUsd) || 0;
+      const bs = Number(m.amountBs) || (usd * rate);
+      const isInc = m.type === 'income';
+
+      if (isInc) {
+        incUsd += usd;
+        incBs += bs;
+        if (methodTotals[m.method] !== undefined) methodTotals[m.method] += usd;
+      } else {
+        expUsd += usd;
+        expBs += bs;
+        if (methodTotals[m.method] !== undefined) methodTotals[m.method] -= usd;
+      }
+    });
+
+    const netUsd = incUsd - expUsd;
+    const netBs = incBs - expBs;
+
+    const elNetUsd = document.getElementById('caja-net-usd');
+    const elNetBs = document.getElementById('caja-net-bs');
+    const elIncUsd = document.getElementById('caja-income-usd');
+    const elIncBs = document.getElementById('caja-income-bs');
+    const elExpUsd = document.getElementById('caja-expense-usd');
+    const elExpBs = document.getElementById('caja-expense-bs');
+
+    if (elNetUsd) {
+      elNetUsd.textContent = `${netUsd >= 0 ? '$' : '-$'}${Math.abs(netUsd).toFixed(2)}`;
+      elNetUsd.className = `font-mono text-2xl font-extrabold leading-tight ${netUsd >= 0 ? 'text-secondary' : 'text-rose-600 dark:text-rose-400'}`;
+    }
+    if (elNetBs) elNetBs.textContent = `${netBs >= 0 ? '' : '-'}${Math.abs(netBs).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
+    if (elIncUsd) elIncUsd.textContent = `+$${incUsd.toFixed(2)}`;
+    if (elIncBs) elIncBs.textContent = `+${incBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
+    if (elExpUsd) elExpUsd.textContent = `-$${expUsd.toFixed(2)}`;
+    if (elExpBs) elExpBs.textContent = `-${expBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
+
+    // Metodos grid
+    const metodosGrid = document.getElementById('caja-metodos-grid');
+    if (metodosGrid) {
+      metodosGrid.innerHTML = '';
+      const methodKeys = [
+        { key: 'efectivo_usd', label: 'Efectivo $', isUsd: true },
+        { key: 'efectivo_bs', label: 'Efectivo Bs.', isUsd: false },
+        { key: 'pago_movil', label: 'Pago Móvil', isUsd: false },
+        { key: 'transferencia', label: 'Transferencia', isUsd: false },
+        { key: 'punto_venta', label: 'Punto/Tarjeta', isUsd: false },
+        { key: 'zelle', label: 'Zelle', isUsd: true }
+      ];
+
+      methodKeys.forEach(mk => {
+        const val = methodTotals[mk.key] || 0;
+        const col = document.createElement('div');
+        col.className = 'p-2 rounded-xl bg-surface-container-lowest border border-surface-container text-center';
+        col.innerHTML = `
+          <div class="text-[10px] text-on-surface-variant font-bold truncate">${mk.label}</div>
+          <div class="font-mono text-xs font-extrabold mt-0.5 ${val >= 0 ? 'text-on-surface' : 'text-rose-600 dark:text-rose-400'}">
+            ${mk.isUsd ? '$' + val.toFixed(2) : (val * rate).toLocaleString('es-VE', { maximumFractionDigits: 0 }) + ' Bs.'}
+          </div>
+        `;
+        metodosGrid.appendChild(col);
+      });
+    }
+  }
+
+  function renderCajaTable() {
+    const tbody = document.getElementById('caja-table-body');
+    const emptyState = document.getElementById('caja-empty-state');
+    const countBadge = document.getElementById('caja-count-badge');
+    const search = document.getElementById('search-caja');
+    const q = (search ? search.value : '').toLowerCase().trim();
+
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const period = state.cajaPeriodFilter || 'month';
+    const typeFilter = state.cajaTypeFilter || 'all';
+
+    let list = filterCashMovementsByPeriod(state.cashMovements, period);
+
+    if (typeFilter !== 'all') {
+      list = list.filter(m => m.type === typeFilter);
+    }
+
+    if (q) {
+      list = list.filter(m =>
+        (m.concept || '').toLowerCase().includes(q) ||
+        (m.category || '').toLowerCase().includes(q) ||
+        (m.thirdParty || '').toLowerCase().includes(q) ||
+        (m.reference || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (countBadge) countBadge.textContent = `${list.length} registros`;
+
+    if (list.length === 0) {
+      if (emptyState) emptyState.classList.remove('hidden');
+      return;
+    }
+    if (emptyState) emptyState.classList.add('hidden');
+
+    const rate = state.exchange.rate || 1;
+
+    list.forEach(m => {
+      const isInc = m.type === 'income';
+      const usd = Number(m.amountUsd) || 0;
+      const bs = Number(m.amountBs) || (usd * rate);
+      const dStr = m.date ? new Date(m.date).toLocaleString('es-VE', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }) : '-';
+
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-surface-container/30 transition-colors';
+      tr.innerHTML = `
+        <td class="py-2.5 px-3 text-on-surface-variant font-mono text-[11px] whitespace-nowrap">${dStr}</td>
+        <td class="py-2.5 px-3">
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${isInc ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}">
+            <span class="material-symbols-outlined text-[13px]">${isInc ? 'arrow_downward' : 'arrow_upward'}</span>
+            ${m.category || (isInc ? 'Ingreso' : 'Egreso')}
+          </span>
+        </td>
+        <td class="py-2.5 px-3 font-semibold text-on-surface">
+          <div>${m.concept || 'Movimiento'}</div>
+          ${m.thirdParty ? `<div class="text-[10px] text-on-surface-variant font-normal">Tercero: ${m.thirdParty}</div>` : ''}
+        </td>
+        <td class="py-2.5 px-3 text-on-surface-variant text-[11px]">
+          <div>${getMethodLabel(m.method)}</div>
+          ${m.reference ? `<div class="font-mono text-[10px] text-outline">Ref: ${m.reference}</div>` : ''}
+        </td>
+        <td class="py-2.5 px-3 text-right font-mono whitespace-nowrap">
+          <div class="font-extrabold ${isInc ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+            ${isInc ? '+' : '-'}$${usd.toFixed(2)}
+          </div>
+          <div class="text-[10px] text-on-surface-variant font-medium">
+            ${isInc ? '+' : '-'}${bs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.
+          </div>
+        </td>
+        <td class="py-2.5 px-3 text-center">
+          <button class="btn-del-caja w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-rose-500 transition-colors" data-id="${m.id}" title="Eliminar registro">
+            <span class="material-symbols-outlined text-[16px]">delete</span>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.btn-del-caja').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        if (confirm('¿Deseas eliminar este movimiento de caja?')) {
+          state.cashMovements = state.cashMovements.filter(x => x.id !== id);
+          saveCashMovementsToStorage();
+          renderCajaView();
+          showToast('Movimiento eliminado.', 'info');
+        }
+      });
+    });
+  }
+
+  function updateCajaCategoryDropdown(type) {
+    const sel = document.getElementById('caja-categoria');
+    if (!sel) return;
+    sel.innerHTML = '';
+    const cats = cajaCategories[type] || [];
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c;
+      sel.appendChild(opt);
+    });
+  }
+
+  // ==========================================================================
+  // MÓDULO: CUENTAS POR COBRAR (FASE 3 - QUIÉN ME DEBE)
+  // ==========================================================================
+  function loadCxcFromStorage() {
+    if (window.MarktNativeStorage) {
+      window.MarktNativeStorage.load('cuentas_por_cobrar.json').then(data => {
+        if (data && Array.isArray(data)) state.cuentasPorCobrar = data;
+      });
+    } else {
+      const saved = localStorage.getItem('markt_cuentas_cobrar');
+      if (saved) {
+        try { state.cuentasPorCobrar = JSON.parse(saved); } catch (e) { state.cuentasPorCobrar = []; }
+      }
+    }
+  }
+
+  function saveCxcToStorage() {
+    if (window.MarktNativeStorage) {
+      window.MarktNativeStorage.save('cuentas_por_cobrar.json', state.cuentasPorCobrar);
+    }
+    localStorage.setItem('markt_cuentas_cobrar', JSON.stringify(state.cuentasPorCobrar));
+  }
+
+  function renderCxcView() {
+    renderCxcSummary();
+    renderCxcTable();
+  }
+
+  function renderCxcSummary() {
+    let totalDebtUsd = 0;
+    let countPending = 0;
+    let collectedMonthUsd = 0;
+
+    const rate = state.exchange.rate || 1;
+    const now = new Date();
+
+    state.cuentasPorCobrar.forEach(c => {
+      const bal = Number(c.balanceUsd) || 0;
+      if (bal > 0.01) {
+        totalDebtUsd += bal;
+        countPending++;
+      }
+      if (c.abonos && Array.isArray(c.abonos)) {
+        c.abonos.forEach(ab => {
+          if (ab.date) {
+            const d = new Date(ab.date);
+            if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+              collectedMonthUsd += Number(ab.amountUsd) || 0;
+            }
+          }
+        });
+      }
+    });
+
+    const elTotalUsd = document.getElementById('cxc-total-usd');
+    const elTotalBs = document.getElementById('cxc-total-bs');
+    const elClientsCount = document.getElementById('cxc-clients-count');
+    const elCollUsd = document.getElementById('cxc-collected-usd');
+    const elCollBs = document.getElementById('cxc-collected-bs');
+
+    if (elTotalUsd) elTotalUsd.textContent = `$${totalDebtUsd.toFixed(2)}`;
+    if (elTotalBs) elTotalBs.textContent = `${(totalDebtUsd * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
+    if (elClientsCount) elClientsCount.textContent = countPending.toString();
+    if (elCollUsd) elCollUsd.textContent = `+$${collectedMonthUsd.toFixed(2)}`;
+    if (elCollBs) elCollBs.textContent = `+${(collectedMonthUsd * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
+  }
+
+  function renderCxcTable() {
+    const tbody = document.getElementById('cxc-table-body');
+    const emptyState = document.getElementById('cxc-empty-state');
+    const countBadge = document.getElementById('cxc-count-badge');
+    const search = document.getElementById('search-cxc');
+    const q = (search ? search.value : '').toLowerCase().trim();
+
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const statusFilter = state.cxcStatusFilter || 'pending';
+    let list = state.cuentasPorCobrar.filter(c => {
+      const isPaid = (Number(c.balanceUsd) || 0) <= 0.01;
+      if (statusFilter === 'pending' && isPaid) return false;
+      if (statusFilter === 'paid' && !isPaid) return false;
+      if (!q) return true;
+      return (c.clientName || '').toLowerCase().includes(q) ||
+             (c.docNumber || '').toLowerCase().includes(q) ||
+             (c.concept || '').toLowerCase().includes(q) ||
+             (c.clientPhone || '').toLowerCase().includes(q);
+    });
+
+    if (countBadge) countBadge.textContent = `${list.length} cuentas`;
+
+    if (list.length === 0) {
+      if (emptyState) emptyState.classList.remove('hidden');
+      return;
+    }
+    if (emptyState) emptyState.classList.add('hidden');
+
+    const rate = state.exchange.rate || 1;
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    list.forEach(c => {
+      const bal = Number(c.balanceUsd) || 0;
+      const total = Number(c.totalDebtUsd) || 0;
+      const paid = Number(c.paidUsd) || 0;
+      const isPaid = bal <= 0.01;
+      const isOverdue = !isPaid && c.dueDate && c.dueDate < todayStr;
+
+      let badgeHtml = '';
+      if (isPaid) {
+        badgeHtml = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Saldada</span>';
+      } else if (isOverdue) {
+        badgeHtml = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 animate-pulse">Vencida</span>';
+      } else {
+        badgeHtml = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400">Al día</span>';
+      }
+
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-surface-container/30 transition-colors';
+      tr.innerHTML = `
+        <td class="py-2.5 px-3">
+          <div class="font-bold text-on-surface">${c.clientName || 'Cliente'}</div>
+          ${c.clientPhone ? `<div class="text-[10px] text-on-surface-variant font-mono">${c.clientPhone}</div>` : ''}
+        </td>
+        <td class="py-2.5 px-3 font-medium text-on-surface">
+          <div>${c.docNumber ? 'Doc #' + c.docNumber : 'Crédito'}</div>
+          ${c.concept ? `<div class="text-[10px] text-on-surface-variant truncate max-w-[120px]">${c.concept}</div>` : ''}
+        </td>
+        <td class="py-2.5 px-3 text-on-surface-variant font-mono text-[11px] whitespace-nowrap">
+          ${c.dueDate || 'Sin plazo'}
+        </td>
+        <td class="py-2.5 px-3 text-right font-mono font-semibold text-on-surface">$${total.toFixed(2)}</td>
+        <td class="py-2.5 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400">+$${paid.toFixed(2)}</td>
+        <td class="py-2.5 px-3 text-right font-mono font-extrabold text-rose-600 dark:text-rose-400">
+          <div>$${bal.toFixed(2)}</div>
+          <div class="text-[10px] text-on-surface-variant font-medium">${(bal * rate).toLocaleString('es-VE', { maximumFractionDigits: 0 })} Bs.</div>
+        </td>
+        <td class="py-2.5 px-3 text-center">${badgeHtml}</td>
+        <td class="py-2.5 px-3 text-center">
+          <div class="flex items-center justify-center gap-1">
+            ${!isPaid ? `
+              <button class="btn-abono-cxc h-7 px-2 rounded-lg bg-primary text-on-primary font-bold text-[10px] flex items-center gap-1 shadow-sm active:scale-95" data-id="${c.id}" title="Registrar abono">
+                <span class="material-symbols-outlined text-[13px]">payments</span>
+                <span>Abonar</span>
+              </button>
+              <button class="btn-whatsapp-cxc w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-500/25 transition-colors" data-id="${c.id}" title="Enviar recordatorio WhatsApp">
+                <i class="fa-brands fa-whatsapp text-[14px]"></i>
+              </button>
+            ` : `
+              <span class="material-symbols-outlined text-emerald-500 text-[18px]">done_all</span>
+            `}
+            <button class="btn-del-cxc w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-rose-500 transition-colors ml-1" data-id="${c.id}" title="Eliminar registro">
+              <span class="material-symbols-outlined text-[15px]">delete</span>
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Event listeners de acciones
+    tbody.querySelectorAll('.btn-abono-cxc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        openAbonoForm(id);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-whatsapp-cxc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        sendCollectionWhatsApp(id);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-del-cxc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        if (confirm('¿Deseas eliminar esta cuenta por cobrar?')) {
+          state.cuentasPorCobrar = state.cuentasPorCobrar.filter(x => x.id !== id);
+          saveCxcToStorage();
+          renderCxcView();
+          showToast('Cuenta por cobrar eliminada.', 'info');
+        }
+      });
+    });
+  }
+
+  function openAbonoForm(cxcId) {
+    const item = state.cuentasPorCobrar.find(x => x.id === cxcId);
+    if (!item) return;
+
+    const abonoBox = document.getElementById('cxc-abono-box');
+    const hiddenId = document.getElementById('abono-cxc-id');
+    const clientDisplay = document.getElementById('abono-client-display');
+    const docDisplay = document.getElementById('abono-doc-display');
+    const balanceDisplay = document.getElementById('abono-balance-display');
+    const inputUsd = document.getElementById('abono-monto-usd');
+    const inputBs = document.getElementById('abono-monto-bs');
+
+    if (!abonoBox) return;
+
+    hiddenId.value = item.id;
+    clientDisplay.textContent = item.clientName || 'Cliente';
+    docDisplay.textContent = item.docNumber ? `Comprobante #${item.docNumber}` : (item.concept || 'Deuda');
+    balanceDisplay.textContent = `$${(item.balanceUsd || 0).toFixed(2)}`;
+
+    inputUsd.value = '';
+    inputBs.value = '';
+
+    abonoBox.classList.remove('hidden');
+    abonoBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    inputUsd.focus();
+  }
+
+  function sendCollectionWhatsApp(cxcId) {
+    const item = state.cuentasPorCobrar.find(x => x.id === cxcId);
+    if (!item) return;
+
+    const rate = state.exchange.rate || 1;
+    const balUsd = Number(item.balanceUsd) || 0;
+    const balBs = (balUsd * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const bizName = state.business.name || 'Nuestro Negocio';
+
+    const msg = `Hola estimado(a) ${item.clientName}, un cordial saludo de parte de *${bizName}*.
+
+Le recordamos atentamente que mantiene un saldo pendiente por valor de:
+*Monto USD:* $${balUsd.toFixed(2)}
+*Monto Bs (BCV):* ${balBs} Bs.
+*Concepto:* ${item.docNumber ? 'Doc #' + item.docNumber : item.concept || 'Servicios/Productos'}
+
+Para su comodidad puede realizar su pago mediante:
+- Pago Móvil: ${state.suiche.phone || state.business.phone} | RIF: ${state.suiche.docType || 'J'}-${state.suiche.docNumber || ''} | Banco: ${state.suiche.bank || '0134'}
+- Efectivo USD o Bs. en nuestra sede.
+
+Por favor envíenos su comprobante una vez realizado. ¡Muchas gracias por su preferencia!`;
+
+    const cleanPhone = (item.clientPhone || '').replace(/[^0-9]/g, '');
+    const waUrl = cleanPhone.length >= 10 ?
+      `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}` :
+      `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+    window.open(waUrl, '_blank');
+  }
+
+  // ==========================================================================
+  // MÓDULO: ANALÍTICA & REPORTES GERENCIALES (FASE 5)
+  // ==========================================================================
+  function renderFinancialReport() {
+    const period = state.reportPeriodFilter || 'month';
+    const now = new Date();
+
+    const isMatchDate = (dStr) => {
+      if (!dStr) return false;
+      const d = new Date(dStr);
+      if (isNaN(d.getTime())) return false;
+      if (period === 'today') return d.toDateString() === now.toDateString();
+      if (period === 'week') {
+        const diff = (now - d) / (1000 * 60 * 60 * 24);
+        return diff >= 0 && diff <= 7;
+      }
+      if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      if (period === 'last_month') {
+        const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+        const lastYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        return d.getMonth() === lastMonth && d.getFullYear() === lastYear;
+      }
+      return true; // 'all'
+    };
+
+    let totalSalesUsd = 0;
+    let totalCogsUsd = 0;
+    const productStats = {};
+    const sellerStats = {};
+
+    // 1. Analizar ventas desde state.history
+    state.history.forEach(rec => {
+      const recDate = rec.doc_date || (rec.uuid ? new Date(Number(rec.uuid)).toISOString() : null);
+      if (!isMatchDate(recDate)) return;
+
+      const grand = Number(rec.total_principal) || 0;
+      totalSalesUsd += grand;
+
+      // Seller tracking
+      const vName = rec.vendedor || 'Sin Vendedor';
+      if (!sellerStats[vName]) sellerStats[vName] = { salesUsd: 0, count: 0, commissionUsd: 0 };
+      sellerStats[vName].salesUsd += grand;
+      sellerStats[vName].count++;
+
+      // Check seller commission %
+      const sellerProfile = state.sellersCatalog.find(s => s.name && s.name.toLowerCase() === vName.toLowerCase());
+      const commRate = sellerProfile ? (Number(sellerProfile.prodCommission) || 0) / 100 : 0;
+      sellerStats[vName].commissionUsd += (grand * commRate);
+
+      // Cost of goods sold (COGS) & product stats
+      if (rec.items && Array.isArray(rec.items)) {
+        rec.items.forEach(it => {
+          const qty = Number(it.qty) || 1;
+          const price = Number(it.price) || 0;
+          const pName = it.name || 'Producto';
+
+          // find cost in catalog
+          const pCat = state.productsCatalog.find(p => (p.code && p.code === it.code) || (p.name && p.name.toLowerCase() === pName.toLowerCase()));
+          const unitCost = pCat ? (Number(pCat.cost) || 0) : 0;
+          totalCogsUsd += (unitCost * qty);
+
+          if (!productStats[pName]) productStats[pName] = { qty: 0, totalUsd: 0 };
+          productStats[pName].qty += qty;
+          productStats[pName].totalUsd += (price * qty);
+        });
+      }
+    });
+
+    // 2. Analizar gastos operativos desde state.cashMovements
+    let totalExpensesUsd = 0;
+    state.cashMovements.forEach(m => {
+      if (m.type === 'expense' && isMatchDate(m.date)) {
+        totalExpensesUsd += Number(m.amountUsd) || 0;
+      }
+    });
+
+    const grossProfitUsd = totalSalesUsd - totalCogsUsd;
+    const netProfitUsd = grossProfitUsd - totalExpensesUsd;
+    const netMarginPct = totalSalesUsd > 0 ? (netProfitUsd / totalSalesUsd) * 100 : 0;
+    const rate = state.exchange.rate || 1;
+
+    // Actualizar UI Cards
+    const elSalesUsd = document.getElementById('rep-sales-usd');
+    const elSalesBs = document.getElementById('rep-sales-bs');
+    const elCostsUsd = document.getElementById('rep-costs-usd');
+    const elCostsBs = document.getElementById('rep-costs-bs');
+    const elExpUsd = document.getElementById('rep-expenses-usd');
+    const elExpBs = document.getElementById('rep-expenses-bs');
+    const elProfitUsd = document.getElementById('rep-profit-usd');
+    const elProfitMargin = document.getElementById('rep-profit-margin');
+
+    if (elSalesUsd) elSalesUsd.textContent = `$${totalSalesUsd.toFixed(2)}`;
+    if (elSalesBs) elSalesBs.textContent = `${(totalSalesUsd * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
+    if (elCostsUsd) elCostsUsd.textContent = `$${totalCogsUsd.toFixed(2)}`;
+    if (elCostsBs) elCostsBs.textContent = `${(totalCogsUsd * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
+    if (elExpUsd) elExpUsd.textContent = `$${totalExpensesUsd.toFixed(2)}`;
+    if (elExpBs) elExpBs.textContent = `${(totalExpensesUsd * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`;
+    if (elProfitUsd) {
+      elProfitUsd.textContent = `${netProfitUsd >= 0 ? '$' : '-$'}${Math.abs(netProfitUsd).toFixed(2)}`;
+      elProfitUsd.className = `font-mono text-2xl font-extrabold ${netProfitUsd >= 0 ? 'text-secondary' : 'text-rose-600 dark:text-rose-400'}`;
+    }
+    if (elProfitMargin) {
+      elProfitMargin.textContent = `Margen Neto Real: ${netMarginPct.toFixed(1)}%`;
+      elProfitMargin.className = `text-xs font-bold ${netMarginPct >= 0 ? 'text-on-surface-variant' : 'text-rose-600 dark:text-rose-400'}`;
+    }
+
+    // Top Productos
+    const topProdList = document.getElementById('rep-top-products-list');
+    if (topProdList) {
+      topProdList.innerHTML = '';
+      const sortedProds = Object.entries(productStats).sort((a, b) => b[1].totalUsd - a[1].totalUsd).slice(0, 5);
+      if (sortedProds.length === 0) {
+        topProdList.innerHTML = '<p class="text-on-surface-variant text-center py-4">No hay ventas registradas en este período.</p>';
+      } else {
+        sortedProds.forEach(([name, stat], idx) => {
+          const item = document.createElement('div');
+          item.className = 'flex items-center justify-between p-2 rounded-xl bg-surface-container-lowest border border-surface-container';
+          item.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-surface-container text-on-surface-variant font-mono font-bold text-[10px] flex items-center justify-center">${idx + 1}</span>
+              <div>
+                <div class="font-bold text-on-surface truncate max-w-[160px]">${name}</div>
+                <div class="text-[10px] text-on-surface-variant">${stat.qty} unidades vendidas</div>
+              </div>
+            </div>
+            <div class="font-mono font-extrabold text-secondary text-right">$${stat.totalUsd.toFixed(2)}</div>
+          `;
+          topProdList.appendChild(item);
+        });
+      }
+    }
+
+    // Vendedores y Comisiones
+    const sellersList = document.getElementById('rep-sellers-list');
+    if (sellersList) {
+      sellersList.innerHTML = '';
+      const sellerEntries = Object.entries(sellerStats);
+      if (sellerEntries.length === 0) {
+        sellersList.innerHTML = '<p class="text-on-surface-variant text-center py-4">No hay ventas con vendedores asignados.</p>';
+      } else {
+        sellerEntries.forEach(([name, stat]) => {
+          const item = document.createElement('div');
+          item.className = 'flex items-center justify-between p-2 rounded-xl bg-surface-container-lowest border border-surface-container';
+          item.innerHTML = `
+            <div>
+              <div class="font-bold text-on-surface">${name}</div>
+              <div class="text-[10px] text-on-surface-variant">${stat.count} transacciones | Ventas: $${stat.salesUsd.toFixed(2)}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-[10px] text-on-surface-variant font-semibold">Comisión Ganada</div>
+              <div class="font-mono font-extrabold text-emerald-600 dark:text-emerald-400">+$${stat.commissionUsd.toFixed(2)}</div>
+            </div>
+          `;
+          sellersList.appendChild(item);
+        });
+      }
+    }
+  }
+
+  // ==========================================================================
+  // MÓDULO: ESCÁNER INTELIGENTE DE FACTURAS (OCR - FASE 6)
+  // ==========================================================================
+  async function scanInvoicePhoto(file) {
+    const ocrStatus = document.getElementById('caja-ocr-status');
+    const ocrStatusText = document.getElementById('caja-ocr-status-text');
+    if (ocrStatus) ocrStatus.classList.remove('hidden');
+
+    try {
+      if (typeof Tesseract === 'undefined') {
+        throw new Error('Módulo OCR cargando...');
+      }
+
+      if (ocrStatusText) ocrStatusText.textContent = 'Analizando texto de factura con IA...';
+      const result = await Tesseract.recognize(file, 'spa+eng', {
+        logger: m => {
+          if (m.status === 'recognizing text' && ocrStatusText) {
+            ocrStatusText.textContent = `Leyendo factura: ${Math.round((m.progress || 0) * 100)}%`;
+          }
+        }
+      });
+
+      const text = result.data.text || '';
+      parseInvoiceTextAndPopulateExpense(text);
+      showToast('Datos de factura extraídos con éxito.', 'success');
+    } catch (err) {
+      console.warn('OCR fallback or error:', err);
+      // Fallback: abrir formulario para llenado directo
+      openNewMovementForm('expense', 'Compra de Mercancía / Insumos', 'Gasto por Factura');
+      showToast('Completa los datos de la factura manualmente.', 'info');
+    } finally {
+      if (ocrStatus) ocrStatus.classList.add('hidden');
+    }
+  }
+
+  function parseInvoiceTextAndPopulateExpense(text) {
+    let detectedAmount = 0;
+    let detectedRif = '';
+    let detectedSupplier = '';
+
+    // Regex para montos
+    const amountMatches = text.match(/(?:total|monto|bs|usd|neto)[\s:=]*([0-9]{1,3}(?:[.,][0-9]{3})*[.,][0-9]{2})/i);
+    if (amountMatches && amountMatches[1]) {
+      const cleaned = amountMatches[1].replace(/\./g, '').replace(',', '.');
+      detectedAmount = parseFloat(cleaned) || 0;
+    }
+
+    // Regex para RIF venezolano (J-, V-, G-, E-)
+    const rifMatch = text.match(/([JVGE]-?[0-9]{7,9}-?[0-9])/i);
+    if (rifMatch) detectedRif = rifMatch[1].toUpperCase();
+
+    // Extraer proveedor de primeras líneas
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+    if (lines.length > 0) {
+      detectedSupplier = lines[0].substring(0, 40);
+    }
+
+    // Poblamos el formulario
+    openNewMovementForm('expense', 'Compra de Mercancía / Insumos', `Factura: ${detectedSupplier || 'Proveedor'}`);
+
+    const inputUsd = document.getElementById('caja-monto-usd');
+    const inputBs = document.getElementById('caja-monto-bs');
+    const inputTercero = document.getElementById('caja-tercero');
+    const inputRef = document.getElementById('caja-referencia');
+
+    const rate = state.exchange.rate || 1;
+    if (detectedAmount > 0) {
+      // Si el monto es mayor a 500, asumimos Bs, sino USD
+      if (detectedAmount > 200) {
+        if (inputBs) inputBs.value = detectedAmount.toFixed(2);
+        if (inputUsd) inputUsd.value = (detectedAmount / rate).toFixed(2);
+      } else {
+        if (inputUsd) inputUsd.value = detectedAmount.toFixed(2);
+        if (inputBs) inputBs.value = (detectedAmount * rate).toFixed(2);
+      }
+    }
+
+    if (inputTercero && (detectedSupplier || detectedRif)) {
+      inputTercero.value = `${detectedSupplier} ${detectedRif ? '(' + detectedRif + ')' : ''}`.trim();
+    }
+    if (inputRef && detectedRif) {
+      inputRef.value = detectedRif;
+    }
+  }
+
+  function openNewMovementForm(type = 'income', category = null, concept = '') {
+    const box = document.getElementById('caja-form-box');
+    if (!box) return;
+
+    const radIncome = document.querySelector('input[name="caja-tipo"][value="income"]');
+    const radExpense = document.querySelector('input[name="caja-tipo"][value="expense"]');
+    const lblIncome = document.getElementById('caja-lbl-income');
+    const lblExpense = document.getElementById('caja-lbl-expense');
+
+    if (type === 'income') {
+      if (radIncome) radIncome.checked = true;
+      if (lblIncome) {
+        lblIncome.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 cursor-pointer font-bold text-emerald-700 dark:text-emerald-300 text-sm transition-all';
+      }
+      if (lblExpense) {
+        lblExpense.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border border-surface-container bg-surface-container-lowest cursor-pointer font-bold text-on-surface-variant text-sm transition-all';
+      }
+    } else {
+      if (radExpense) radExpense.checked = true;
+      if (lblExpense) {
+        lblExpense.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-rose-500 bg-rose-500/10 cursor-pointer font-bold text-rose-700 dark:text-rose-300 text-sm transition-all';
+      }
+      if (lblIncome) {
+        lblIncome.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border border-surface-container bg-surface-container-lowest cursor-pointer font-bold text-on-surface-variant text-sm transition-all';
+      }
+    }
+
+    updateCajaCategoryDropdown(type);
+    if (category) {
+      const sel = document.getElementById('caja-categoria');
+      if (sel) sel.value = category;
+    }
+
+    const inputConcept = document.getElementById('caja-concepto');
+    if (inputConcept) inputConcept.value = concept;
+
+    const inputDate = document.getElementById('caja-fecha');
+    if (inputDate) {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      inputDate.value = now.toISOString().slice(0, 16);
+    }
+
+    box.classList.remove('hidden');
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ==========================================================================
+  // EVENT LISTENERS DE FASES 2, 3, 5, 6
+  // ==========================================================================
+  function setupPhases2to6EventListeners() {
+    // 1. CAJA: Toggle Formulario
+    const btnShowAddCaja = document.getElementById('btn-show-add-caja-form');
+    const btnCancelCaja1 = document.getElementById('btn-cancel-caja-form');
+    const btnCancelCaja2 = document.getElementById('btn-cancel-caja-form-2');
+    const boxCaja = document.getElementById('caja-form-box');
+
+    if (btnShowAddCaja) {
+      btnShowAddCaja.addEventListener('click', () => {
+        openNewMovementForm('income');
+      });
+    }
+    const hideCajaBox = () => { if (boxCaja) boxCaja.classList.add('hidden'); };
+    if (btnCancelCaja1) btnCancelCaja1.addEventListener('click', hideCajaBox);
+    if (btnCancelCaja2) btnCancelCaja2.addEventListener('click', hideCajaBox);
+
+    // Tipo radio changes
+    document.querySelectorAll('input[name="caja-tipo"]').forEach(rad => {
+      rad.addEventListener('change', e => {
+        openNewMovementForm(e.target.value);
+      });
+    });
+
+    // Conversión en vivo USD <-> Bs en formulario de caja
+    const inputCajaUsd = document.getElementById('caja-monto-usd');
+    const inputCajaBs = document.getElementById('caja-monto-bs');
+    if (inputCajaUsd && inputCajaBs) {
+      inputCajaUsd.addEventListener('input', () => {
+        const rate = state.exchange.rate || 1;
+        const val = parseFloat(inputCajaUsd.value) || 0;
+        inputCajaBs.value = val > 0 ? (val * rate).toFixed(2) : '';
+      });
+      inputCajaBs.addEventListener('input', () => {
+        const rate = state.exchange.rate || 1;
+        const val = parseFloat(inputCajaBs.value) || 0;
+        inputCajaUsd.value = val > 0 ? (val / rate).toFixed(2) : '';
+      });
+    }
+
+    // Submit Nuevo Movimiento
+    const formCaja = document.getElementById('form-nuevo-movimiento');
+    if (formCaja) {
+      formCaja.addEventListener('submit', e => {
+        e.preventDefault();
+        const typeRad = document.querySelector('input[name="caja-tipo"]:checked');
+        const type = typeRad ? typeRad.value : 'income';
+        const cat = document.getElementById('caja-categoria').value;
+        const concept = document.getElementById('caja-concepto').value.trim();
+        const usd = parseFloat(document.getElementById('caja-monto-usd').value) || 0;
+        const bs = parseFloat(document.getElementById('caja-monto-bs').value) || (usd * (state.exchange.rate || 1));
+        const method = document.getElementById('caja-metodo').value;
+        const ref = document.getElementById('caja-referencia').value.trim();
+        const third = document.getElementById('caja-tercero').value.trim();
+        const dateVal = document.getElementById('caja-fecha').value;
+
+        if (usd <= 0) {
+          showToast('El monto debe ser mayor a 0', 'error');
+          return;
+        }
+
+        const newMov = {
+          id: 'caja_' + Date.now().toString(),
+          date: dateVal ? new Date(dateVal).toISOString() : new Date().toISOString(),
+          type,
+          category: cat,
+          concept,
+          amountUsd: usd,
+          amountBs: bs,
+          method,
+          reference: ref,
+          thirdParty: third
+        };
+
+        state.cashMovements.unshift(newMov);
+        saveCashMovementsToStorage();
+        renderCajaView();
+        hideCajaBox();
+        formCaja.reset();
+        showToast('Movimiento registrado con éxito.', 'success');
+      });
+    }
+
+    // Filtros de Caja
+    const filterCajaPeriod = document.getElementById('filter-caja-periodo');
+    if (filterCajaPeriod) {
+      filterCajaPeriod.addEventListener('change', e => {
+        state.cajaPeriodFilter = e.target.value;
+        renderCajaView();
+      });
+    }
+    const filterCajaType = document.getElementById('filter-caja-tipo');
+    if (filterCajaType) {
+      filterCajaType.addEventListener('change', e => {
+        state.cajaTypeFilter = e.target.value;
+        renderCajaTable();
+      });
+    }
+    const searchCaja = document.getElementById('search-caja');
+    if (searchCaja) {
+      searchCaja.addEventListener('input', () => renderCajaTable());
+    }
+
+    // Escáner OCR de Facturas
+    const btnScanBill = document.getElementById('btn-caja-scan-bill');
+    const inputOcr = document.getElementById('input-caja-camera-ocr');
+    if (btnScanBill && inputOcr) {
+      btnScanBill.addEventListener('click', () => inputOcr.click());
+      inputOcr.addEventListener('change', e => {
+        if (e.target.files && e.target.files[0]) {
+          scanInvoicePhoto(e.target.files[0]);
+          inputOcr.value = '';
+        }
+      });
+    }
+
+    // Compartir Arqueo de Caja
+    const btnShareCaja = document.getElementById('btn-share-caja-summary');
+    if (btnShareCaja) {
+      btnShareCaja.addEventListener('click', () => {
+        const period = state.cajaPeriodFilter || 'month';
+        const filtered = filterCashMovementsByPeriod(state.cashMovements, period);
+        let incUsd = 0;
+        let expUsd = 0;
+        filtered.forEach(m => {
+          if (m.type === 'income') incUsd += Number(m.amountUsd) || 0;
+          else expUsd += Number(m.amountUsd) || 0;
+        });
+        const net = incUsd - expUsd;
+        const rate = state.exchange.rate || 1;
+        const biz = state.business.name || 'Mi Negocio';
+
+        const txt = `*ARQUEO DE CAJA - ${biz.toUpperCase()}*
+*Período:* ${period.toUpperCase()}
+*Total Ingresos:* +$${incUsd.toFixed(2)} (+${(incUsd * rate).toLocaleString('es-VE', { maximumFractionDigits: 0 })} Bs.)
+*Total Gastos:* -$${expUsd.toFixed(2)} (-${(expUsd * rate).toLocaleString('es-VE', { maximumFractionDigits: 0 })} Bs.)
+*Saldo Neto Disponible:* ${net >= 0 ? '$' : '-$'}${Math.abs(net).toFixed(2)} (${(net * rate).toLocaleString('es-VE', { maximumFractionDigits: 0 })} Bs.)
+*Tasa BCV:* ${rate.toFixed(2)} Bs./$
+Generado por MARKT Universal OS`;
+
+        if (navigator.share) {
+          navigator.share({ title: 'Arqueo de Caja', text: txt }).catch(() => {});
+        } else {
+          navigator.clipboard.writeText(txt);
+          showToast('Arqueo copiado al portapapeles.', 'success');
+        }
+      });
+    }
+
+    // 2. CUENTAS POR COBRAR: Toggle Nueva Cuenta Form
+    const btnShowCxc = document.getElementById('btn-show-add-cxc-form');
+    const btnCancelCxc1 = document.getElementById('btn-cancel-cxc-form');
+    const btnCancelCxc2 = document.getElementById('btn-cancel-cxc-form-2');
+    const boxCxc = document.getElementById('cxc-form-box');
+
+    if (btnShowCxc) {
+      btnShowCxc.addEventListener('click', () => {
+        if (boxCxc) boxCxc.classList.remove('hidden');
+      });
+    }
+    const hideCxcBox = () => { if (boxCxc) boxCxc.classList.add('hidden'); };
+    if (btnCancelCxc1) btnCancelCxc1.addEventListener('click', hideCxcBox);
+    if (btnCancelCxc2) btnCancelCxc2.addEventListener('click', hideCxcBox);
+
+    // Cancel Abono box
+    const btnCancelAb1 = document.getElementById('btn-cancel-abono-box');
+    const btnCancelAb2 = document.getElementById('btn-cancel-abono-box-2');
+    const boxAb = document.getElementById('cxc-abono-box');
+    const hideAbBox = () => { if (boxAb) boxAb.classList.add('hidden'); };
+    if (btnCancelAb1) btnCancelAb1.addEventListener('click', hideAbBox);
+    if (btnCancelAb2) btnCancelAb2.addEventListener('click', hideAbBox);
+
+    // Conversión Abono USD <-> Bs
+    const inputAbUsd = document.getElementById('abono-monto-usd');
+    const inputAbBs = document.getElementById('abono-monto-bs');
+    if (inputAbUsd && inputAbBs) {
+      inputAbUsd.addEventListener('input', () => {
+        const rate = state.exchange.rate || 1;
+        const val = parseFloat(inputAbUsd.value) || 0;
+        inputAbBs.value = val > 0 ? (val * rate).toFixed(2) : '';
+      });
+      inputAbBs.addEventListener('input', () => {
+        const rate = state.exchange.rate || 1;
+        const val = parseFloat(inputAbBs.value) || 0;
+        inputAbUsd.value = val > 0 ? (val / rate).toFixed(2) : '';
+      });
+    }
+
+    // Submit Nueva Cuenta por Cobrar
+    const formCxc = document.getElementById('form-nueva-cuenta-cobrar');
+    if (formCxc) {
+      formCxc.addEventListener('submit', e => {
+        e.preventDefault();
+        const clientName = document.getElementById('cxc-client-name').value.trim();
+        const clientPhone = document.getElementById('cxc-client-phone').value.trim();
+        const docRef = document.getElementById('cxc-doc-ref').value.trim();
+        const total = parseFloat(document.getElementById('cxc-total-debt-usd').value) || 0;
+        const initPay = parseFloat(document.getElementById('cxc-initial-payment-usd').value) || 0;
+        const dueDate = document.getElementById('cxc-due-date').value;
+        const concept = document.getElementById('cxc-concept').value.trim();
+
+        if (total <= 0) {
+          showToast('El monto de la deuda debe ser mayor a 0', 'error');
+          return;
+        }
+
+        const bal = Math.max(0, total - initPay);
+        const newRecord = {
+          id: 'cxc_' + Date.now().toString(),
+          receiptId: null,
+          docNumber: docRef || 'C-001',
+          clientName,
+          clientPhone,
+          date: new Date().toISOString().split('T')[0],
+          dueDate: dueDate || new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
+          totalDebtUsd: total,
+          paidUsd: initPay,
+          balanceUsd: bal,
+          concept: concept || 'Venta a crédito',
+          status: bal <= 0.01 ? 'paid' : 'pending',
+          abonos: initPay > 0 ? [{
+            date: new Date().toISOString(),
+            amountUsd: initPay,
+            method: 'efectivo_usd',
+            reference: 'Inicial'
+          }] : []
+        };
+
+        state.cuentasPorCobrar.unshift(newRecord);
+        saveCxcToStorage();
+
+        // Si pagó inicial, registrar en caja
+        if (initPay > 0) {
+          const cashEntry = {
+            id: 'caja_ab_' + Date.now().toString(),
+            date: new Date().toISOString(),
+            type: 'income',
+            category: 'Abono / Anticipo de Inicial',
+            concept: `Abono Inicial Crédito #${newRecord.docNumber} - ${clientName}`,
+            amountUsd: initPay,
+            amountBs: initPay * (state.exchange.rate || 1),
+            method: 'efectivo_usd',
+            reference: 'Inicial',
+            thirdParty: clientName
+          };
+          state.cashMovements.unshift(cashEntry);
+          saveCashMovementsToStorage();
+        }
+
+        renderCxcView();
+        hideCxcBox();
+        formCxc.reset();
+        showToast('Cuenta por cobrar registrada.', 'success');
+      });
+    }
+
+    // Submit Abono a Deuda
+    const formAbono = document.getElementById('form-registrar-abono');
+    if (formAbono) {
+      formAbono.addEventListener('submit', e => {
+        e.preventDefault();
+        const cxcId = document.getElementById('abono-cxc-id').value;
+        const item = state.cuentasPorCobrar.find(x => x.id === cxcId);
+        if (!item) return;
+
+        const usd = parseFloat(document.getElementById('abono-monto-usd').value) || 0;
+        const bs = parseFloat(document.getElementById('abono-monto-bs').value) || (usd * (state.exchange.rate || 1));
+        const method = document.getElementById('abono-metodo').value;
+        const ref = document.getElementById('abono-referencia').value.trim();
+        const autoCaja = document.getElementById('abono-auto-caja').checked;
+
+        if (usd <= 0) {
+          showToast('El monto del abono debe ser mayor a 0', 'error');
+          return;
+        }
+
+        item.paidUsd = (Number(item.paidUsd) || 0) + usd;
+        item.balanceUsd = Math.max(0, (Number(item.totalDebtUsd) || 0) - item.paidUsd);
+        if (item.balanceUsd <= 0.01) item.status = 'paid';
+
+        if (!item.abonos) item.abonos = [];
+        item.abonos.push({
+          date: new Date().toISOString(),
+          amountUsd: usd,
+          amountBs: bs,
+          method,
+          reference: ref
+        });
+
+        saveCxcToStorage();
+
+        // Ingreso en Caja automático
+        if (autoCaja) {
+          const cashEntry = {
+            id: 'caja_abono_' + Date.now().toString(),
+            date: new Date().toISOString(),
+            type: 'income',
+            category: 'Cobro a Cliente / Abono Factura',
+            concept: `Abono Deuda #${item.docNumber} - ${item.clientName}`,
+            amountUsd: usd,
+            amountBs: bs,
+            method,
+            reference: ref || 'Abono',
+            thirdParty: item.clientName
+          };
+          state.cashMovements.unshift(cashEntry);
+          saveCashMovementsToStorage();
+        }
+
+        renderCxcView();
+        hideAbBox();
+        formAbono.reset();
+        showToast('Abono registrado con éxito.', 'success');
+      });
+    }
+
+    // Filtros de CxC
+    const filterCxcStatus = document.getElementById('filter-cxc-status');
+    if (filterCxcStatus) {
+      filterCxcStatus.addEventListener('change', e => {
+        state.cxcStatusFilter = e.target.value;
+        renderCxcTable();
+      });
+    }
+    const searchCxc = document.getElementById('search-cxc');
+    if (searchCxc) {
+      searchCxc.addEventListener('input', () => renderCxcTable());
+    }
+
+    // 3. REPORTES: Filtro y Compartir
+    const filterReport = document.getElementById('report-period-filter');
+    if (filterReport) {
+      filterReport.addEventListener('change', e => {
+        state.reportPeriodFilter = e.target.value;
+        renderFinancialReport();
+      });
+    }
+
+    const btnShareReport = document.getElementById('btn-share-report');
+    if (btnShareReport) {
+      btnShareReport.addEventListener('click', () => {
+        const period = state.reportPeriodFilter || 'month';
+        const elSales = document.getElementById('rep-sales-usd');
+        const elCosts = document.getElementById('rep-costs-usd');
+        const elExp = document.getElementById('rep-expenses-usd');
+        const elProfit = document.getElementById('rep-profit-usd');
+        const elMargin = document.getElementById('rep-profit-margin');
+        const biz = state.business.name || 'Mi Negocio';
+
+        const txt = `*INFORME FINANCIERO - ${biz.toUpperCase()}*
+*Período:* ${period.toUpperCase()}
+*Ventas Totales:* ${elSales ? elSales.textContent : '$0.00'}
+*Costo de Mercancía:* ${elCosts ? elCosts.textContent : '$0.00'}
+*Gastos Operativos:* ${elExp ? elExp.textContent : '$0.00'}
+*UTILIDAD NETA REAL:* ${elProfit ? elProfit.textContent : '$0.00'}
+*${elMargin ? elMargin.textContent : ''}*
+Generado por MARKT Universal OS`;
+
+        if (navigator.share) {
+          navigator.share({ title: 'Informe Financiero', text: txt }).catch(() => {});
+        } else {
+          navigator.clipboard.writeText(txt);
+          showToast('Informe financiero copiado al portapapeles.', 'success');
+        }
+      });
+    }
+  }
