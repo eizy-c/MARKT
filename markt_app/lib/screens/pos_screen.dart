@@ -204,6 +204,15 @@ class _PosScreenState extends State<PosScreen> {
       }
     });
     DebugLogger.instance.info('Producto agregado: ${p.name} (Cant: $qty)');
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Agregado: ${p.name} (Cant: $qty)'),
+        duration: const Duration(seconds: 1),
+        backgroundColor: const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _updateCartQty(Product p, int newQty) {
@@ -215,8 +224,19 @@ class _PosScreenState extends State<PosScreen> {
         } else {
           _cart[idx].quantity = newQty;
         }
+      } else if (newQty > 0) {
+        _cart.add(CartItem(product: p, quantity: newQty));
       }
     });
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(newQty > 0 ? '${p.name}: $newQty en orden' : 'Eliminado del carrito: ${p.name}'),
+        duration: const Duration(seconds: 1),
+        backgroundColor: newQty > 0 ? const Color(0xFF6366F1) : const Color(0xFFEF4444),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _promptProductQuantity(Product p) {
@@ -229,79 +249,83 @@ class _PosScreenState extends State<PosScreen> {
       context: context,
       builder: (ctx) {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return AlertDialog(
-          backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            p.name,
-            style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Precio: \$${p.priceUsd.toStringAsFixed(2)} | Bs. ${(p.priceUsd * _activeRate).toStringAsFixed(2)}',
-                style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      int val = int.tryParse(ctrl.text) ?? 1;
-                      if (val > 1) {
-                        val--;
-                        ctrl.text = val.toString();
-                      }
-                    },
-                    icon: const Icon(Icons.remove_circle_outline, color: Color(0xFFEF4444)),
-                  ),
-                  SizedBox(
-                    width: 70,
-                    child: TextField(
-                      controller: ctrl,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 18),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        filled: true,
-                        fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              p.name,
+              style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Precio: \$${p.priceUsd.toStringAsFixed(2)} | Bs. ${(p.priceUsd * _activeRate).toStringAsFixed(2)}',
+                  style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        int val = int.tryParse(ctrl.text) ?? 1;
+                        if (val > 1) {
+                          val--;
+                          ctrl.text = val.toString();
+                          setDialogState(() {});
+                        }
+                      },
+                      icon: const Icon(Icons.remove_circle_outline, color: Color(0xFFEF4444)),
+                    ),
+                    SizedBox(
+                      width: 70,
+                      child: TextField(
+                        controller: ctrl,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 18),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          filled: true,
+                          fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      int val = int.tryParse(ctrl.text) ?? 1;
-                      val++;
-                      ctrl.text = val.toString();
-                    },
-                    icon: const Icon(Icons.add_circle_outline, color: Color(0xFF10B981)),
-                  ),
-                ],
+                    IconButton(
+                      onPressed: () {
+                        int val = int.tryParse(ctrl.text) ?? 1;
+                        val++;
+                        ctrl.text = val.toString();
+                        setDialogState(() {});
+                      },
+                      icon: const Icon(Icons.add_circle_outline, color: Color(0xFF10B981)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final finalQty = int.tryParse(ctrl.text) ?? 1;
+                  _updateCartQty(p, finalQty);
+                  Navigator.pop(ctx);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6366F1),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Confirmar Cantidad'),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final finalQty = int.tryParse(ctrl.text) ?? 1;
-                _updateCartQty(p, finalQty);
-                Navigator.pop(ctx);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Confirmar Cantidad'),
-            ),
-          ],
         );
       },
     );
@@ -1131,131 +1155,136 @@ class _PosScreenState extends State<PosScreen> {
                           final cartItem = _cart.firstWhere((c) => c.product.id == p.id, orElse: () => CartItem(product: p, quantity: 0));
                           final inCartQty = cartItem.quantity;
 
-                          return Container(
-                            margin: const EdgeInsets.symmetric(vertical: 3),
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF0F172A) : Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: inCartQty > 0
-                                    ? const Color(0xFF6366F1)
-                                    : (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
-                                width: inCartQty > 0 ? 1.5 : 1,
+                          return InkWell(
+                            onTap: () => _addToCart(p, qty: 1),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 3),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: inCartQty > 0
+                                      ? const Color(0xFF6366F1)
+                                      : (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+                                  width: inCartQty > 0 ? 1.5 : 1,
+                                ),
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                // Badge de Stock y Categoría
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: (inCartQty > 0 ? const Color(0xFF6366F1) : const Color(0xFF10B981)).withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    inCartQty > 0 ? Icons.check_circle : Icons.inventory_2_outlined,
-                                    color: inCartQty > 0 ? const Color(0xFF6366F1) : const Color(0xFF10B981),
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-
-                                // Detalles del Producto
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        p.name,
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '${p.category} • Stock: ${p.stock} unids.',
-                                        style: TextStyle(
-                                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Precios USD y Bs.
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '\$${p.priceUsd.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        color: Color(0xFF10B981),
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 14,
-                                      ),
+                              child: Row(
+                                children: [
+                                  // Badge de Stock y Categoría
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: (inCartQty > 0 ? const Color(0xFF6366F1) : const Color(0xFF10B981)).withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                    Text(
-                                      'Bs. ${(p.priceUsd * rate).toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                    child: Icon(
+                                      inCartQty > 0 ? Icons.check_circle : Icons.inventory_2_outlined,
+                                      color: inCartQty > 0 ? const Color(0xFF6366F1) : const Color(0xFF10B981),
+                                      size: 20,
                                     ),
-                                  ],
-                                ),
-                                const SizedBox(width: 10),
+                                  ),
+                                  const SizedBox(width: 10),
 
-                                // Controles de Cantidad tipo Valery
-                                if (inCartQty > 0)
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      InkWell(
-                                        onTap: () => _updateCartQty(p, inCartQty - 1),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: BoxDecoration(color: const Color(0xFFEF4444).withValues(alpha: 0.15), shape: BoxShape.circle),
-                                          child: const Icon(Icons.remove, size: 14, color: Color(0xFFEF4444)),
-                                        ),
-                                      ),
-                                      InkWell(
-                                        onTap: () => _promptProductQuantity(p),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                                          child: Text(
-                                            '$inCartQty',
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                  // Detalles del Producto
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          p.name,
+                                          style: TextStyle(
+                                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
                                           ),
                                         ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${p.category} • Stock: ${p.stock} unids.',
+                                          style: TextStyle(
+                                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Precios USD y Bs.
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        '\$${p.priceUsd.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          color: Color(0xFF10B981),
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 14,
+                                        ),
                                       ),
-                                      InkWell(
-                                        onTap: () => _updateCartQty(p, inCartQty + 1),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: BoxDecoration(color: const Color(0xFF10B981).withValues(alpha: 0.15), shape: BoxShape.circle),
-                                          child: const Icon(Icons.add, size: 14, color: Color(0xFF10B981)),
+                                      Text(
+                                        'Bs. ${(p.priceUsd * rate).toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ],
-                                  )
-                                else
-                                  ElevatedButton(
-                                    onPressed: () => _promptProductQuantity(p),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF6366F1),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      minimumSize: Size.zero,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                    ),
-                                    child: const Text('Añadir', style: TextStyle(fontSize: 11)),
                                   ),
-                              ],
+                                  const SizedBox(width: 10),
+
+                                  // Controles de Cantidad tipo Valery
+                                  if (inCartQty > 0)
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        InkWell(
+                                          onTap: () => _updateCartQty(p, inCartQty - 1),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(color: const Color(0xFFEF4444).withValues(alpha: 0.15), shape: BoxShape.circle),
+                                            child: const Icon(Icons.remove, size: 14, color: Color(0xFFEF4444)),
+                                          ),
+                                        ),
+                                        InkWell(
+                                          onTap: () => _promptProductQuantity(p),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                                            child: Text(
+                                              '$inCartQty',
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                            ),
+                                          ),
+                                        ),
+                                        InkWell(
+                                          onTap: () => _updateCartQty(p, inCartQty + 1),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(color: const Color(0xFF10B981).withValues(alpha: 0.15), shape: BoxShape.circle),
+                                            child: const Icon(Icons.add, size: 14, color: Color(0xFF10B981)),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  else
+                                    ElevatedButton.icon(
+                                      onPressed: () => _addToCart(p, qty: 1),
+                                      icon: const Icon(Icons.add_shopping_cart, size: 14),
+                                      label: const Text('Añadir', style: TextStyle(fontSize: 11)),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF6366F1),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        minimumSize: Size.zero,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
                           );
                         },
