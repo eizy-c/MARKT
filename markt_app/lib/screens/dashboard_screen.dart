@@ -207,7 +207,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
+
+            // Banner Inteligente de Recordatorios y Notificaciones Activas
+            _buildSmartAlertBanner(isDark),
+            const SizedBox(height: 12),
 
             // Bento Grid de 4 Cards (Ventas, Utilidad Neta, Por Cobrar, Saldo en Caja)
             Row(
@@ -529,6 +533,117 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 fontSize: 11,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSmartAlertBanner(bool isDark) {
+    final waitingProjectsCount = _projects.where((p) => p.status == '1_aprobacion').length;
+    final readyProjectsCount = _projects.where((p) => p.status == '5_finalizado' || p.status == 'completed').length;
+    final pendingDownPaymentCount = _projects.where((p) => p.status == '2_anticipo').length;
+
+    final hasAlerts = _receivablesCount > 0 || waitingProjectsCount > 0 || readyProjectsCount > 0 || pendingDownPaymentCount > 0;
+    if (!hasAlerts) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.notifications_active_outlined, color: Color(0xFF3B82F6), size: 18),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Recordatorios & Atención Requerida',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2563EB)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (_receivablesCount > 0)
+                _buildAlertPill(
+                  label: '$_receivablesCount deudas pendientes',
+                  icon: Icons.money_off,
+                  color: const Color(0xFFEF4444),
+                  onTap: () => widget.onNavigate(3), // Por Cobrar
+                ),
+              if (pendingDownPaymentCount > 0)
+                _buildAlertPill(
+                  label: '$pendingDownPaymentCount por cobrar inicial',
+                  icon: Icons.pending_actions,
+                  color: const Color(0xFFF59E0B),
+                  onTap: () => widget.onNavigate(5), // Proyectos
+                ),
+              if (waitingProjectsCount > 0)
+                _buildAlertPill(
+                  label: '$waitingProjectsCount proyectos en espera',
+                  icon: Icons.hourglass_top,
+                  color: const Color(0xFF38BDF8),
+                  onTap: () => widget.onNavigate(5), // Proyectos
+                ),
+              if (readyProjectsCount > 0)
+                _buildAlertPill(
+                  label: '$readyProjectsCount proyectos listos sin entregar',
+                  icon: Icons.verified_outlined,
+                  color: const Color(0xFF10B981),
+                  onTap: () => widget.onNavigate(5), // Proyectos
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAlertPill({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, size: 14, color: color),
           ],
         ),
       ),

@@ -14,6 +14,9 @@ import 'screens/projects_screen.dart';
 import 'screens/products_screen.dart';
 import 'screens/clients_screen.dart';
 import 'screens/settings_screen.dart';
+import 'models/app_models.dart';
+import 'services/storage_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'widgets/app_drawer.dart';
 import 'widgets/floating_debug_button.dart';
 
@@ -327,6 +330,40 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   child: const Icon(Icons.mark_chat_unread_outlined, color: Color(0xFF10B981), size: 20),
                 ),
               ),
+              const SizedBox(width: 8),
+
+              // Botón Notificaciones del Sistema
+              InkWell(
+                onTap: _showNotificationsCenterModal,
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFFEEF2F6),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(Icons.notifications_outlined, color: isDark ? Colors.white : const Color(0xFF0F172A), size: 20),
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFEF4444),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -372,7 +409,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
             ),
             _buildNavItem(icon: Icons.assignment_late_outlined, label: 'Por Cobrar', index: 3, isDark: isDark),
-            _buildNavItem(icon: Icons.menu, label: 'Menú', index: 99, isDark: isDark, isDrawerTrigger: true),
+            _buildNavItem(icon: Icons.store_mall_directory_outlined, label: 'Comercio', index: 8, isDark: isDark),
           ],
         ),
       ),
@@ -416,6 +453,378 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showNotificationsCenterModal() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Cargar datos en vivo para generar alertas inteligentes
+    List<ReceivableAccount> pendingDebts = [];
+    List<ProjectItem> waitingProjects = [];
+    List<ProjectItem> readyProjects = [];
+    List<ProjectItem> pendingDownPaymentProjects = [];
+
+    try {
+      final rawRec = await StorageService.instance.load('receivables');
+      if (rawRec != null && rawRec is List) {
+        for (final item in rawRec) {
+          final acc = ReceivableAccount.fromJson(Map<String, dynamic>.from(item));
+          if (!acc.isPaid) pendingDebts.add(acc);
+        }
+      }
+
+      final rawProj = await StorageService.instance.load('proyectos');
+      if (rawProj != null && rawProj is List) {
+        for (final item in rawProj) {
+          final p = ProjectItem.fromJson(Map<String, dynamic>.from(item));
+          if (p.status == '1_aprobacion') {
+            waitingProjects.add(p);
+          } else if (p.status == '2_anticipo') {
+            pendingDownPaymentProjects.add(p);
+          } else if (p.status == '5_finalizado' || p.status == 'completed') {
+            readyProjects.add(p);
+          }
+        }
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.85,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.notifications_active, color: Color(0xFFEF4444), size: 22),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Centro de Notificaciones & Alertas',
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          'Recordatorios de proyectos, iniciales y deudas',
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            Expanded(
+              child: ListView(
+                children: [
+                  // 1. Deudas Pendientes de Clientes
+                  if (pendingDebts.isNotEmpty) ...[
+                    _buildNotificationHeader(
+                      title: 'Deudas Pendientes de Cobro (${pendingDebts.length})',
+                      color: const Color(0xFFEF4444),
+                      icon: Icons.money_off,
+                    ),
+                    const SizedBox(height: 8),
+                    ...pendingDebts.map((acc) => _buildDebtNotificationCard(acc, isDark)),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // 2. Clientes que deben dar Inicial / Anticipo
+                  if (pendingDownPaymentProjects.isNotEmpty) ...[
+                    _buildNotificationHeader(
+                      title: 'Pendiente Pago de Inicial / Anticipo (${pendingDownPaymentProjects.length})',
+                      color: const Color(0xFFF59E0B),
+                      icon: Icons.pending_actions,
+                    ),
+                    const SizedBox(height: 8),
+                    ...pendingDownPaymentProjects.map((p) => _buildProjectAlertCard(
+                          title: p.title,
+                          client: p.clientName,
+                          amount: p.totalUsd,
+                          alertText: 'Requiere cobro de inicial para iniciar producción en taller',
+                          actionLabel: 'Cobrar Inicial',
+                          color: const Color(0xFFF59E0B),
+                          isDark: isDark,
+                          onAction: () {
+                            Navigator.pop(ctx);
+                            _onDestinationSelected(5); // Proyectos
+                          },
+                        )),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // 3. Proyectos en Espera de Aprobación
+                  if (waitingProjects.isNotEmpty) ...[
+                    _buildNotificationHeader(
+                      title: 'Proyectos en Espera de Aprobación (${waitingProjects.length})',
+                      color: const Color(0xFF38BDF8),
+                      icon: Icons.hourglass_top,
+                    ),
+                    const SizedBox(height: 8),
+                    ...waitingProjects.map((p) => _buildProjectAlertCard(
+                          title: p.title,
+                          client: p.clientName,
+                          amount: p.totalUsd,
+                          alertText: 'Cotización emitida en espera de confirmación del cliente',
+                          actionLabel: 'Ver Proyecto',
+                          color: const Color(0xFF38BDF8),
+                          isDark: isDark,
+                          onAction: () {
+                            Navigator.pop(ctx);
+                            _onDestinationSelected(5);
+                          },
+                        )),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // 4. Proyectos Listos sin Entregar
+                  if (readyProjects.isNotEmpty) ...[
+                    _buildNotificationHeader(
+                      title: 'Proyectos Listos sin Entregar (${readyProjects.length})',
+                      color: const Color(0xFF10B981),
+                      icon: Icons.check_circle_outline,
+                    ),
+                    const SizedBox(height: 8),
+                    ...readyProjects.map((p) => _buildProjectAlertCard(
+                          title: p.title,
+                          client: p.clientName,
+                          amount: p.totalUsd,
+                          alertText: 'Fabricación finalizada. Listo para retiro o instalación',
+                          actionLabel: 'Notificar Entrega',
+                          color: const Color(0xFF10B981),
+                          isDark: isDark,
+                          onAction: () {
+                            Navigator.pop(ctx);
+                            _onDestinationSelected(5);
+                          },
+                        )),
+                    const SizedBox(height: 16),
+                  ],
+
+                  if (pendingDebts.isEmpty &&
+                      pendingDownPaymentProjects.isEmpty &&
+                      waitingProjects.isEmpty &&
+                      readyProjects.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.done_all, color: Color(0xFF10B981), size: 48),
+                            const SizedBox(height: 12),
+                            Text(
+                              '¡Todo al día!',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'No hay deudas vencidas ni proyectos desatendidos.',
+                              style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationHeader({required String title, required Color color, required IconData icon}) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 6),
+        Text(
+          title,
+          style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDebtNotificationCard(ReceivableAccount acc, bool isDark) {
+    final rate = BcvService.instance.currentRates.usd;
+    final totalBs = acc.remainingBalanceUsd * rate;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                acc.clientName,
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              Text(
+                'Debe: \$${acc.remainingBalanceUsd.toStringAsFixed(2)} (~Bs. ${totalBs.toStringAsFixed(2)})',
+                style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Concepto: ${acc.concept}',
+            style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final text = 'Hola estimado/a ${acc.clientName}, le saludamos cordialmente. '
+                      'Le recordamos amablemente su saldo pendiente de *\$${acc.remainingBalanceUsd.toStringAsFixed(2)}* '
+                      '(Bs. ${totalBs.toStringAsFixed(2)}) correspondiente a: "${acc.concept}". '
+                      'Agradecemos su atención. ¡Feliz día!';
+                  String cleanPhone = acc.clientPhone.replaceAll(RegExp(r'[^0-9]'), '');
+                  if (cleanPhone.startsWith('0')) cleanPhone = '58${cleanPhone.substring(1)}';
+                  final url = Uri.parse('https://wa.me/$cleanPhone?text=${Uri.encodeComponent(text)}');
+                  try {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  } catch (_) {
+                    Clipboard.setData(ClipboardData(text: text));
+                  }
+                },
+                icon: const Icon(Icons.chat, size: 14, color: Color(0xFF10B981)),
+                label: const Text('Cobrar por WhatsApp', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF10B981)),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProjectAlertCard({
+    required String title,
+    required String client,
+    required double amount,
+    required String alertText,
+    required String actionLabel,
+    required Color color,
+    required bool isDark,
+    required VoidCallback onAction,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              Text(
+                '\$${amount.toStringAsFixed(2)}',
+                style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Cliente: $client',
+            style: TextStyle(color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155), fontSize: 11, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            alertText,
+            style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: ElevatedButton.icon(
+              onPressed: onAction,
+              icon: const Icon(Icons.arrow_forward, size: 14),
+              label: Text(actionLabel, style: const TextStyle(fontSize: 11)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                minimumSize: Size.zero,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
