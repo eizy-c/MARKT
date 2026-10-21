@@ -281,6 +281,25 @@
          VISTA 1: TERMINAL POS (Flujo Rapido, Des-encajonado)
          ========================================================================== -->
     <section id="view-pos" class="app-view active w-full flex flex-col pb-6 space-y-4">
+      <!-- Banner Informativo MARKT v4.0 -->
+      <div id="v4-welcome-banner" class="hidden p-3.5 rounded-2xl bg-secondary/10 border border-secondary/20 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-secondary text-on-secondary flex items-center justify-center font-bold text-xs flex-shrink-0">
+            <span class="material-symbols-outlined text-[18px]">verified</span>
+          </div>
+          <div>
+            <div class="font-bold text-on-surface text-xs leading-tight">Bienvenido a MARKT v4.0 Universal Business OS</div>
+            <div class="text-[11px] text-on-surface-variant">Memoria física interna, Libro de Caja, Cobranzas y Escáner de Facturas.</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <button id="btn-view-v4-changelog" class="px-3 py-1.5 rounded-xl bg-secondary text-on-secondary text-xs font-bold active:scale-95 transition-transform" type="button">Ver Novedades</button>
+          <button id="btn-dismiss-v4-banner" class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface" type="button" title="Cerrar">
+            <span class="material-symbols-outlined text-[16px]">close</span>
+          </button>
+        </div>
+      </div>
+
       
       <!-- Selector de Tipo de Comprobante (Pills Planas) -->
       <div class="flex items-center gap-2 pt-1">
@@ -914,6 +933,10 @@
           <button id="btn-download-quote-img" class="py-3 px-3 rounded-xl bg-surface-container text-secondary hover:bg-surface-container-high font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 transition-all" type="button">
             <span class="material-symbols-outlined text-[18px]">download</span>
             <span>Descargar PNG</span>
+          </button>
+          <button id="btn-convert-quote-to-pos" class="py-3 px-3 rounded-xl bg-primary text-on-primary hover:bg-primary/90 font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" type="button">
+            <span class="material-symbols-outlined text-[18px]">point_of_sale</span>
+            <span>Cobrar en POS</span>
           </button>
           <button id="btn-convert-quote-to-project" class="py-3 px-3 rounded-xl bg-surface-container text-secondary hover:bg-surface-container-high font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 transition-all" type="button">
             <span class="material-symbols-outlined text-[18px]">rocket_launch</span>

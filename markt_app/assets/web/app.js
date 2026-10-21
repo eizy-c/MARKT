@@ -6156,4 +6156,61 @@ Generado por MARKT Universal OS`;
         }
       });
     }
+
+    // 4. CONVERTIR COTIZACIÓN A VENTA POS
+    const btnConvertQuoteToPos = document.getElementById('btn-convert-quote-to-pos');
+    if (btnConvertQuoteToPos) {
+      btnConvertQuoteToPos.addEventListener('click', () => {
+        if (!state.activeQuote) {
+          showToast('No hay una cotización activa.', 'error');
+          return;
+        }
+        if (state.activeQuote.clientName) state.client.name = state.activeQuote.clientName;
+        if (state.activeQuote.clientId) state.client.id = state.activeQuote.clientId;
+        if (state.activeQuote.clientPhone) state.client.phone = state.activeQuote.clientPhone;
+        if (state.activeQuote.clientCity) state.client.city = state.activeQuote.clientCity;
+
+        if (state.activeQuote.items && state.activeQuote.items.length > 0) {
+          state.items = state.activeQuote.items.map(it => ({
+            code: it.code || 'COT',
+            name: it.name || it.desc || 'Producto / Servicio',
+            qty: Number(it.qty) || 1,
+            price: Number(it.price) || 0,
+            unit: it.unit || 'und',
+            cost: Number(it.cost) || 0
+          }));
+        }
+
+        state.activeQuote.status = 'Aprobado';
+        saveCotizacionesToStorage();
+        renderItemsList();
+        updateCalculationsAndPreview();
+        switchView('view-pos');
+        showToast('Cotización cargada en el Terminal POS lista para facturar.', 'success');
+      });
+    }
+
+    // 5. BANNER NOVEDADES V4.0
+    const banner = document.getElementById('v4-welcome-banner');
+    const btnViewV4 = document.getElementById('btn-view-v4-changelog');
+    const btnDismissV4 = document.getElementById('btn-dismiss-v4-banner');
+
+    if (banner) {
+      const seen = localStorage.getItem('markt_v4_changelog_seen');
+      if (!seen) banner.classList.remove('hidden');
+
+      if (btnViewV4) {
+        btnViewV4.addEventListener('click', () => {
+          localStorage.setItem('markt_v4_changelog_seen', 'true');
+          banner.classList.add('hidden');
+          switchView('view-changelog');
+        });
+      }
+      if (btnDismissV4) {
+        btnDismissV4.addEventListener('click', () => {
+          localStorage.setItem('markt_v4_changelog_seen', 'true');
+          banner.classList.add('hidden');
+        });
+      }
+    }
   }
