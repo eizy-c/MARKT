@@ -8,13 +8,13 @@ void main() {
     await tester.pump();
 
     // Comprobar que el título inicial y la pantalla de Dashboard carguen
-    expect(find.text('Panel Principal'), findsOneWidget);
-    expect(find.text('Panel de Control'), findsOneWidget);
-    expect(find.byIcon(Icons.menu), findsOneWidget);
+    expect(find.text('Panel Principal'), findsWidgets);
+    expect(find.text('Resumen del Negocio'), findsOneWidget);
+    expect(find.byIcon(Icons.menu), findsWidgets);
     expect(find.byIcon(Icons.bug_report), findsOneWidget);
 
     // Abrir menú lateral nativo (Drawer)
-    await tester.tap(find.byIcon(Icons.menu));
+    await tester.tap(find.byIcon(Icons.menu).first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
