@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
   <meta name="apple-mobile-web-app-title" content="PubliCraft MARKT"/>
-  <title>PubliCraft CNC - Sistema POS & Cotizaciones</title>
+  <title>Mi Negocio - Sistema POS & Cotizaciones</title>
 
   <!-- Google Fonts: Inter & Plus Jakarta Sans & Material Symbols Outlined -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -123,7 +123,7 @@
         <div class="flex flex-col">
           <div class="flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></span>
-            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">PubliCraft CNC</span>
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">MARKT</span>
           </div>
           <span id="current-view-title" class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">Terminal POS</span>
         </div>
@@ -139,15 +139,9 @@
           </button>
         </div>
 
-        <!-- Quick Ticket Direct Button -->
-        <button id="btn-open-thermal-modal" class="px-3 py-1.5 rounded-xl bg-surface-container text-secondary hover:bg-surface-container-high transition-all active:scale-95 flex items-center gap-1.5 border border-surface-container font-label-sm text-label-sm font-semibold" title="Ver Comprobante Actual" type="button">
-          <span class="material-symbols-outlined text-[18px]">receipt_long</span>
-          <span class="hidden sm:inline">Ticket</span>
-        </button>
-
-        <!-- Profile Button -->
-        <button id="btn-header-profile" class="p-0.5 rounded-full bg-surface-container flex items-center justify-center border border-surface-container-high hover:ring-2 hover:ring-secondary/40 transition-all stitch-nav-item" data-view="view-ajustes" title="Mi Negocio">
-          <img id="header-avatar-img" alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcs5Vfz1UVF_eA8cRh3_kvFzWriA1yt7b2hUZfawqwwVyShPYUU1I8HfXklr7pdGU1ZSLW6VM6ffp_oMTUJHbpEYnBkoSGOrjUYp-mRf75NK7lfyGm8oCwnN9hrLk4O40OZRVbgCRiWJOLtHF6ANBtTGrfrioOFAHsFnadQkFifUMHsX4uByZDLG875xUwJyDu3aiNbxUGRtfJCJ2K35SZEQ1jkMoBA-caL0WsiptFiyOlvDKJha55"/>
+        <!-- Profile / Mi Negocio Button -->
+        <button id="btn-header-profile" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center border border-surface-container-high hover:ring-2 hover:ring-secondary/40 transition-all stitch-nav-item text-secondary" data-view="view-ajustes" title="Mi Negocio y Ajustes" type="button">
+          <span class="material-symbols-outlined text-[18px]">storefront</span>
         </button>
       </div>
     </div>
@@ -161,7 +155,7 @@
           <span class="material-symbols-outlined text-[20px]">precision_manufacturing</span>
         </div>
         <div>
-          <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">PubliCraft POS</h2>
+          <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">MARKT POS</h2>
           <span class="font-label-sm text-label-sm text-secondary font-semibold">Sistema MARKT v3.0</span>
         </div>
       </div>
@@ -253,75 +247,63 @@
       
       <!-- Selector de Tipo de Comprobante (Pills Planas) -->
       <div class="flex items-center gap-2 pt-1">
-        <button class="doc-type-btn active flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 bg-surface-container-high text-secondary shadow-sm" data-type="venta" type="button">
+        <button class="doc-type-btn active flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 bg-surface-container-high text-secondary shadow-sm" data-type="venta" data-doctype="venta" type="button">
           <span class="material-symbols-outlined text-[18px]">receipt_long</span>
           <span>Factura Venta</span>
         </button>
-        <button class="doc-type-btn flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-semibold text-on-surface-variant transition-all flex items-center justify-center gap-1.5 bg-surface-container-lowest border border-surface-container hover:bg-surface-container-low" data-type="ingreso" type="button">
+        <button class="doc-type-btn flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-semibold text-on-surface-variant transition-all flex items-center justify-center gap-1.5 bg-surface-container-lowest border border-surface-container hover:bg-surface-container-low" data-type="ingreso" data-doctype="ingreso" type="button">
           <span class="material-symbols-outlined text-[18px]">payments</span>
-          <span>Recibo Caja</span>
+          <span>Recibo de Caja</span>
         </button>
-        <button class="doc-type-btn flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-semibold text-on-surface-variant transition-all flex items-center justify-center gap-1.5 bg-surface-container-lowest border border-surface-container hover:bg-surface-container-low" data-type="egreso" type="button">
+        <button class="doc-type-btn flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-semibold text-on-surface-variant transition-all flex items-center justify-center gap-1.5 bg-surface-container-lowest border border-surface-container hover:bg-surface-container-low" data-type="egreso" data-doctype="egreso" type="button">
           <span class="material-symbols-outlined text-[18px]">output</span>
           <span>Egreso</span>
         </button>
         <span id="doc-type-title-text" class="hidden">Factura de Venta</span>
       </div>
 
-      <!-- Barra de Cliente Asignado y Acciones (Plana, 1 sola capa) -->
-      <div class="flex items-center justify-between p-3 rounded-xl bg-surface-container border border-surface-container-high">
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-secondary shrink-0">
-            <span class="material-symbols-outlined text-[22px]">person</span>
+      <!-- Datos del Cliente / Receptor en Factura (Plano, interactivo y en linea) -->
+      <div class="rounded-xl bg-surface-container-lowest border border-surface-container p-3 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
+              <span class="material-symbols-outlined text-[20px]">person</span>
+            </div>
+            <div>
+              <span id="section-person-title" class="font-headline-sm text-headline-sm text-on-surface font-bold">Cliente / Receptor</span>
+              <p id="pos-active-client-phone" class="font-body-sm text-body-sm text-on-surface-variant">Venta a Mostrador (o ingresa datos abajo)</p>
+            </div>
           </div>
-          <div class="flex flex-col min-w-0">
-            <span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Cliente Asignado:</span>
-            <p id="pos-active-client-name" class="font-label-md text-label-md text-on-surface truncate font-bold">Cliente Mostrador</p>
-            <p id="pos-active-client-phone" class="font-body-sm text-body-sm text-on-surface-variant truncate">Mostrador General</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-1.5 shrink-0">
-          <button id="btn-open-select-client-modal" class="px-3 py-2 bg-surface-container-lowest rounded-xl text-on-surface font-label-sm text-label-sm shadow-sm hover:bg-surface-container-low active:scale-95 transition-transform flex items-center gap-1 border border-surface-container font-semibold" type="button">
-            <span class="material-symbols-outlined text-[16px]">swap_horiz</span>
-            <span>Cambiar</span>
-          </button>
-          <button id="btn-show-add-client-form" class="w-9 h-9 rounded-xl bg-secondary text-on-secondary flex items-center justify-center shadow-sm hover:bg-secondary-container active:scale-95 transition-transform" type="button" title="Nuevo Cliente">
-            <span class="material-symbols-outlined text-[18px]">person_add</span>
+          <button id="btn-clear-pos-client" class="text-xs text-on-surface-variant hover:text-error transition-colors flex items-center gap-1 font-semibold" type="button" title="Limpiar y volver a mostrador">
+            <span class="material-symbols-outlined text-[16px]">clear</span>
+            <span>Limpiar</span>
           </button>
         </div>
-      </div>
 
-      <!-- Panel Expandible de Datos Fiscales del Cliente (Plano) -->
-      <details id="pos-client-details" class="rounded-xl bg-surface-container-lowest border border-surface-container overflow-hidden group">
-        <summary class="p-3 font-label-md text-label-md text-on-surface font-semibold flex items-center justify-between cursor-pointer hover:bg-surface-container-low transition-colors select-none">
-          <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-secondary text-[18px]">edit_note</span>
-            <span id="section-person-title">Editar Datos del Cliente / Receptor</span>
-          </div>
-          <span class="material-symbols-outlined text-on-surface-variant transition-transform group-open:rotate-180 text-[20px]">expand_more</span>
-        </summary>
-        <div class="p-3 pt-0 border-t border-surface-container grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
-            <label id="lbl-client-id" class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Documento / C.I. / RIF</label>
+            <label id="lbl-client-name" class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Nombre del Cliente / Razon Social *</label>
+            <input type="text" id="client-name" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-xs text-on-surface outline-none focus:border-secondary font-semibold" placeholder="Escribe el nombre o razon social"/>
+          </div>
+          <div>
+            <label id="lbl-client-id" class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Cedula / RIF</label>
             <div class="flex gap-1.5">
-              <input type="text" id="client-id" class="flex-1 px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container font-mono text-sm text-on-surface uppercase outline-none focus:border-secondary" placeholder="V-12345678"/>
-              <button id="btn-search-cedula" class="px-3 py-2 rounded-lg bg-surface-container text-secondary hover:bg-surface-container-high transition-colors font-label-sm text-label-sm font-semibold flex items-center gap-1" type="button" title="Consultar">
+              <input type="text" id="client-id" class="flex-1 px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container font-mono text-xs text-on-surface uppercase outline-none focus:border-secondary" placeholder="V-12345678 / J-12345678-0"/>
+              <button id="btn-search-cedula" class="px-2.5 py-2 rounded-lg bg-surface-container text-secondary hover:bg-surface-container-high transition-colors font-label-sm text-label-sm font-semibold flex items-center gap-1" type="button" title="Buscar en directorio">
                 <span class="material-symbols-outlined text-[16px]">search</span>
               </button>
             </div>
           </div>
           <div>
-            <label id="lbl-client-name" class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Nombre del Cliente *</label>
-            <input type="text" id="client-name" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm text-on-surface outline-none focus:border-secondary font-semibold" placeholder="Nombre completo o Razon Social"/>
-          </div>
-          <div>
             <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Telefono / WhatsApp</label>
-            <input type="tel" id="client-phone" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm text-on-surface outline-none focus:border-secondary" placeholder="0414-1234567"/>
+            <input type="tel" id="client-phone" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-xs text-on-surface outline-none focus:border-secondary" placeholder="0414-0000000"/>
           </div>
           <div>
-            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Direccion / Ciudad</label>
-            <input type="text" id="client-city" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm text-on-surface outline-none focus:border-secondary" placeholder="Caracas, Venezuela"/>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Direccion</label>
+            <input type="text" id="client-city" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-xs text-on-surface outline-none focus:border-secondary" placeholder="Direccion o ciudad"/>
           </div>
+        </div>
+        <div class="hidden"><p id="pos-active-client-name">Cliente Mostrador</p><button id="btn-open-select-client-modal" type="button"></button><button id="btn-show-add-client-form" type="button"></button></div>
           <div>
             <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Forma de Pago</label>
             <select id="payment-form" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm text-on-surface outline-none focus:border-secondary">
@@ -433,65 +415,7 @@
 
           <!-- Grid de Productos Planos -->
           <div class="grid grid-cols-2 gap-2.5" id="pos-quick-catalog-grid">
-            <!-- Producto 1 -->
-            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between hover:border-secondary/50 transition-colors">
-              <div>
-                <span class="px-2 py-0.5 rounded bg-surface-container font-label-sm text-label-sm font-semibold text-secondary">Aviso LED</span>
-                <p class="font-label-md text-label-md text-on-surface font-bold mt-1 line-clamp-1">Aviso Neon Flex 60x40cm</p>
-                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">Base acrilico cristal 4mm</p>
-              </div>
-              <div class="flex items-center justify-between pt-2 mt-2 border-t border-surface-container">
-                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">$65.00</span>
-                <button class="btn-stitch-quick-add w-8 h-8 rounded-lg bg-surface-container text-secondary flex items-center justify-center active:bg-secondary active:text-on-secondary transition-colors" data-desc="Aviso Neon Flex 60x40cm" data-sub="Base acrilico cristal 4mm" data-price="65.00" type="button" title="Anadir al ticket">
-                  <span class="material-symbols-outlined text-[18px]">add</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Producto 2 -->
-            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between hover:border-secondary/50 transition-colors">
-              <div>
-                <span class="px-2 py-0.5 rounded bg-surface-container font-label-sm text-label-sm font-semibold text-secondary">Corporeo</span>
-                <p class="font-label-md text-label-md text-on-surface font-bold mt-1 line-clamp-1">Letras Corporeas 3D Acrilico</p>
-                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">Acrilico dorado espejo</p>
-              </div>
-              <div class="flex items-center justify-between pt-2 mt-2 border-t border-surface-container">
-                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">$120.00</span>
-                <button class="btn-stitch-quick-add w-8 h-8 rounded-lg bg-surface-container text-secondary flex items-center justify-center active:bg-secondary active:text-on-secondary transition-colors" data-desc="Letras Corporeas 3D Acrilico" data-sub="Acrilico dorado espejo" data-price="120.00" type="button" title="Anadir al ticket">
-                  <span class="material-symbols-outlined text-[18px]">add</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Producto 3 -->
-            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between hover:border-secondary/50 transition-colors">
-              <div>
-                <span class="px-2 py-0.5 rounded bg-surface-container font-label-sm text-label-sm font-semibold text-secondary">Material</span>
-                <p class="font-label-md text-label-md text-on-surface font-bold mt-1 line-clamp-1">Plancha Acrilico Cast 3mm</p>
-                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">Medida 2.44 x 1.22 m</p>
-              </div>
-              <div class="flex items-center justify-between pt-2 mt-2 border-t border-surface-container">
-                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">$78.00</span>
-                <button class="btn-stitch-quick-add w-8 h-8 rounded-lg bg-surface-container text-secondary flex items-center justify-center active:bg-secondary active:text-on-secondary transition-colors" data-desc="Plancha Acrilico Cast 3mm" data-sub="Medida 2.44 x 1.22 m" data-price="78.00" type="button" title="Anadir al ticket">
-                  <span class="material-symbols-outlined text-[18px]">add</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Producto 4 -->
-            <div class="bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between hover:border-secondary/50 transition-colors">
-              <div>
-                <span class="px-2 py-0.5 rounded bg-surface-container font-label-sm text-label-sm font-semibold text-on-tertiary-container">Servicio</span>
-                <p class="font-label-md text-label-md text-on-surface font-bold mt-1 line-clamp-1">Instalacion en Fachada</p>
-                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">Cuadrilla con andamios</p>
-              </div>
-              <div class="flex items-center justify-between pt-2 mt-2 border-t border-surface-container">
-                <span class="font-headline-sm text-headline-sm text-on-surface font-bold">$90.00</span>
-                <button class="btn-stitch-quick-add w-8 h-8 rounded-lg bg-surface-container text-secondary flex items-center justify-center active:bg-secondary active:text-on-secondary transition-colors" data-desc="Instalacion en Fachada" data-sub="Cuadrilla con andamios" data-price="90.00" type="button" title="Anadir al ticket">
-                  <span class="material-symbols-outlined text-[18px]">add</span>
-                </button>
-              </div>
-            </div>
+            <!-- Renderizado dinamicamente por renderPosQuickCatalog() -->
           </div>
         </div>
 
@@ -592,7 +516,7 @@
         <!-- Logo y Datos Empresa -->
         <div class="text-center">
           <img id="ticket-logo-img" alt="Logo" class="mx-auto hidden max-h-16 object-contain mb-1"/>
-          <h3 id="view-biz-name" class="font-headline-sm font-bold text-on-surface uppercase leading-tight">PubliCraft CNC</h3>
+          <h3 id="view-biz-name" class="font-headline-sm font-bold text-on-surface uppercase leading-tight">Mi Negocio</h3>
           <p id="view-biz-id" class="text-xs font-mono text-on-surface-variant">RIF: J-40918290-1</p>
           <p id="view-biz-address" class="text-[11px] text-on-surface-variant">Caracas, Venezuela</p>
           <p id="view-biz-phone" class="text-[11px] text-on-surface-variant">Tel: +58 412 8421990</p>
@@ -859,11 +783,11 @@
           </div>
           <div>
             <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Cliente</label>
-            <input type="text" id="quote-client-name" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm text-on-surface outline-none font-semibold" value="Boutique Velvet & Co."/>
+            <input type="text" id="quote-client-name" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm text-on-surface outline-none font-semibold" value="" placeholder="Nombre del cliente"/>
           </div>
           <div>
             <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Telefono / WhatsApp</label>
-            <input type="tel" id="quote-client-phone" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm text-on-surface outline-none" value="584141234567"/>
+            <input type="tel" id="quote-client-phone" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container text-sm text-on-surface outline-none" value="" placeholder="584140000000"/>
           </div>
           <div>
             <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Fecha Emision</label>
@@ -1398,7 +1322,7 @@
               <span class="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></span>
               <span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold">Perfil del Comercio</span>
             </div>
-            <h2 id="settings-biz-display-title" class="font-headline-sm text-headline-sm text-on-surface truncate font-bold">PubliCraft CNC & Proyectos Integrales</h2>
+            <h2 id="settings-biz-display-title" class="font-headline-sm text-headline-sm text-on-surface truncate font-bold">Mi Negocio</h2>
             <p id="settings-biz-display-sub" class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-2">Soluciones en corte laser, CNC router, avisos corporeos e instalaciones comerciales</p>
             <div class="mt-3 flex flex-wrap gap-2 justify-center sm:justify-start">
               <label for="input-logo" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container-low text-secondary font-label-md text-label-md hover:bg-surface-container transition-colors cursor-pointer border border-surface-container font-semibold">
@@ -1433,19 +1357,19 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           <div>
             <label class="font-label-md text-label-md text-on-surface font-semibold block mb-1">Nombre Comercial / Razon Social</label>
-            <input type="text" id="biz-name" class="w-full px-3 py-2.5 rounded-lg bg-surface-container-low border border-surface-container font-body-md text-body-md text-on-surface outline-none" value="PubliCraft CNC & Publicidad"/>
+            <input type="text" id="biz-name" class="w-full px-3 py-2.5 rounded-lg bg-surface-container-low border border-surface-container font-body-md text-body-md text-on-surface outline-none" value="" placeholder="Nombre comercial / Razon Social"/>
           </div>
           <div>
             <label class="font-label-md text-label-md text-on-surface font-semibold block mb-1">RIF / RFC / C.I.</label>
-            <input type="text" id="biz-id" class="w-full px-3 py-2.5 rounded-lg bg-surface-container-low border border-surface-container font-mono text-sm text-on-surface uppercase outline-none" value="J-40918290-1"/>
+            <input type="text" id="biz-id" class="w-full px-3 py-2.5 rounded-lg bg-surface-container-low border border-surface-container font-mono text-sm text-on-surface uppercase outline-none" value="" placeholder="J-12345678-0"/>
           </div>
           <div>
             <label class="font-label-md text-label-md text-on-surface font-semibold block mb-1">Telefono Comercial / WhatsApp</label>
-            <input type="tel" id="biz-phone" class="w-full px-3 py-2.5 rounded-lg bg-surface-container-low border border-surface-container font-body-md text-body-md text-on-surface outline-none" value="+58 412 8421990"/>
+            <input type="tel" id="biz-phone" class="w-full px-3 py-2.5 rounded-lg bg-surface-container-low border border-surface-container font-body-md text-body-md text-on-surface outline-none" value="" placeholder="+58 412 0000000"/>
           </div>
           <div>
             <label class="font-label-md text-label-md text-on-surface font-semibold block mb-1">Direccion Fiscal / Taller</label>
-            <input type="text" id="biz-address" class="w-full px-3 py-2.5 rounded-lg bg-surface-container-low border border-surface-container font-body-md text-body-md text-on-surface outline-none" value="Av. Principal Los Cortijos, Centro Industrial CNC"/>
+            <input type="text" id="biz-address" class="w-full px-3 py-2.5 rounded-lg bg-surface-container-low border border-surface-container font-body-md text-body-md text-on-surface outline-none" value="" placeholder="Direccion del local o taller"/>
           </div>
         </div>
       </div>
@@ -1506,15 +1430,14 @@
         <div class="rounded-lg bg-surface-container-low p-3 flex items-center justify-between border border-surface-container">
           <div class="flex flex-col min-w-0">
             <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Pago Movil Rapido</span>
-            <span id="clabe-code-text" class="font-label-numeric text-label-numeric text-on-surface tracking-wider font-mono select-all truncate font-bold">0134 - V-24190824 - 04128421990</span>
+            <span id="clabe-code-text" class="font-label-numeric text-label-numeric text-on-surface tracking-wider font-mono select-all truncate font-bold">Sin datos bancarios registrados</span>
           </div>
           <button id="btn-copy-clabe" class="p-2 text-secondary hover:text-on-surface-variant transition-colors" type="button" title="Copiar Datos">
             <span class="material-symbols-outlined text-[20px]">content_copy</span>
           </button>
         </div>
 
-        <textarea id="bank-info-textarea" rows="2" class="w-full text-xs font-mono p-2.5 rounded-lg bg-surface-container-low border border-surface-container text-on-surface" placeholder="Detalles de cuentas para cotizaciones...">Pago Movil: Banesco (0134) - C.I: 24.190.824 - Tel: 0412-8421990
-Transferencias: Banco BBVA / Zelle disponible para proyectos industriales.</textarea>
+        <textarea id="bank-info-textarea" rows="2" class="w-full text-xs font-mono p-2.5 rounded-lg bg-surface-container-low border border-surface-container text-on-surface" placeholder="Detalles de cuentas para cotizaciones..."></textarea>
       </div>
 
       <!-- Configuracion Suiche 7B Pago Movil (QR Dinamico) -->
@@ -1554,12 +1477,12 @@ Transferencias: Banco BBVA / Zelle disponible para proyectos industriales.</text
                 <option value="E">E</option>
                 <option value="G">G</option>
               </select>
-              <input type="text" id="suiche-doc-number" class="flex-1 px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container font-mono text-xs text-on-surface outline-none" placeholder="24190824"/>
+              <input type="text" id="suiche-doc-number" class="flex-1 px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container font-mono text-xs text-on-surface outline-none" placeholder="Cedula o RIF sin guiones"/>
             </div>
           </div>
           <div>
             <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Telefono Registrado</label>
-            <input type="tel" id="suiche-phone" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container font-mono text-xs text-on-surface outline-none" placeholder="04128421990"/>
+            <input type="tel" id="suiche-phone" class="w-full px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container font-mono text-xs text-on-surface outline-none" placeholder="04120000000"/>
           </div>
         </div>
 
@@ -1574,7 +1497,7 @@ Transferencias: Banco BBVA / Zelle disponible para proyectos industriales.</text
           <div>
             <label class="font-label-sm text-label-sm text-on-surface-variant block mb-1 font-semibold">Folio Actual / Proximo</label>
             <div class="flex gap-1.5">
-              <input type="text" id="doc-number" class="w-1/2 px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container font-mono text-xs text-on-surface font-bold" value="No. FES-001"/>
+              <input type="text" id="doc-number" class="w-1/2 px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container font-mono text-xs text-on-surface font-bold" value="No. 001"/>
               <input type="number" id="folio-counter" class="w-1/2 px-3 py-2 rounded-lg bg-surface-container-low border border-surface-container font-mono text-xs text-on-surface" value="1"/>
             </div>
           </div>

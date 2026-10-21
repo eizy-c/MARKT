@@ -3,6 +3,34 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // --- PURGE LEGACY TEST DATA (Sistema en 0) ---
+  function purgeLegacyTestData() {
+    try {
+      const settings = localStorage.getItem('martk_settings_permanent');
+      if (settings && (settings.includes('PubliCraft') || settings.includes('24190824') || settings.includes('J-40918290-1'))) {
+        localStorage.removeItem('martk_settings_permanent');
+      }
+      const quotes = localStorage.getItem('martk_quotes');
+      if (quotes && quotes.includes('Boutique Velvet')) {
+        localStorage.removeItem('martk_quotes');
+      }
+      const projs = localStorage.getItem('martk_projects');
+      if (projs && projs.includes('Boutique Velvet')) {
+        localStorage.removeItem('martk_projects');
+      }
+      const prods = localStorage.getItem('martk_products');
+      if (prods && (prods.includes('Aviso') || prods.includes('SRV-001'))) {
+        localStorage.removeItem('martk_products');
+      }
+      const gal = localStorage.getItem('martk_gallery');
+      if (gal && gal.includes('Burger Gourmet')) {
+        localStorage.removeItem('martk_gallery');
+      }
+    } catch (e) {
+      console.warn('Error purging legacy test data', e);
+    }
+  }
+
 
   // --- MODO 100% STANDALONE WEB & MOBILE (Sin Base de Datos / LocalStorage) ---
 
@@ -16,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
       address: '',
       phone: '',
       docTitle: 'FACTURA ELECTRÓNICA DE VENTA',
-      docNumber: 'No. FES-001',
+      docNumber: 'No. 001',
       currency: '$',
       logo: null
     },
@@ -47,16 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
       phone: '',
       amountMode: 'dynamic'
     },
-    items: [
-      {
-        id: '1',
-        cant: 1,
-        desc: '',
-        subtext: '',
-        taxRate: 0,
-        unitPrice: 0
-      }
-    ],
+    items: [],
     paymentDetails: {
       concept: '',
       amount: 0,
@@ -330,6 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- INITIALIZATION ---
   function init() {
+    purgeLegacyTestData();
     loadSavedSettingsAndBusiness();
     loadProductsFromStorage();
     loadClientsFromStorage();
@@ -903,65 +923,45 @@ document.addEventListener('DOMContentLoaded', () => {
   function setupDocTypeSelector() {
     docTypeBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        docTypeBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        docTypeBtns.forEach(b => {
+          b.classList.remove('active', 'bg-surface-container-high', 'text-secondary', 'shadow-sm', 'font-bold');
+          b.classList.add('text-on-surface-variant', 'bg-surface-container-lowest', 'border', 'border-surface-container');
+        });
+        btn.classList.remove('text-on-surface-variant', 'bg-surface-container-lowest', 'border', 'border-surface-container');
+        btn.classList.add('active', 'bg-surface-container-high', 'text-secondary', 'shadow-sm', 'font-bold');
 
-        const type = btn.getAttribute('data-doctype');
+        const type = btn.getAttribute('data-doctype') || btn.getAttribute('data-type') || 'venta';
         setDocumentType(type);
+        updateCalculationsAndPreview();
+        showToast(`Documento cambiado a: ${docTypeTitleText ? docTypeTitleText.textContent : type.toUpperCase()}`, 'info');
       });
     });
   }
 
   function setDocumentType(type) {
-    state.docType = type;
+    state.docType = type || 'venta';
 
-    if (type === 'venta') {
-      docTypeTitleText.textContent = 'Factura de Venta';
-      state.business.docTitle = 'FACTURA ELECTRÓNICA DE VENTA';
-      sectionVentaItems.classList.remove('hidden');
-      sectionPaymentDetails.classList.add('hidden');
-
-      if (tabPersonText) tabPersonText.textContent = 'Cliente';
-      if (tabItemsText) tabItemsText.textContent = 'Productos';
-      if (tabItemsIcon) tabItemsIcon.className = 'fa-solid fa-list-check';
-      if (sectionPersonTitle) sectionPersonTitle.textContent = 'Datos del Cliente & Pago';
-      if (lblClientId) lblClientId.textContent = 'Documento / C.I. / RIF';
-      if (lblClientName) lblClientName.textContent = 'Nombre del Cliente *';
-      if (btnNextStepText) btnNextStepText.textContent = 'Siguiente: Productos';
-      if (btnPrevStep2Text) btnPrevStep2Text.textContent = 'Anterior: Cliente';
-      if (btnPrevStep3Text) btnPrevStep3Text.textContent = 'Anterior: Productos';
-
-    } else if (type === 'ingreso') {
-      docTypeTitleText.textContent = 'Recibo de Caja (Cobro)';
-      state.business.docTitle = 'RECIBO DE CAJA / COMPROBANTE DE INGRESO';
-      sectionVentaItems.classList.add('hidden');
-      sectionPaymentDetails.classList.remove('hidden');
-
-      if (tabPersonText) tabPersonText.textContent = 'Cliente';
-      if (tabItemsText) tabItemsText.textContent = 'Detalle Cobro';
-      if (tabItemsIcon) tabItemsIcon.className = 'fa-solid fa-money-bill-wave';
-      if (sectionPersonTitle) sectionPersonTitle.textContent = 'Datos del Cliente / Pagador';
-      if (lblClientId) lblClientId.textContent = 'Documento / C.I. / RIF';
-      if (lblClientName) lblClientName.textContent = 'Nombre del Cliente *';
-      if (btnNextStepText) btnNextStepText.textContent = 'Siguiente: Detalle del Cobro';
-      if (btnPrevStep2Text) btnPrevStep2Text.textContent = 'Anterior: Cliente';
-      if (btnPrevStep3Text) btnPrevStep3Text.textContent = 'Anterior: Detalle Cobro';
-
-    } else if (type === 'egreso') {
-      docTypeTitleText.textContent = 'Comprobante de Egreso';
-      state.business.docTitle = 'COMPROBANTE DE EGRESO DE CAJA';
-      sectionVentaItems.classList.add('hidden');
-      sectionPaymentDetails.classList.remove('hidden');
-
-      if (tabPersonText) tabPersonText.textContent = 'Beneficiario';
-      if (tabItemsText) tabItemsText.textContent = 'Detalle Egreso';
-      if (tabItemsIcon) tabItemsIcon.className = 'fa-solid fa-money-bill-transfer';
+    if (state.docType === 'venta') {
+      if (docTypeTitleText) docTypeTitleText.textContent = 'Factura de Venta';
+      state.business.docTitle = 'FACTURA DE VENTA';
+      if (sectionVentaItems) sectionVentaItems.classList.remove('hidden');
+      if (sectionPaymentDetails) sectionPaymentDetails.classList.add('hidden');
+      if (sectionPersonTitle) sectionPersonTitle.textContent = 'Cliente / Receptor';
+      if (lblClientName) lblClientName.textContent = 'Nombre del Cliente / Razón Social *';
+    } else if (state.docType === 'ingreso') {
+      if (docTypeTitleText) docTypeTitleText.textContent = 'Recibo de Caja';
+      state.business.docTitle = 'RECIBO DE CAJA';
+      if (sectionVentaItems) sectionVentaItems.classList.add('hidden');
+      if (sectionPaymentDetails) sectionPaymentDetails.classList.remove('hidden');
+      if (sectionPersonTitle) sectionPersonTitle.textContent = 'Datos del Pagador / Cliente';
+      if (lblClientName) lblClientName.textContent = 'Recibido de *';
+    } else if (state.docType === 'egreso') {
+      if (docTypeTitleText) docTypeTitleText.textContent = 'Comprobante de Egreso';
+      state.business.docTitle = 'COMPROBANTE DE EGRESO';
+      if (sectionVentaItems) sectionVentaItems.classList.add('hidden');
+      if (sectionPaymentDetails) sectionPaymentDetails.classList.remove('hidden');
       if (sectionPersonTitle) sectionPersonTitle.textContent = 'Datos del Beneficiario';
-      if (lblClientId) lblClientId.textContent = 'Documento / RIF / C.I.';
-      if (lblClientName) lblClientName.textContent = 'Nombre / Razón Social *';
-      if (btnNextStepText) btnNextStepText.textContent = 'Siguiente: Detalle del Egreso';
-      if (btnPrevStep2Text) btnPrevStep2Text.textContent = 'Anterior: Beneficiario';
-      if (btnPrevStep3Text) btnPrevStep3Text.textContent = 'Anterior: Detalle Egreso';
+      if (lblClientName) lblClientName.textContent = 'Pagado a / Beneficiario *';
     }
 
     state.business.docNumber = formatFolioNumber(state.folioCounter);
@@ -973,6 +973,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- EVENT LISTENERS WITH AUTOMATIC SANITIZATION ---
   function setupEventListeners() {
+    const btnClearPosClient = document.getElementById('btn-clear-pos-client');
+    if (btnClearPosClient) {
+      btnClearPosClient.addEventListener('click', () => {
+        state.client.name = '';
+        state.client.id = '';
+        state.client.phone = '';
+        state.client.city = '';
+        if (inputClientName) inputClientName.value = '';
+        if (inputClientId) inputClientId.value = '';
+        if (inputClientPhone) inputClientPhone.value = '';
+        if (inputClientCity) inputClientCity.value = '';
+        updateCalculationsAndPreview();
+        showToast('Cliente restablecido a Mostrador.', 'info');
+      });
+    }
+
     inputClientName.addEventListener('input', e => { state.client.name = cleanInputText(e.target.value); updateCalculationsAndPreview(); });
     inputClientName.addEventListener('blur', e => { e.target.value = cleanInputText(e.target.value); });
 
@@ -1697,21 +1713,112 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadProductsFromStorage() {
     try {
       const saved = localStorage.getItem('martk_products');
-      if (saved) {
-        state.productsCatalog = JSON.parse(saved);
-      } else {
-        // Catálogo inicial de ejemplo para inicio rápido
-        state.productsCatalog = [
-          { id: 1, codigo: 'SRV-001', nombre: 'Servicio / Honorarios Profesionales', precio_usd: 25.00, iva_porcentaje: 0, subtexto: 'Servicio general' },
-          { id: 2, codigo: 'PRD-001', nombre: 'Producto / Mercancía General', precio_usd: 10.00, iva_porcentaje: 16.00, subtexto: 'Venta al detal' }
-        ];
-        localStorage.setItem('martk_products', JSON.stringify(state.productsCatalog));
-      }
+      state.productsCatalog = saved ? JSON.parse(saved) : [];
       renderProductsTable();
+      renderPosQuickCatalog();
     } catch(err) {
       state.productsCatalog = [];
       renderProductsTable();
+      renderPosQuickCatalog();
     }
+  }
+
+  
+  // --- DYNAMIC POS QUICK CATALOG RENDERER ---
+  function renderPosQuickCatalog() {
+    const grid = document.getElementById('pos-quick-catalog-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (!state.productsCatalog || state.productsCatalog.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-2 text-center py-10 px-4 bg-surface-container-lowest rounded-xl border border-dashed border-surface-container space-y-2">
+          <span class="material-symbols-outlined text-[36px] text-outline opacity-60">inventory_2</span>
+          <p class="font-label-md text-label-md font-bold text-on-surface">Tu catálogo está en 0</p>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">Agrega productos en "Productos" o usa "+ Partida Manual" arriba.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const searchInput = document.getElementById('stitch-pos-search');
+    const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+    const activeCatBtn = document.querySelector('.pos-cat-btn.bg-primary');
+    const activeCat = activeCatBtn ? activeCatBtn.getAttribute('data-cat') : 'all';
+
+    const rate = state.exchange.rate > 0 ? state.exchange.rate : 1;
+
+    const filtered = state.productsCatalog.filter(p => {
+      const matchText = (p.nombre || '').toLowerCase().includes(query) || (p.subtexto || '').toLowerCase().includes(query) || (p.codigo || '').toLowerCase().includes(query);
+      if (!matchText) return false;
+      if (activeCat && activeCat !== 'all') {
+        const catText = ((p.categoria || '') + ' ' + (p.nombre || '')).toLowerCase();
+        return catText.includes(activeCat.toLowerCase());
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-2 text-center py-8 text-on-surface-variant font-label-sm">
+          No hay productos que coincidan con la búsqueda.
+        </div>
+      `;
+      return;
+    }
+
+    filtered.forEach(p => {
+      const priceUsd = parseFloat(p.precio_usd || 0);
+      const priceBs = priceUsd * rate;
+      const card = document.createElement('div');
+      card.className = 'pos-product-card bg-surface-container-lowest rounded-xl p-3 shadow-sm border border-surface-container flex flex-col justify-between hover:border-secondary transition-all cursor-pointer group';
+      card.innerHTML = `
+        <div>
+          <span class="px-2 py-0.5 rounded bg-surface-container font-label-sm text-label-sm font-semibold text-secondary">${escapeHtml(p.codigo || 'PRD')}</span>
+          <p class="font-label-md text-label-md text-on-surface font-bold mt-1 line-clamp-1 group-hover:text-secondary transition-colors">${escapeHtml(p.nombre || 'Producto')}</p>
+          <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">${escapeHtml(p.subtexto || '')}</p>
+        </div>
+        <div class="flex items-center justify-between pt-2 mt-2 border-t border-surface-container">
+          <div class="flex flex-col">
+            <span class="font-headline-sm text-headline-sm text-on-surface font-bold font-mono">$${priceUsd.toFixed(2)}</span>
+            <span class="text-[10px] text-on-surface-variant font-mono">Bs. ${priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          <button class="w-8 h-8 rounded-lg bg-surface-container text-secondary flex items-center justify-center group-hover:bg-secondary group-hover:text-on-secondary transition-colors" type="button" title="Añadir al ticket">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+          </button>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        addCatalogProductToTicket(p);
+      });
+
+      grid.appendChild(card);
+    });
+  }
+
+  function addCatalogProductToTicket(p) {
+    const desc = p.nombre || 'Producto';
+    const sub = p.subtexto || '';
+    const price = parseFloat(p.precio_usd) || 0;
+    const tax = parseFloat(p.iva_porcentaje) || 0;
+
+    const existing = state.items.find(i => i.desc === desc);
+    if (existing) {
+      existing.cant = (parseFloat(existing.cant) || 0) + 1;
+    } else {
+      state.items.push({
+        id: Date.now().toString(),
+        cant: 1,
+        desc: desc,
+        subtext: sub,
+        taxRate: tax,
+        unitPrice: price
+      });
+    }
+    renderItemsList();
+    updateCalculationsAndPreview();
+    showToast(`Añadido al ticket: ${desc}`, 'success');
   }
 
   function renderProductsTable() {
@@ -2065,14 +2172,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (savedLocal) {
         applySettingsObject(JSON.parse(savedLocal));
       } else {
-        // Valores por defecto iniciales
-        state.business.name = 'MI NEGOCIO / COMERCIO';
-        state.business.id = 'RIF: J-00000000-0';
-        state.business.phone = 'Tel: 0414-0000000';
-        state.business.address = 'Caracas, Venezuela';
-        state.business.docTitle = 'FACTURA ELECTRÓNICA DE VENTA';
+        state.business.name = '';
+        state.business.id = '';
+        state.business.phone = '';
+        state.business.address = '';
+        state.business.docTitle = 'FACTURA DE VENTA';
         state.business.currency = '$';
-        autoSaveSettings();
       }
       updateCalculationsAndPreview();
     } catch(err) {}
@@ -2789,38 +2894,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadCotizacionesFromStorage() {
     try {
       const saved = localStorage.getItem('martk_quotes');
-      if (saved) {
-        state.cotizaciones = JSON.parse(saved);
-      } else {
-        state.cotizaciones = [
-          {
-            id: 1001,
-            folio: 'COT-001',
-            title: 'Aviso Corpóreo Acrílico 3D con Luz Neón Flex + 2 Pendones Frontlight',
-            clientName: 'Boutique Velvet & Co.',
-            clientPhone: '584141234567',
-            date: new Date().toISOString().split('T')[0],
-            validityDays: 15,
-            items: [
-              { type: 'material', desc: 'Acrílico Espejo Dorado 3mm + Base MDF 12mm', cant: 1, unitCost: 45.00, unitPrice: 110.00 },
-              { type: 'material', desc: 'Módulos Neón Flex LED 12V Siliconado IP67 (metros)', cant: 12, unitCost: 4.50, unitPrice: 10.00 },
-              { type: 'corte', desc: 'Corte CNC Router y grabado de contornos 1:1', cant: 3, unitCost: 10.00, unitPrice: 25.00 },
-              { type: 'material', desc: 'Pendón Frontlight 13oz 3x2m con ojetes y refuerzo', cant: 2, unitCost: 20.00, unitPrice: 45.00 },
-              { type: 'instalacion', desc: 'Montaje Técnico en Altura (Andamio + Eléctrico 220V)', cant: 1, unitCost: 35.00, unitPrice: 85.00 }
-            ],
-            totalClient: 485.00,
-            totalCost: 184.00,
-            gain: 301.00,
-            marginPct: 62.0,
-            status: 'Aprobado'
-          }
-        ];
-        localStorage.setItem('martk_quotes', JSON.stringify(state.cotizaciones));
-      }
+      state.cotizaciones = saved ? JSON.parse(saved) : [];
       renderQuotesHistory();
-      updateQuoteKPIs();
-    } catch (e) {
+    } catch(err) {
       state.cotizaciones = [];
+      renderQuotesHistory();
     }
   }
 
@@ -3216,6 +3294,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function openQuoteSheetModal(quote) {
+    if (quote) initActiveQuote(quote);
+    switchView('view-cotizacion-detalle');
     const modal = document.getElementById('modal-quote-sheet');
     if (!modal) return;
 
@@ -3721,6 +3801,8 @@ ${bankArea.value.trim()}
   }
 
   function openQuoteSheetModal(quote) {
+    if (quote) initActiveQuote(quote);
+    switchView('view-cotizacion-detalle');
     const modal = document.getElementById('modal-quote-sheet');
     if (!modal) return;
 
@@ -4013,16 +4095,8 @@ ${bankArea.value.trim()}
     // POS Real-time Catalog Search
     const inputStitchPosSearch = document.getElementById('stitch-pos-search');
     if (inputStitchPosSearch) {
-      inputStitchPosSearch.addEventListener('input', e => {
-        const q = (e.target.value || '').toLowerCase().trim();
-        document.querySelectorAll('#pos-quick-catalog-grid > div').forEach(card => {
-          const text = (card.textContent || '').toLowerCase();
-          if (!q || text.includes(q)) {
-            card.style.display = '';
-          } else {
-            card.style.display = 'none';
-          }
-        });
+      inputStitchPosSearch.addEventListener('input', () => {
+        renderPosQuickCatalog();
       });
     }
 
@@ -4036,19 +4110,7 @@ ${bankArea.value.trim()}
         btn.classList.remove('bg-surface-container-lowest', 'text-on-surface-variant');
         btn.classList.add('bg-primary', 'text-on-primary');
 
-        const cat = btn.getAttribute('data-cat');
-        document.querySelectorAll('#pos-quick-catalog-grid > div').forEach(card => {
-          if (cat === 'all') {
-            card.style.display = '';
-          } else {
-            const cardText = (card.textContent || '').toLowerCase();
-            if (cardText.includes(cat.toLowerCase())) {
-              card.style.display = '';
-            } else {
-              card.style.display = 'none';
-            }
-          }
-        });
+        renderPosQuickCatalog();
       });
     });
 
@@ -4114,30 +4176,37 @@ ${bankArea.value.trim()}
     if (btnStitchSaveQuote) {
       btnStitchSaveQuote.addEventListener('click', () => {
         if (!state.items || state.items.length === 0) {
-          showToast('Añade productos al ticket primero.', 'info');
+          showToast('Añade al menos un producto o partida al ticket para cotizar.', 'info');
           return;
         }
         const newFolio = `COT-${new Date().getFullYear()}-${String(state.cotizaciones.length + 1).padStart(3, '0')}`;
         const newQ = {
           id: Date.now(),
           folio: newFolio,
-          title: state.items.map(i => i.desc).slice(0, 2).join(' + ') || 'Presupuesto Comercial',
-          clientName: state.client.name || 'Cliente Asignado',
+          title: state.items.map(i => i.desc).filter(Boolean).slice(0, 2).join(' + ') || 'Presupuesto Comercial',
+          clientName: state.client.name || 'Cliente Mostrador',
           clientPhone: state.client.phone || '',
-          date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
+          date: new Date().toISOString().split('T')[0],
           validityDays: 15,
           status: 'Borrador',
-          items: JSON.parse(JSON.stringify(state.items)),
+          items: state.items.map(i => ({
+            type: 'material',
+            desc: i.desc || 'Partida',
+            cant: parseFloat(i.cant) || 1,
+            unitCost: (parseFloat(i.unitPrice) || 0) * 0.6,
+            unitPrice: parseFloat(i.unitPrice) || 0
+          })),
           subtotal: state.totals.subtotal,
           totalClient: state.totals.grandTotal,
           anticipoUsd: state.totals.grandTotal * 0.5,
-          notes: 'Presupuesto formal emitido desde Terminal POS.'
+          notes: 'Presupuesto formal emitido desde POS.'
         };
         state.cotizaciones.unshift(newQ);
         saveCotizacionesToStorage();
         renderQuotesHistory();
-        openQuoteSheetModal(newQ);
-        showToast('Cotización generada exitosamente.', 'success');
+        initActiveQuote(newQ);
+        switchView('view-cotizacion-detalle');
+        showToast(`Cotización ${newFolio} generada. Abierta en vista formal.`, 'success');
       });
     }
 
