@@ -46,6 +46,25 @@ class _PosScreenState extends State<PosScreen> {
   final TextEditingController _quickAmountCtrl = TextEditingController();
   String _quickCurrency = 'USD'; // 'USD' o 'Bs'
 
+  // Opciones Avanzadas para Presupuestos / Cotizaciones
+  int _validityDays = 5; // 3, 5, 7, 15 días
+  double _requiredDownPaymentPercent = 50.0; // 50%, 60%, 70%
+  bool _registerInitialNow = false; // ¿Cliente dio la inicial de una vez?
+  final TextEditingController _customDownPaymentCtrl = TextEditingController();
+
+  // Servicios Adicionales opcionales
+  bool _hasLighting = false;
+  final TextEditingController _lightingCostCtrl = TextEditingController(text: '25.00');
+
+  bool _hasInstallation = false;
+  final TextEditingController _installationCostCtrl = TextEditingController(text: '30.00');
+
+  bool _hasDelivery = false;
+  final TextEditingController _deliveryCostCtrl = TextEditingController(text: '10.00');
+
+  bool _hasGraphicDesign = false;
+  final TextEditingController _graphicDesignCostCtrl = TextEditingController(text: '15.00');
+
   final List<String> _paymentMethods = [
     'Efectivo USD (\$)',
     'Pago Móvil (Bs.)',
@@ -67,6 +86,11 @@ class _PosScreenState extends State<PosScreen> {
     _searchProductCtrl.dispose();
     _quickConceptCtrl.dispose();
     _quickAmountCtrl.dispose();
+    _customDownPaymentCtrl.dispose();
+    _lightingCostCtrl.dispose();
+    _installationCostCtrl.dispose();
+    _deliveryCostCtrl.dispose();
+    _graphicDesignCostCtrl.dispose();
     super.dispose();
   }
 
@@ -331,7 +355,19 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
-  double get _totalUsd => _cart.fold(0.0, (acc, item) => acc + item.totalUsd);
+  double get _quotationExtrasUsd {
+    if (_voucherType != 'cotizacion') return 0.0;
+    double extra = 0.0;
+    if (_hasLighting) extra += double.tryParse(_lightingCostCtrl.text) ?? 0.0;
+    if (_hasInstallation) extra += double.tryParse(_installationCostCtrl.text) ?? 0.0;
+    if (_hasDelivery) extra += double.tryParse(_deliveryCostCtrl.text) ?? 0.0;
+    if (_hasGraphicDesign) extra += double.tryParse(_graphicDesignCostCtrl.text) ?? 0.0;
+    return extra;
+  }
+
+  double get _cartTotalUsd => _cart.fold(0.0, (acc, item) => acc + item.totalUsd);
+
+  double get _totalUsd => _cartTotalUsd + _quotationExtrasUsd;
 
   void _showCartDetails() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -650,6 +686,345 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
+  // Modal para configurar Validez, Inicial (%) y Servicios Opcionales del Presupuesto
+  void _showQuotationOptionsModal() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final cartSum = _cartTotalUsd;
+          final extras = (_hasLighting ? (double.tryParse(_lightingCostCtrl.text) ?? 0.0) : 0.0) +
+              (_hasInstallation ? (double.tryParse(_installationCostCtrl.text) ?? 0.0) : 0.0) +
+              (_hasDelivery ? (double.tryParse(_deliveryCostCtrl.text) ?? 0.0) : 0.0) +
+              (_hasGraphicDesign ? (double.tryParse(_graphicDesignCostCtrl.text) ?? 0.0) : 0.0);
+          final projTotal = cartSum + extras;
+          final downPaymentAmount = projTotal * (_requiredDownPaymentPercent / 100);
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.tune, color: Color(0xFF0284C7), size: 20),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Opciones de Presupuesto',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // 1. Tiempo de Validez del Presupuesto
+                    Text(
+                      'Tiempo de Validez del Presupuesto:',
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [3, 5, 7, 15].map((days) {
+                        final isSel = _validityDays == days;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text('$days Días', style: TextStyle(fontSize: 11, color: isSel ? Colors.white : null)),
+                            selected: isSel,
+                            selectedColor: const Color(0xFF0284C7),
+                            onSelected: (_) {
+                              setModalState(() => _validityDays = days);
+                              setState(() => _validityDays = days);
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 2. Porcentaje de Inicial / Anticipo Requerido
+                    Text(
+                      'Porcentaje de Inicial Requerido (Anticipo):',
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [40.0, 50.0, 60.0, 70.0].map((pct) {
+                        final isSel = _requiredDownPaymentPercent == pct;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text('${pct.toStringAsFixed(0)}%', style: TextStyle(fontSize: 11, color: isSel ? Colors.white : null)),
+                            selected: isSel,
+                            selectedColor: const Color(0xFF10B981),
+                            onSelected: (_) {
+                              setModalState(() => _requiredDownPaymentPercent = pct);
+                              setState(() => _requiredDownPaymentPercent = pct);
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Monto de Inicial a pagar:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          Text(
+                            '\$${downPaymentAmount.toStringAsFixed(2)}  (Bs. ${(downPaymentAmount * _activeRate).toStringAsFixed(2)})',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 3. Servicios Opcionales a Elección del Cliente
+                    Text(
+                      'Servicios Adicionales (A elección del cliente):',
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Luz LED / Neón
+                    _buildQuotationServiceOption(
+                      title: '¿Llevará Luces / Módulos LED / Neón Flex?',
+                      icon: Icons.lightbulb_outline,
+                      value: _hasLighting,
+                      costCtrl: _lightingCostCtrl,
+                      isDark: isDark,
+                      onChanged: (val) {
+                        setModalState(() => _hasLighting = val);
+                        setState(() => _hasLighting = val);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Instalación en Sitio
+                    _buildQuotationServiceOption(
+                      title: '¿Llevará Instalación en Sitio?',
+                      icon: Icons.handyman_outlined,
+                      value: _hasInstallation,
+                      costCtrl: _installationCostCtrl,
+                      isDark: isDark,
+                      onChanged: (val) {
+                        setModalState(() => _hasInstallation = val);
+                        setState(() => _hasInstallation = val);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Envío / Delivery / Flete
+                    _buildQuotationServiceOption(
+                      title: '¿Llevará Envío / Delivery / Flete?',
+                      icon: Icons.local_shipping_outlined,
+                      value: _hasDelivery,
+                      costCtrl: _deliveryCostCtrl,
+                      isDark: isDark,
+                      onChanged: (val) {
+                        setModalState(() => _hasDelivery = val);
+                        setState(() => _hasDelivery = val);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Diseño Gráfico / Vectorizado CNC
+                    _buildQuotationServiceOption(
+                      title: '¿Llevará Diseño Gráfico / Vectorizado CNC?',
+                      icon: Icons.draw_outlined,
+                      value: _hasGraphicDesign,
+                      costCtrl: _graphicDesignCostCtrl,
+                      isDark: isDark,
+                      onChanged: (val) {
+                        setModalState(() => _hasGraphicDesign = val);
+                        setState(() => _hasGraphicDesign = val);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 4. Conexión de Inicial: ¿El cliente dio el anticipo ya?
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _registerInitialNow
+                            ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                            : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _registerInitialNow ? const Color(0xFF10B981) : (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('¿El cliente entregó la inicial ahora?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                    Text(
+                                      _registerInitialNow
+                                          ? 'Se registrará el cobro en Caja, se creará el Proyecto en Taller y el saldo irá a Cuentas por Cobrar.'
+                                          : 'Quedará en espera de anticipo.',
+                                      style: TextStyle(
+                                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch(
+                                value: _registerInitialNow,
+                                activeThumbColor: const Color(0xFF10B981),
+                                onChanged: (val) {
+                                  setModalState(() => _registerInitialNow = val);
+                                  setState(() => _registerInitialNow = val);
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0284C7),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Guardar Opciones de Presupuesto', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildQuotationServiceOption({
+    required String title,
+    required IconData icon,
+    required bool value,
+    required TextEditingController costCtrl,
+    required bool isDark,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: value
+            ? const Color(0xFF6366F1).withValues(alpha: 0.1)
+            : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: value ? const Color(0xFF6366F1) : (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: value ? const Color(0xFF6366F1) : const Color(0xFF94A3B8)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: value ? FontWeight.bold : FontWeight.normal,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+            ),
+          ),
+          if (value) ...[
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 70,
+              height: 32,
+              child: TextField(
+                controller: costCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => setState(() {}),
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  prefixText: '\$ ',
+                  isDense: true,
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                ),
+              ),
+            ),
+          ],
+          Switch(
+            value: value,
+            activeThumbColor: const Color(0xFF6366F1),
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
   // Diálogo obligatorio de Referencia y Banco para Pago Móvil / Transferencia
   Future<bool> _promptPagoMovilBankAndReference() async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -802,6 +1177,38 @@ class _PosScreenState extends State<PosScreen> {
       totalUsd = _totalUsd;
       totalBs = totalUsd * rate;
       invoiceItems = List.from(_cart);
+
+      // Si es cotización y tiene servicios adicionales seleccionados, añadirlos como ítems al presupuesto
+      if (_voucherType == 'cotizacion') {
+        if (_hasLighting) {
+          final cost = double.tryParse(_lightingCostCtrl.text) ?? 0.0;
+          invoiceItems.add(CartItem(
+            product: Product(id: 'extra-light', name: 'Servicio: Iluminación / Módulos LED / Neón Flex', category: 'Servicios', priceUsd: cost),
+            quantity: 1,
+          ));
+        }
+        if (_hasInstallation) {
+          final cost = double.tryParse(_installationCostCtrl.text) ?? 0.0;
+          invoiceItems.add(CartItem(
+            product: Product(id: 'extra-inst', name: 'Servicio: Instalación en Sitio y Montaje', category: 'Servicios', priceUsd: cost),
+            quantity: 1,
+          ));
+        }
+        if (_hasDelivery) {
+          final cost = double.tryParse(_deliveryCostCtrl.text) ?? 0.0;
+          invoiceItems.add(CartItem(
+            product: Product(id: 'extra-deliv', name: 'Servicio: Envío / Delivery / Flete', category: 'Servicios', priceUsd: cost),
+            quantity: 1,
+          ));
+        }
+        if (_hasGraphicDesign) {
+          final cost = double.tryParse(_graphicDesignCostCtrl.text) ?? 0.0;
+          invoiceItems.add(CartItem(
+            product: Product(id: 'extra-design', name: 'Servicio: Diseño Gráfico / Vectorizado CNC', category: 'Servicios', priceUsd: cost),
+            quantity: 1,
+          ));
+        }
+      }
     } else {
       // Egreso o Abono
       final amount = double.tryParse(_quickAmountCtrl.text) ?? 0.0;
@@ -834,6 +1241,11 @@ class _PosScreenState extends State<PosScreen> {
       ];
     }
 
+    final downPaymentAmtUsd = _voucherType == 'cotizacion'
+        ? (totalUsd * (_requiredDownPaymentPercent / 100))
+        : 0.0;
+    final initialPaid = (_voucherType == 'cotizacion' && _registerInitialNow) ? downPaymentAmtUsd : 0.0;
+
     final invoice = Invoice(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       folio: folioStr,
@@ -852,6 +1264,18 @@ class _PosScreenState extends State<PosScreen> {
       paymentReference: _paymentReference.isNotEmpty ? _paymentReference : null,
       notes: _quickConceptCtrl.text.trim().isNotEmpty ? _quickConceptCtrl.text.trim() : null,
       business: _businessProfile,
+      validityDays: _voucherType == 'cotizacion' ? _validityDays : 5,
+      requiredDownPaymentPercent: _voucherType == 'cotizacion' ? _requiredDownPaymentPercent : 50.0,
+      initialPaidUsd: initialPaid,
+      hasLighting: _hasLighting,
+      lightingCostUsd: double.tryParse(_lightingCostCtrl.text) ?? 0.0,
+      hasInstallation: _hasInstallation,
+      installationCostUsd: double.tryParse(_installationCostCtrl.text) ?? 0.0,
+      hasDelivery: _hasDelivery,
+      deliveryCostUsd: double.tryParse(_deliveryCostCtrl.text) ?? 0.0,
+      hasGraphicDesign: _hasGraphicDesign,
+      graphicDesignCostUsd: double.tryParse(_graphicDesignCostCtrl.text) ?? 0.0,
+      quotationStatus: (_voucherType == 'cotizacion' && _registerInitialNow) ? 'en_taller' : 'esperando_inicial',
     );
 
     // Guardar perfil (contador de folio)
@@ -885,8 +1309,83 @@ class _PosScreenState extends State<PosScreen> {
         date: DateTime.now(),
       );
       await _recordCashMovement(cashMovement);
+    } else if (_voucherType == 'cotizacion' && _registerInitialNow) {
+      // SI EL CLIENTE DIO LA INICIAL DEL PRESUPUESTO EN EL ACTO:
+      // 1. Ingreso a Caja del monto del anticipo
+      final cashMovement = CashMovement(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: 'income',
+        category: 'Inicial Presupuesto ($folioStr)',
+        amountUsd: downPaymentAmtUsd,
+        amountBs: downPaymentAmtUsd * rate,
+        method: _selectedPaymentMethod,
+        description: 'Anticipo ${_requiredDownPaymentPercent.toStringAsFixed(0)}% Presupuesto $folioStr - ${_selectedClient?.fullName ?? "Cliente"}',
+        date: DateTime.now(),
+      );
+      await _recordCashMovement(cashMovement);
+
+      final firstItemTitle = invoiceItems.isNotEmpty ? invoiceItems.first.product.name : 'Proyecto $folioStr';
+
+      // 2. Crear Proyecto directamente en etapa "3_taller" (Armado en Taller)
+      try {
+        final rawProj = await StorageService.instance.load('proyectos');
+        final List<Map<String, dynamic>> projList = [];
+        if (rawProj != null && rawProj is List) {
+          for (final item in rawProj) {
+            projList.add(Map<String, dynamic>.from(item));
+          }
+        }
+        final newProject = ProjectItem(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: '$firstItemTitle ($folioStr)',
+          clientName: _selectedClient?.fullName ?? 'Cliente Ocasional',
+          clientPhone: _selectedClient?.phone ?? '',
+          totalUsd: totalUsd,
+          status: '3_taller', // Pasa directo a Taller porque ya pagó inicial
+          date: DateTime.now(),
+        );
+        projList.insert(0, newProject.toJson());
+        await StorageService.instance.save('proyectos', projList);
+      } catch (e) {
+        DebugLogger.instance.error('Error al crear proyecto desde cotización: $e');
+      }
+
+      // 3. Crear Cuenta por Cobrar por el Saldo Restante
+      final remainingBalance = totalUsd - downPaymentAmtUsd;
+      if (remainingBalance > 0.01) {
+        try {
+          final rawRec = await StorageService.instance.load('receivables');
+          final List<Map<String, dynamic>> recList = [];
+          if (rawRec != null && rawRec is List) {
+            for (final item in rawRec) {
+              recList.add(Map<String, dynamic>.from(item));
+            }
+          }
+          final newReceivable = ReceivableAccount(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            clientName: _selectedClient?.fullName ?? 'Cliente Ocasional',
+            clientPhone: _selectedClient?.phone ?? '',
+            concept: 'Saldo restante Trabajo $folioStr ($firstItemTitle)',
+            totalUsd: totalUsd,
+            payments: [
+              ReceivablePayment(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                amountUsd: downPaymentAmtUsd,
+                method: _selectedPaymentMethod,
+                date: DateTime.now(),
+                note: 'Inicial ${_requiredDownPaymentPercent.toStringAsFixed(0)}% cobrada al emitir $folioStr',
+              ),
+            ],
+            dueDate: DateTime.now().add(Duration(days: _validityDays)),
+            createdAt: DateTime.now(),
+          );
+          recList.insert(0, newReceivable.toJson());
+          await StorageService.instance.save('receivables', recList);
+        } catch (e) {
+          DebugLogger.instance.error('Error al registrar cuenta por cobrar del saldo: $e');
+        }
+      }
     }
-    // Cotización NO impacta caja
 
     // Deducción de Inventario (Solo en Factura / Venta real)
     if (_voucherType == 'factura') {
@@ -943,6 +1442,11 @@ class _PosScreenState extends State<PosScreen> {
       _paymentReference = '';
       _quickConceptCtrl.clear();
       _quickAmountCtrl.clear();
+      _registerInitialNow = false;
+      _hasLighting = false;
+      _hasInstallation = false;
+      _hasDelivery = false;
+      _hasGraphicDesign = false;
     });
 
     // Mostrar el ticket comprobante
@@ -1453,7 +1957,59 @@ class _PosScreenState extends State<PosScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Resumen Carrito (en modo Factura o Cotización)
-                if (_voucherType == 'factura' || _voucherType == 'cotizacion')
+                if (_voucherType == 'factura' || _voucherType == 'cotizacion') ...[
+                  if (_voucherType == 'cotizacion') ...[
+                    // Barra de Opciones y Servicios del Presupuesto
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0284C7).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.tune, size: 14, color: Color(0xFF38BDF8)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Validez: $_validityDays días • Inicial: ${_requiredDownPaymentPercent.toStringAsFixed(0)}%',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF38BDF8)),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  _quotationExtrasUsd > 0
+                                      ? 'Extras seleccionados: +\$${_quotationExtrasUsd.toStringAsFixed(2)}'
+                                      : 'Sin extras (Luces, Instalación, Envíos)',
+                                  style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 10),
+                                ),
+                              ],
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: _showQuotationOptionsModal,
+                            icon: const Icon(Icons.settings_suggest_outlined, size: 14),
+                            label: const Text('Opciones & Inicial', style: TextStyle(fontSize: 11)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF38BDF8),
+                              side: const BorderSide(color: Color(0xFF38BDF8)),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: Size.zero,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   InkWell(
                     onTap: _cart.isEmpty ? null : _showCartDetails,
                     borderRadius: BorderRadius.circular(8),
@@ -1493,6 +2049,7 @@ class _PosScreenState extends State<PosScreen> {
                       ),
                     ),
                   ),
+                ],
                 const SizedBox(height: 6),
 
                 // Selector de Forma de Pago y Botón de Emisión

@@ -224,6 +224,68 @@ class InvoiceDetailModal extends StatelessWidget {
                         Text('Bs. ${invoice.totalBs.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF38BDF8))),
                       ],
                     ),
+
+                    // CONDICIONES ESPECÍFICAS DE PRESUPUESTO / COTIZACIÓN
+                    if (invoice.voucherType == 'cotizacion') ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0284C7).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.3)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Vigencia del Presupuesto:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                                Text('${invoice.validityDays} DÍAS HÁBILES', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF0284C7))),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Inicial Requerida (${invoice.requiredDownPaymentPercent.toStringAsFixed(0)}%):', style: const TextStyle(fontSize: 11)),
+                                Text('\$${invoice.requiredDownPaymentAmountUsd.toStringAsFixed(2)} (Bs. ${(invoice.requiredDownPaymentAmountUsd * invoice.rateBcv).toStringAsFixed(2)})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Estado de la Inicial:', style: TextStyle(fontSize: 11)),
+                                Text(
+                                  invoice.isInitialPaid ? 'PAGADA / EN TALLER' : 'PENDIENTE POR PAGAR',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: invoice.isInitialPaid ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (invoice.isInitialPaid) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Saldo Restante contra Entrega:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                  Text(
+                                    '\$${invoice.remainingBalanceUsd.toStringAsFixed(2)} (Bs. ${(invoice.remainingBalanceUsd * invoice.rateBcv).toStringAsFixed(2)})',
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEF4444)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: 6),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

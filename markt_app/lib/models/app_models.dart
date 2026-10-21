@@ -320,6 +320,20 @@ class Invoice {
   final String? notes;
   final BusinessProfile business;
 
+  // Campos avanzados para Cotizaciones y Presupuestos
+  final int validityDays; // ej. 3, 5, 7, 15 días
+  final double requiredDownPaymentPercent; // ej. 50%
+  final double initialPaidUsd; // Monto de anticipo pagado
+  final bool hasLighting; // ¿Llevará luces / LED / Neón?
+  final double lightingCostUsd;
+  final bool hasInstallation; // ¿Llevará instalación en sitio?
+  final double installationCostUsd;
+  final bool hasDelivery; // ¿Llevará flete / delivery?
+  final double deliveryCostUsd;
+  final bool hasGraphicDesign; // ¿Llevará diseño gráfico / vectorizado?
+  final double graphicDesignCostUsd;
+  final String quotationStatus; // 'esperando_inicial', 'en_taller', 'rechazado', 'entregado'
+
   Invoice({
     required this.id,
     required this.folio,
@@ -338,11 +352,94 @@ class Invoice {
     this.paymentReference,
     this.notes,
     required this.business,
+    this.validityDays = 5,
+    this.requiredDownPaymentPercent = 50.0,
+    this.initialPaidUsd = 0.0,
+    this.hasLighting = false,
+    this.lightingCostUsd = 0.0,
+    this.hasInstallation = false,
+    this.installationCostUsd = 0.0,
+    this.hasDelivery = false,
+    this.deliveryCostUsd = 0.0,
+    this.hasGraphicDesign = false,
+    this.graphicDesignCostUsd = 0.0,
+    this.quotationStatus = 'esperando_inicial',
   });
+
+  // Helpers para Cotizaciones
+  DateTime get expirationDate => date.add(Duration(days: validityDays));
+  bool get isExpired => DateTime.now().isAfter(expirationDate);
+  double get requiredDownPaymentAmountUsd => totalUsd * (requiredDownPaymentPercent / 100);
+  double get remainingBalanceUsd => (totalUsd - initialPaidUsd).clamp(0.0, double.infinity);
+  bool get isInitialPaid => initialPaidUsd >= (requiredDownPaymentAmountUsd - 0.01);
 
   double get totalCostUsd => items.fold(0.0, (acc, item) => acc + (item.product.costUsd * item.quantity));
   double get netProfitUsd => totalUsd - totalCostUsd;
   double get sellerCommissionUsd => totalUsd * (seller.commissionPercent / 100);
+
+  Invoice copyWith({
+    String? id,
+    String? folio,
+    String? voucherType,
+    DateTime? date,
+    Client? client,
+    Seller? seller,
+    List<CartItem>? items,
+    double? rateBcv,
+    String? rateCurrency,
+    String? currencyMode,
+    double? totalUsd,
+    double? totalBs,
+    String? paymentMethod,
+    String? bankName,
+    String? paymentReference,
+    String? notes,
+    BusinessProfile? business,
+    int? validityDays,
+    double? requiredDownPaymentPercent,
+    double? initialPaidUsd,
+    bool? hasLighting,
+    double? lightingCostUsd,
+    bool? hasInstallation,
+    double? installationCostUsd,
+    bool? hasDelivery,
+    double? deliveryCostUsd,
+    bool? hasGraphicDesign,
+    double? graphicDesignCostUsd,
+    String? quotationStatus,
+  }) {
+    return Invoice(
+      id: id ?? this.id,
+      folio: folio ?? this.folio,
+      voucherType: voucherType ?? this.voucherType,
+      date: date ?? this.date,
+      client: client ?? this.client,
+      seller: seller ?? this.seller,
+      items: items ?? this.items,
+      rateBcv: rateBcv ?? this.rateBcv,
+      rateCurrency: rateCurrency ?? this.rateCurrency,
+      currencyMode: currencyMode ?? this.currencyMode,
+      totalUsd: totalUsd ?? this.totalUsd,
+      totalBs: totalBs ?? this.totalBs,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      bankName: bankName ?? this.bankName,
+      paymentReference: paymentReference ?? this.paymentReference,
+      notes: notes ?? this.notes,
+      business: business ?? this.business,
+      validityDays: validityDays ?? this.validityDays,
+      requiredDownPaymentPercent: requiredDownPaymentPercent ?? this.requiredDownPaymentPercent,
+      initialPaidUsd: initialPaidUsd ?? this.initialPaidUsd,
+      hasLighting: hasLighting ?? this.hasLighting,
+      lightingCostUsd: lightingCostUsd ?? this.lightingCostUsd,
+      hasInstallation: hasInstallation ?? this.hasInstallation,
+      installationCostUsd: installationCostUsd ?? this.installationCostUsd,
+      hasDelivery: hasDelivery ?? this.hasDelivery,
+      deliveryCostUsd: deliveryCostUsd ?? this.deliveryCostUsd,
+      hasGraphicDesign: hasGraphicDesign ?? this.hasGraphicDesign,
+      graphicDesignCostUsd: graphicDesignCostUsd ?? this.graphicDesignCostUsd,
+      quotationStatus: quotationStatus ?? this.quotationStatus,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -365,6 +462,18 @@ class Invoice {
     'paymentReference': paymentReference,
     'notes': notes,
     'business': business.toJson(),
+    'validityDays': validityDays,
+    'requiredDownPaymentPercent': requiredDownPaymentPercent,
+    'initialPaidUsd': initialPaidUsd,
+    'hasLighting': hasLighting,
+    'lightingCostUsd': lightingCostUsd,
+    'hasInstallation': hasInstallation,
+    'installationCostUsd': installationCostUsd,
+    'hasDelivery': hasDelivery,
+    'deliveryCostUsd': deliveryCostUsd,
+    'hasGraphicDesign': hasGraphicDesign,
+    'graphicDesignCostUsd': graphicDesignCostUsd,
+    'quotationStatus': quotationStatus,
   };
 
   factory Invoice.fromJson(Map<String, dynamic> json) => Invoice(
@@ -391,6 +500,18 @@ class Invoice {
     paymentReference: json['paymentReference']?.toString(),
     notes: json['notes']?.toString(),
     business: BusinessProfile.fromJson(Map<String, dynamic>.from(json['business'] ?? {})),
+    validityDays: (json['validityDays'] as num?)?.toInt() ?? 5,
+    requiredDownPaymentPercent: (json['requiredDownPaymentPercent'] as num?)?.toDouble() ?? 50.0,
+    initialPaidUsd: (json['initialPaidUsd'] as num?)?.toDouble() ?? 0.0,
+    hasLighting: json['hasLighting'] == true,
+    lightingCostUsd: (json['lightingCostUsd'] as num?)?.toDouble() ?? 0.0,
+    hasInstallation: json['hasInstallation'] == true,
+    installationCostUsd: (json['installationCostUsd'] as num?)?.toDouble() ?? 0.0,
+    hasDelivery: json['hasDelivery'] == true,
+    deliveryCostUsd: (json['deliveryCostUsd'] as num?)?.toDouble() ?? 0.0,
+    hasGraphicDesign: json['hasGraphicDesign'] == true,
+    graphicDesignCostUsd: (json['graphicDesignCostUsd'] as num?)?.toDouble() ?? 0.0,
+    quotationStatus: json['quotationStatus']?.toString() ?? 'esperando_inicial',
   );
 }
 
