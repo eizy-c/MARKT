@@ -49,7 +49,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // 2. Caja
       final rawCash = await StorageService.instance.load('cash_movements');
       double cashBal = 0.0;
-      double cashExpenses = 0.0;
       if (rawCash != null && rawCash is List) {
         for (final item in rawCash) {
           final m = CashMovement.fromJson(Map<String, dynamic>.from(item));
@@ -57,7 +56,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             cashBal += m.amountUsd;
           } else {
             cashBal -= m.amountUsd;
-            cashExpenses += m.amountUsd;
           }
         }
       }

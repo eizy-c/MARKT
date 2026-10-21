@@ -320,7 +320,7 @@ class _ReceivablesScreenState extends State<ReceivablesScreen> {
                     ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<String>(
-                    value: method,
+                    initialValue: method,
                     dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                     style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
                     decoration: InputDecoration(

@@ -1233,7 +1233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         }
                       });
                       await StorageService.instance.save('bank_accounts', _bankAccounts.map((a) => a.toJson()).toList());
-                      if (mounted) Navigator.pop(ctx);
+                      if (ctx.mounted) Navigator.pop(ctx);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF10B981),
@@ -1468,7 +1468,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         }
                       });
                       await StorageService.instance.save('sellers', _sellers.map((s) => s.toJson()).toList());
-                      if (mounted) Navigator.pop(ctx);
+                      if (ctx.mounted) Navigator.pop(ctx);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6366F1),

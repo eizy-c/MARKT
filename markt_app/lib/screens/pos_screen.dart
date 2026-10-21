@@ -635,7 +635,7 @@ class _PosScreenState extends State<PosScreen> {
                             _selectedClient = newClient;
                           });
                           await StorageService.instance.save('clients', _clients.map((c) => c.toJson()).toList());
-                          if (mounted) Navigator.pop(ctx);
+                          if (ctx.mounted) Navigator.pop(ctx);
                         },
                         icon: const Icon(Icons.check, size: 16),
                         label: const Text('Registrar y Seleccionar'),
@@ -1180,7 +1180,7 @@ class _PosScreenState extends State<PosScreen> {
     final isPagoMovil = _selectedPaymentMethod.toLowerCase().contains('móvil') || _selectedPaymentMethod.toLowerCase().contains('movil');
     if (isPagoMovil) {
       final ok = await _promptPagoMovilBankAndReference();
-      if (!ok) return;
+      if (!ok || !mounted) return;
     }
 
     final rate = _activeRate;

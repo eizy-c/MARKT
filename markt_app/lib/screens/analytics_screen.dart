@@ -161,6 +161,7 @@ _Generado automáticamente por MARKT POS._
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final rate = BcvService.instance.currentRates.usd;
 
