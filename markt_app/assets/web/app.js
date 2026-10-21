@@ -33,11 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
     exchange: {
       mode: 'bcv-usd', // 'bcv-usd' | 'bcv-eur' | 'custom'
       targetCurrency: 'USD',
-      rate: 798.33,
-      customRate: 798.33,
+      rate: 881.88,
+      customRate: 881.88,
       showDual: true,
-      bcvUsd: 798.33,
-      bcvEur: 926.55
+      bcvUsd: 881.88,
+      bcvEur: 988.97,
+      lastUpdated: '2026-10-20'
     },
     suiche: {
       bank: '0134',
@@ -130,7 +131,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const sidebarBcvUsd = document.getElementById('sidebar-bcv-usd');
   const sidebarBcvEur = document.getElementById('sidebar-bcv-eur');
+  const drawerBcvUsd = document.getElementById('drawer-bcv-usd');
+  const drawerBcvEur = document.getElementById('drawer-bcv-eur');
   const btnSidebarFetchBcv = document.getElementById('btn-sidebar-fetch-bcv');
+  const btnAjustesFetchBcv = document.getElementById('btn-ajustes-fetch-bcv');
+  const ajustesBcvUsd = document.getElementById('ajustes-bcv-usd');
+  const ajustesBcvEur = document.getElementById('ajustes-bcv-eur');
+  const bcvLastUpdatedLbl = document.getElementById('bcv-last-updated-lbl');
   const sidebarHistoryCount = document.getElementById('sidebar-history-count');
 
   // Subtab elements
@@ -330,6 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCotizacionesFromStorage();
     loadProyectosFromStorage();
     loadGaleriaFromStorage();
+    loadSavedBcvRates();
     setupNavigation();
     setupSubtabsSystem();
     setupDocTypeSelector();
@@ -633,36 +641,135 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- BCV INTEGRATION & RATE SELECTOR ---
-  async function fetchBcvRatesFromApi() {
-    sidebarBcvUsd.textContent = 'Consultando...';
-    sidebarBcvEur.textContent = 'Consultando...';
-
+  function loadSavedBcvRates() {
     try {
-      const res = await fetch('https://ve.dolarapi.com/v1/cotizaciones');
-      if (!res.ok) throw new Error('Error de red');
-      const data = await res.json();
-
-      const usdObj = data.find(d => d.moneda === 'USD' && d.fuente === 'oficial');
-      const eurObj = data.find(d => d.moneda === 'EUR' && d.fuente === 'oficial');
-
-      if (usdObj && usdObj.promedio) {
-        state.exchange.bcvUsd = usdObj.promedio;
-        sidebarBcvUsd.textContent = `${usdObj.promedio.toFixed(2)} Bs.`;
+      const saved = localStorage.getItem('martk_bcv_rates');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.bcvUsd && typeof parsed.bcvUsd === 'number') state.exchange.bcvUsd = parsed.bcvUsd;
+        if (parsed.bcvEur && typeof parsed.bcvEur === 'number') state.exchange.bcvEur = parsed.bcvEur;
+        if (parsed.mode) state.exchange.mode = parsed.mode;
+        if (parsed.customRate) state.exchange.customRate = parsed.customRate;
+        if (parsed.lastUpdated) state.exchange.lastUpdated = parsed.lastUpdated;
       }
-      if (eurObj && eurObj.promedio) {
-        state.exchange.bcvEur = eurObj.promedio;
-        sidebarBcvEur.textContent = `${eurObj.promedio.toFixed(2)} Bs.`;
-      }
+    } catch (e) {
+      console.warn('Error loading saved BCV rates', e);
+    }
+    syncBcvUiElements();
+    updateRateOptionsDropdown();
+    applyActiveRateMode();
+  }
 
-      updateRateOptionsDropdown();
-      applyActiveRateMode();
-      updateCalculationsAndPreview();
-      showToast(`Tasas BCV actualizadas: Dólar ${state.exchange.bcvUsd.toFixed(2)} Bs. | Euro ${state.exchange.bcvEur.toFixed(2)} Bs.`, 'success');
-    } catch (err) {
-      sidebarBcvUsd.textContent = `${state.exchange.bcvUsd.toFixed(2)} Bs.`;
-      sidebarBcvEur.textContent = `${state.exchange.bcvEur.toFixed(2)} Bs.`;
-      updateRateOptionsDropdown();
-      applyActiveRateMode();
+  function saveBcvRatesToStorage() {
+    try {
+      localStorage.setItem('martk_bcv_rates', JSON.stringify({
+        bcvUsd: state.exchange.bcvUsd,
+        bcvEur: state.exchange.bcvEur,
+        mode: state.exchange.mode,
+        customRate: state.exchange.customRate,
+        lastUpdated: state.exchange.lastUpdated || new Date().toISOString()
+      }));
+    } catch (e) {
+      console.warn('Error saving BCV rates', e);
+    }
+  }
+
+  function syncBcvUiElements() {
+    const usdStr = state.exchange.bcvUsd.toFixed(2);
+    const eurStr = state.exchange.bcvEur.toFixed(2);
+
+    if (sidebarBcvUsd) sidebarBcvUsd.textContent = usdStr;
+    if (sidebarBcvEur) sidebarBcvEur.textContent = eurStr;
+    if (drawerBcvUsd) drawerBcvUsd.textContent = `${usdStr} Bs.`;
+    if (drawerBcvEur) drawerBcvEur.textContent = `${eurStr} Bs.`;
+    if (ajustesBcvUsd) ajustesBcvUsd.value = usdStr;
+    if (ajustesBcvEur) ajustesBcvEur.value = eurStr;
+
+    if (bcvLastUpdatedLbl) {
+      let dateText = 'Hoy (Al día)';
+      if (state.exchange.lastUpdated) {
+        try {
+          const d = new Date(state.exchange.lastUpdated);
+          dateText = d.toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        } catch (_) {}
+      }
+      bcvLastUpdatedLbl.textContent = `Actualizado: ${dateText}`;
+    }
+
+    if (viewExchangeRateLbl) {
+      if (state.exchange.mode === 'bcv-eur') {
+        viewExchangeRateLbl.textContent = `Tasa BCV: ${eurStr} Bs./EUR`;
+      } else {
+        viewExchangeRateLbl.textContent = `Tasa BCV: ${usdStr} Bs./$`;
+      }
+    }
+  }
+
+  async function fetchBcvRatesFromApi(isManual = false) {
+    if (sidebarBcvUsd) sidebarBcvUsd.textContent = '...';
+    if (drawerBcvUsd) drawerBcvUsd.textContent = 'Consultando...';
+    if (drawerBcvEur) drawerBcvEur.textContent = 'Consultando...';
+    if (btnSidebarFetchBcv) btnSidebarFetchBcv.classList.add('animate-spin');
+    if (btnAjustesFetchBcv) btnAjustesFetchBcv.classList.add('animate-spin');
+
+    let updated = false;
+
+    // Intento 1: cotizaciones generales dolarapi
+    try {
+      const res = await fetch('https://ve.dolarapi.com/v1/cotizaciones', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        const usdObj = data.find(d => d.moneda === 'USD' && d.fuente === 'oficial');
+        const eurObj = data.find(d => d.moneda === 'EUR' && d.fuente === 'oficial');
+
+        if (usdObj && usdObj.promedio) {
+          state.exchange.bcvUsd = parseFloat(usdObj.promedio);
+          updated = true;
+        }
+        if (eurObj && eurObj.promedio) {
+          state.exchange.bcvEur = parseFloat(eurObj.promedio);
+          updated = true;
+        }
+        if (usdObj && usdObj.fechaActualizacion) {
+          state.exchange.lastUpdated = usdObj.fechaActualizacion;
+        }
+      }
+    } catch (e1) {
+      console.warn('Fallo endpoint cotizaciones dolarapi, probando oficial individual:', e1);
+    }
+
+    // Intento 2: fallback oficial individual
+    if (!updated) {
+      try {
+        const resUsd = await fetch('https://ve.dolarapi.com/v1/dolares/oficial', { cache: 'no-store' });
+        if (resUsd.ok) {
+          const usdData = await resUsd.json();
+          if (usdData && usdData.promedio) {
+            state.exchange.bcvUsd = parseFloat(usdData.promedio);
+            updated = true;
+            if (usdData.fechaActualizacion) state.exchange.lastUpdated = usdData.fechaActualizacion;
+          }
+        }
+      } catch (e2) {
+        console.warn('Fallo endpoint fallback individual oficial:', e2);
+      }
+    }
+
+    if (btnSidebarFetchBcv) btnSidebarFetchBcv.classList.remove('animate-spin');
+    if (btnAjustesFetchBcv) btnAjustesFetchBcv.classList.remove('animate-spin');
+
+    syncBcvUiElements();
+    updateRateOptionsDropdown();
+    applyActiveRateMode();
+    updateCalculationsAndPreview();
+    saveBcvRatesToStorage();
+
+    if (updated) {
+      showToast(`Tasas BCV actualizadas al día: Dólar ${state.exchange.bcvUsd.toFixed(2)} Bs. | Euro ${state.exchange.bcvEur.toFixed(2)} Bs.`, 'success');
+    } else {
+      if (isManual) {
+        showToast(`No se pudo conectar a la API BCV. Se mantiene la última tasa guardada: ${state.exchange.bcvUsd.toFixed(2)} Bs.`, 'warning');
+      }
     }
   }
 
@@ -678,6 +785,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function applyActiveRateMode() {
     const mode = state.exchange.mode || 'bcv-usd';
     if (selectRateMode) selectRateMode.value = mode;
+
+    const customWrapper = document.getElementById('custom-rate-wrapper');
+    if (customWrapper) {
+      if (mode === 'custom') {
+        customWrapper.classList.remove('hidden');
+      } else {
+        customWrapper.classList.add('hidden');
+      }
+    }
 
     if (mode === 'bcv-usd') {
       state.exchange.rate = state.exchange.bcvUsd;
@@ -706,7 +822,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (btnSidebarFetchBcv) btnSidebarFetchBcv.addEventListener('click', fetchBcvRatesFromApi);
+  if (btnSidebarFetchBcv) btnSidebarFetchBcv.addEventListener('click', () => fetchBcvRatesFromApi(true));
+  if (btnAjustesFetchBcv) btnAjustesFetchBcv.addEventListener('click', () => fetchBcvRatesFromApi(true));
+
+  if (ajustesBcvUsd) {
+    ajustesBcvUsd.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      if (val && val > 0) {
+        state.exchange.bcvUsd = val;
+        if (state.exchange.mode === 'bcv-usd') state.exchange.rate = val;
+        syncBcvUiElements();
+        updateRateOptionsDropdown();
+        applyActiveRateMode();
+        updateCalculationsAndPreview();
+        saveBcvRatesToStorage();
+      }
+    });
+  }
+
+  if (ajustesBcvEur) {
+    ajustesBcvEur.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      if (val && val > 0) {
+        state.exchange.bcvEur = val;
+        if (state.exchange.mode === 'bcv-eur') state.exchange.rate = val;
+        syncBcvUiElements();
+        updateRateOptionsDropdown();
+        applyActiveRateMode();
+        updateCalculationsAndPreview();
+        saveBcvRatesToStorage();
+      }
+    });
+  }
 
   if (sidebarBcvUsd) {
     sidebarBcvUsd.style.cursor = 'pointer';
@@ -722,6 +869,28 @@ document.addEventListener('DOMContentLoaded', () => {
   if (sidebarBcvEur) {
     sidebarBcvEur.style.cursor = 'pointer';
     sidebarBcvEur.addEventListener('click', () => {
+      state.exchange.mode = 'bcv-eur';
+      applyActiveRateMode();
+      autoSaveSettings();
+      updateCalculationsAndPreview();
+      showToast(`Tasa cambiada a BCV Euro (€): ${state.exchange.bcvEur.toFixed(2)} Bs.`, 'info');
+    });
+  }
+
+  if (drawerBcvUsd) {
+    drawerBcvUsd.style.cursor = 'pointer';
+    drawerBcvUsd.addEventListener('click', () => {
+      state.exchange.mode = 'bcv-usd';
+      applyActiveRateMode();
+      autoSaveSettings();
+      updateCalculationsAndPreview();
+      showToast(`Tasa cambiada a BCV Dólar ($): ${state.exchange.bcvUsd.toFixed(2)} Bs.`, 'info');
+    });
+  }
+
+  if (drawerBcvEur) {
+    drawerBcvEur.style.cursor = 'pointer';
+    drawerBcvEur.addEventListener('click', () => {
       state.exchange.mode = 'bcv-eur';
       applyActiveRateMode();
       autoSaveSettings();
