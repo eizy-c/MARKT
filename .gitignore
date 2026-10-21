@@ -5,3 +5,18 @@ markt_app/build/
 markt_app/.dart_tool/
 stitch_extracted/
 stitch_raw.html
+
+# Secrets, Tokens and API keys
+.env
+.env.*
+*.env
+*.token
+*.key
+*.pem
+secrets.*
+credentials.*
+tokens.*
+token.txt
+api_keys.*
+markt_secrets.*
+
