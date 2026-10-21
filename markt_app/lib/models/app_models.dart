@@ -238,12 +238,14 @@ class Seller {
   final String name;
   final String code;
   final double commissionPercent;
+  final String role; // 'vendedor', 'armador', 'ambos'
 
   Seller({
     required this.id,
     required this.name,
     required this.code,
     this.commissionPercent = 5.0,
+    this.role = 'vendedor',
   });
 
   Map<String, dynamic> toJson() => {
@@ -251,6 +253,7 @@ class Seller {
     'name': name,
     'code': code,
     'commissionPercent': commissionPercent,
+    'role': role,
   };
 
   factory Seller.fromJson(Map<String, dynamic> json) => Seller(
@@ -258,6 +261,7 @@ class Seller {
     name: json['name'] ?? '',
     code: json['code'] ?? '',
     commissionPercent: (json['commissionPercent'] as num?)?.toDouble() ?? 5.0,
+    role: json['role'] ?? 'vendedor',
   );
 }
 
@@ -623,8 +627,12 @@ class ProjectItem {
   final double totalUsd;
   final String status;
   final DateTime date;
-  final List<RecipeItem> recipe; // Receta / Consumibles específicos del proyecto
-  final String dimensions; // e.g. '50x50 cm'
+  final List<RecipeItem> recipe;
+  final String dimensions;
+  final String? assignedWorkerId;
+  final String? assignedWorkerName;
+  final double assemblyFeeUsd;
+  final bool assemblyPaid;
 
   ProjectItem({
     required this.id,
@@ -636,11 +644,22 @@ class ProjectItem {
     required this.date,
     this.recipe = const [],
     this.dimensions = '',
+    this.assignedWorkerId,
+    this.assignedWorkerName,
+    this.assemblyFeeUsd = 0.0,
+    this.assemblyPaid = false,
   });
 
   double get totalCostUsd => recipe.fold(0.0, (acc, item) => acc + item.totalCostUsd);
   double get netProfitUsd => totalUsd - totalCostUsd;
   double get profitMarginPercent => totalUsd > 0 ? (netProfitUsd / totalUsd) * 100 : 0.0;
+
+  bool get isAssemblyReady => (status == '5_finalizado' || status == 'Listo' || status == 'Procesado' || status == 'Entregado');
+
+  double get effectiveAssemblyFeeUsd {
+    if (assemblyFeeUsd > 0) return assemblyFeeUsd;
+    return recipe.where((it) => it.type == 'mano_obra').fold(0.0, (acc, it) => acc + it.totalCostUsd);
+  }
 
   ProjectItem copyWith({
     String? id,
@@ -652,6 +671,10 @@ class ProjectItem {
     DateTime? date,
     List<RecipeItem>? recipe,
     String? dimensions,
+    String? assignedWorkerId,
+    String? assignedWorkerName,
+    double? assemblyFeeUsd,
+    bool? assemblyPaid,
   }) {
     return ProjectItem(
       id: id ?? this.id,
@@ -663,6 +686,10 @@ class ProjectItem {
       date: date ?? this.date,
       recipe: recipe ?? this.recipe,
       dimensions: dimensions ?? this.dimensions,
+      assignedWorkerId: assignedWorkerId ?? this.assignedWorkerId,
+      assignedWorkerName: assignedWorkerName ?? this.assignedWorkerName,
+      assemblyFeeUsd: assemblyFeeUsd ?? this.assemblyFeeUsd,
+      assemblyPaid: assemblyPaid ?? this.assemblyPaid,
     );
   }
 
@@ -676,6 +703,10 @@ class ProjectItem {
     'date': date.toIso8601String(),
     'recipe': recipe.map((r) => r.toJson()).toList(),
     'dimensions': dimensions,
+    'assignedWorkerId': assignedWorkerId,
+    'assignedWorkerName': assignedWorkerName,
+    'assemblyFeeUsd': assemblyFeeUsd,
+    'assemblyPaid': assemblyPaid,
   };
 
   factory ProjectItem.fromJson(Map<String, dynamic> json) => ProjectItem(
@@ -688,6 +719,10 @@ class ProjectItem {
     date: DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
     recipe: (json['recipe'] as List?)?.map((r) => RecipeItem.fromJson(Map<String, dynamic>.from(r))).toList() ?? [],
     dimensions: json['dimensions'] ?? '',
+    assignedWorkerId: json['assignedWorkerId']?.toString(),
+    assignedWorkerName: json['assignedWorkerName']?.toString(),
+    assemblyFeeUsd: (json['assemblyFeeUsd'] as num?)?.toDouble() ?? 0.0,
+    assemblyPaid: json['assemblyPaid'] ?? false,
   );
 }
 

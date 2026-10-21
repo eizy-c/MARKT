@@ -15,6 +15,9 @@ class AnalyticsScreen extends StatefulWidget {
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
   final List<Invoice> _invoices = [];
   final List<CashMovement> _cashMovements = [];
+  final List<ProjectItem> _projects = [];
+  final List<Seller> _sellers = [];
+  String _teamSubTab = 'armadores';
   bool _loading = true;
   String _period = 'mes'; // 'hoy', 'semana', 'mes', 'historico'
 
@@ -43,6 +46,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         }
       }
 
+      final rawProjects = await StorageService.instance.load('proyectos');
+      _projects.clear();
+      if (rawProjects != null && rawProjects is List) {
+        for (final item in rawProjects) {
+          _projects.add(ProjectItem.fromJson(Map<String, dynamic>.from(item)));
+        }
+      }
+
+      final rawSellers = await StorageService.instance.load('sellers');
+      _sellers.clear();
+      if (rawSellers != null && rawSellers is List) {
+        for (final item in rawSellers) {
+          _sellers.add(Seller.fromJson(Map<String, dynamic>.from(item)));
+        }
+      }
       setState(() => _loading = false);
     } catch (e, stack) {
       DebugLogger.instance.error('Error al cargar analítica financiera: $e', stack);
@@ -127,6 +145,227 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       res[m] = (res[m] ?? 0.0) + inv.totalUsd;
     }
     return res;
+  }
+
+  List<String> get _workshopWorkers {
+    final Set<String> names = {};
+    for (final s in _sellers) {
+      if (s.role == 'armador' || s.role == 'ambos') {
+        names.add(s.name);
+      }
+    }
+    for (final p in _projects) {
+      if (p.assignedWorkerName != null && p.assignedWorkerName!.trim().isNotEmpty) {
+        names.add(p.assignedWorkerName!.trim());
+      }
+    }
+    if (names.isEmpty && _sellers.isNotEmpty) {
+      for (final s in _sellers) {
+        names.add(s.name);
+      }
+    }
+    return names.toList();
+  }
+
+  void _showSettleLaborModal(String workerName, List<ProjectItem> readyProjects, double totalToPayUsd) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final rate = BcvService.instance.currentRates.usd;
+    final totalBs = totalToPayUsd * rate;
+    String selectedMethod = r'Efectivo USD ($)';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0F172A) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.payments, color: Color(0xFF10B981), size: 22),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Liquidar Mano de Obra',
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                  ],
+                ),
+                Text(
+                  'Técnico / Armador: $workerName',
+                  style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Total a Pagar / Liquidar:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF10B981))),
+                          Text(
+                            '\${totalToPayUsd.toStringAsFixed(2)} USD',
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text('Equivalente BCV:', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                          Text(
+                            'Bs. ${totalBs.toStringAsFixed(2)}',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Proyectos Terminados Incluidos (${readyProjects.length}):',
+                  style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 140),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: readyProjects.length,
+                    separatorBuilder: (_, __) => const Divider(height: 8),
+                    itemBuilder: (c, idx) {
+                      final p = readyProjects[idx];
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              p.title,
+                              style: TextStyle(color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155), fontSize: 12),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            '\${p.effectiveAssemblyFeeUsd.toStringAsFixed(2)}',
+                            style: const TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Método de Pago / Origen:',
+                  style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedMethod,
+                      isExpanded: true,
+                      dropdownColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                      items: const [
+                        DropdownMenuItem(value: r'Efectivo USD ($)', child: Text(r'Efectivo USD ($)')),
+                        DropdownMenuItem(value: 'Pago Móvil', child: Text('Pago Móvil')),
+                        DropdownMenuItem(value: 'Transferencia Bancaria', child: Text('Transferencia Bancaria')),
+                        DropdownMenuItem(value: 'Efectivo Bs.', child: Text('Efectivo Bs.')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => selectedMethod = val);
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      // 1. Mark projects as assemblyPaid = true
+                      final readyIds = readyProjects.map((p) => p.id).toSet();
+                      for (int i = 0; i < _projects.length; i++) {
+                        if (readyIds.contains(_projects[i].id)) {
+                          _projects[i] = _projects[i].copyWith(assemblyPaid: true);
+                        }
+                      }
+                      await StorageService.instance.save('proyectos', _projects.map((p) => p.toJson()).toList());
+
+                      // 2. Create cash movement expense
+                      final expense = CashMovement(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        type: 'expense',
+                        category: 'Nómina y Pagos a Personal',
+                        amountUsd: totalToPayUsd,
+                        amountBs: totalBs,
+                        method: selectedMethod,
+                        description: 'Liquidación mano de obra armado - $workerName (${readyProjects.length} trabajos)',
+                        date: DateTime.now(),
+                      );
+                      _cashMovements.insert(0, expense);
+                      await StorageService.instance.save('cash_movements', _cashMovements.map((c) => c.toJson()).toList());
+
+                      DebugLogger.instance.info('Mano de obra liquidada a $workerName por \${totalToPayUsd}');
+                      setState(() {});
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Mano de obra de $workerName liquidada exitosamente. Egreso registrado.'),
+                            backgroundColor: const Color(0xFF10B981),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Confirmar Pago y Registrar Egreso', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _shareFinancialReportWhatsApp() {
@@ -319,7 +558,7 @@ _Generado automáticamente por MARKT POS._
           ),
           const SizedBox(height: 20),
 
-          // Rendimiento de Vendedores & Comisiones
+          // Rendimiento de Personal: Ventas & Armados de Taller
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -331,72 +570,302 @@ _Generado automáticamente por MARKT POS._
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.badge_outlined, color: Color(0xFF6366F1), size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Rendimiento de Vendedores',
-                      style: TextStyle(
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        const Icon(Icons.badge_outlined, color: Color(0xFF6366F1), size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Rendimiento de Personal',
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        InkWell(
+                          onTap: () => setState(() => _teamSubTab = 'armadores'),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _teamSubTab == 'armadores'
+                                  ? const Color(0xFFF59E0B)
+                                  : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Armadores Taller',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: _teamSubTab == 'armadores' ? Colors.white : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        InkWell(
+                          onTap: () => setState(() => _teamSubTab = 'vendedores'),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _teamSubTab == 'vendedores'
+                                  ? const Color(0xFF6366F1)
+                                  : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Vendedores',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: _teamSubTab == 'vendedores' ? Colors.white : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                if (_sellerPerformance.isEmpty)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(
-                        'Sin ventas registradas en este período.',
-                        style: TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+
+                // PESTAÑA: ARMADORES & MANO DE OBRA
+                if (_teamSubTab == 'armadores') ...[
+                  Text(
+                    'La mano de obra va directamente al técnico. Se desbloquea para pago únicamente cuando el trabajo está Finalizado / Entregado.',
+                    style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
+                  ),
+                  const SizedBox(height: 12),
+                  if (_workshopWorkers.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(
+                          'No hay técnicos o trabajos de taller registrados.',
+                          style: TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                        ),
                       ),
-                    ),
-                  )
-                else
-                  ..._sellerPerformance.entries.map((entry) {
-                    final percent = _totalBilledUsd > 0 ? (entry.value / _totalBilledUsd) * 100 : 0.0;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                entry.key,
-                                style: TextStyle(
-                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                    )
+                  else
+                    ..._workshopWorkers.map((workerName) {
+                      // Proyectos de este trabajador
+                      final workerProjs = _projects.where((p) =>
+                          p.assignedWorkerName == workerName ||
+                          _sellers.any((s) => s.name == workerName && s.id == p.assignedWorkerId)).toList();
+
+                      // Listos para liquidar (terminados y aún no pagados)
+                      final readyToPayProjs = workerProjs.where((p) => p.isAssemblyReady && !p.assemblyPaid).toList();
+                      final readyToPayUsd = readyToPayProjs.fold(0.0, (acc, p) => acc + p.effectiveAssemblyFeeUsd);
+
+                      // En taller / Por procesar (no finalizados aún)
+                      final inProcessProjs = workerProjs.where((p) => !p.isAssemblyReady && p.effectiveAssemblyFeeUsd > 0).toList();
+                      final inProcessUsd = inProcessProjs.fold(0.0, (acc, p) => acc + p.effectiveAssemblyFeeUsd);
+
+                      // Ya pagados históricamente
+                      final alreadyPaidProjs = workerProjs.where((p) => p.assemblyPaid).toList();
+                      final alreadyPaidUsd = alreadyPaidProjs.fold(0.0, (acc, p) => acc + p.effectiveAssemblyFeeUsd);
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.build_circle, color: Color(0xFFF59E0B), size: 18),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      workerName,
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              Text(
-                                '\$${entry.value.toStringAsFixed(2)} (${percent.toStringAsFixed(0)}%)',
-                                style: const TextStyle(color: Color(0xFF10B981), fontSize: 13, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          LinearProgressIndicator(
-                            value: percent / 100,
-                            backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                            color: const Color(0xFF6366F1),
-                            borderRadius: BorderRadius.circular(4),
-                            minHeight: 6,
-                          ),
-                        ],
+                                if (readyToPayUsd > 0)
+                                  ElevatedButton.icon(
+                                    onPressed: () => _showSettleLaborModal(workerName, readyToPayProjs, readyToPayUsd),
+                                    icon: const Icon(Icons.payments, size: 14),
+                                    label: Text('Liquidar \$${readyToPayUsd.toStringAsFixed(2)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF10B981),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      minimumSize: Size.zero,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.2)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Listo p/ Cobrar', style: TextStyle(fontSize: 10, color: Color(0xFF10B981), fontWeight: FontWeight.w600)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '\$${readyToPayUsd.toStringAsFixed(2)}',
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                                        ),
+                                        Text(
+                                          '${readyToPayProjs.length} terminados',
+                                          style: TextStyle(fontSize: 9, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.2)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('En Taller', style: TextStyle(fontSize: 10, color: Color(0xFFF59E0B), fontWeight: FontWeight.w600)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '\$${inProcessUsd.toStringAsFixed(2)}',
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFF59E0B)),
+                                        ),
+                                        Text(
+                                          '${inProcessProjs.length} en proceso',
+                                          style: TextStyle(fontSize: 9, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: (isDark ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0)).withValues(alpha: 0.5),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Ya Pagado', style: TextStyle(fontSize: 10, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '\$${alreadyPaidUsd.toStringAsFixed(2)}',
+                                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                                        ),
+                                        Text(
+                                          '${alreadyPaidProjs.length} liquidados',
+                                          style: TextStyle(fontSize: 9, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                ] else ...[
+                  // PESTAÑA: VENDEDORES & COMISIONES
+                  if (_sellerPerformance.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(
+                          'Sin ventas registradas en este período.',
+                          style: TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                        ),
                       ),
-                    );
-                  }),
+                    )
+                  else
+                    ..._sellerPerformance.entries.map((entry) {
+                      final percent = _totalBilledUsd > 0 ? (entry.value / _totalBilledUsd) * 100 : 0.0;
+                      final sObj = _sellers.where((s) => s.name.toLowerCase() == entry.key.toLowerCase()).firstOrNull;
+                      final comPct = sObj?.commissionPercent ?? 5.0;
+                      final comUsd = entry.value * (comPct / 100.0);
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  entry.key,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  '\$${entry.value.toStringAsFixed(2)} (${percent.toStringAsFixed(0)}%) • Comis: \$${comUsd.toStringAsFixed(2)} (${comPct.toStringAsFixed(1)}%)',
+                                  style: const TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            LinearProgressIndicator(
+                              value: percent / 100,
+                              backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                              color: const Color(0xFF6366F1),
+                              borderRadius: BorderRadius.circular(4),
+                              minHeight: 6,
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 16),
-
           // Analítica por Método de Pago (Pago Móvil, Punto de Venta, Efectivo, etc.)
           Container(
             padding: const EdgeInsets.all(16),

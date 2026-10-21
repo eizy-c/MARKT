@@ -1270,7 +1270,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Icon(Icons.badge_outlined, color: Color(0xFF6366F1), size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'Equipo de Vendedores & Asesores',
+                    'Equipo de Trabajo: Vendedores & Armadores',
                     style: TextStyle(
                       color: isDark ? Colors.white : const Color(0xFF0F172A),
                       fontSize: 15,
@@ -1282,7 +1282,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ElevatedButton.icon(
                 onPressed: () => _showAddEditSellerModal(null, isDark),
                 icon: const Icon(Icons.add, size: 16),
-                label: const Text('Añadir Vendedor', style: TextStyle(fontSize: 12)),
+                label: const Text('Añadir Personal', style: TextStyle(fontSize: 12)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6366F1),
                   foregroundColor: Colors.white,
@@ -1295,7 +1295,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Vendedores que emiten ventas y presupuestos en el sistema.',
+            'Gestiona asesores de ventas y técnicos armadores de taller para comisiones y mano de obra.',
             style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
           ),
           const SizedBox(height: 12),
@@ -1303,7 +1303,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'No hay vendedores registrados aún. Se usará Vendedor Principal por defecto.',
+                'No hay personal registrado aún.',
                 style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12),
               ),
             )
@@ -1315,31 +1315,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
               separatorBuilder: (_, __) => const Divider(height: 12),
               itemBuilder: (ctx, i) {
                 final s = _sellers[i];
+                final roleColor = s.role == 'armador'
+                    ? const Color(0xFFF59E0B)
+                    : s.role == 'ambos'
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFF6366F1);
+                final roleLabel = s.role == 'armador'
+                    ? 'Armador / Taller'
+                    : s.role == 'ambos'
+                        ? 'Ventas & Taller'
+                        : 'Vendedor';
+
                 return Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                        color: roleColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.person_pin, color: Color(0xFF6366F1), size: 18),
+                      child: Icon(
+                        s.role == 'armador' ? Icons.build_circle_outlined : Icons.person_pin,
+                        color: roleColor,
+                        size: 18,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            s.name,
-                            style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                s.name,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: roleColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  roleLabel,
+                                  style: TextStyle(color: roleColor, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 2),
                           Text(
-                            'Código: ${s.code} • Comisión: ${s.commissionPercent.toStringAsFixed(1)}%',
+                            'Código: ${s.code} • Comisión Ventas: ${s.commissionPercent.toStringAsFixed(1)}%',
                             style: TextStyle(
                               color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                               fontSize: 11,
@@ -1372,120 +1404,158 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final nameCtrl = TextEditingController(text: seller?.name ?? '');
     final codeCtrl = TextEditingController(text: seller?.code ?? '');
     final comCtrl = TextEditingController(text: seller?.commissionPercent.toString() ?? '5.0');
+    String selectedRole = seller?.role ?? 'vendedor';
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0F172A) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      seller == null ? 'Nuevo Vendedor / Asesor' : 'Editar Vendedor',
-                      style: TextStyle(
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: nameCtrl,
-                  style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
-                  decoration: InputDecoration(
-                    labelText: 'Nombre y Apellido del Vendedor *',
-                    filled: true,
-                    fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: codeCtrl,
-                        style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
-                        decoration: InputDecoration(
-                          labelText: 'Código / Alias (ej. VEND-01)',
-                          filled: true,
-                          fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        seller == null ? 'Nuevo Integrante del Personal' : 'Editar Integrante',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
+                      IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: nameCtrl,
+                    style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                    decoration: InputDecoration(
+                      labelText: 'Nombre y Apellido *',
+                      filled: true,
+                      fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        controller: comCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
-                        decoration: InputDecoration(
-                          labelText: 'Comisión %',
-                          filled: true,
-                          fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Rol / Función en el Negocio:',
+                    style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      ChoiceChip(
+                        avatar: const Icon(Icons.point_of_sale, size: 16),
+                        label: const Text('Vendedor / Asesor', style: TextStyle(fontSize: 11)),
+                        selected: selectedRole == 'vendedor',
+                        selectedColor: const Color(0xFF6366F1),
+                        labelStyle: TextStyle(color: selectedRole == 'vendedor' ? Colors.white : null),
+                        onSelected: (val) => setModalState(() => selectedRole = 'vendedor'),
+                      ),
+                      ChoiceChip(
+                        avatar: const Icon(Icons.build, size: 16),
+                        label: const Text('Armador / Técnico', style: TextStyle(fontSize: 11)),
+                        selected: selectedRole == 'armador',
+                        selectedColor: const Color(0xFFF59E0B),
+                        labelStyle: TextStyle(color: selectedRole == 'armador' ? Colors.white : null),
+                        onSelected: (val) => setModalState(() => selectedRole = 'armador'),
+                      ),
+                      ChoiceChip(
+                        avatar: const Icon(Icons.engineering, size: 16),
+                        label: const Text('Ambos Roles', style: TextStyle(fontSize: 11)),
+                        selected: selectedRole == 'ambos',
+                        selectedColor: const Color(0xFF10B981),
+                        labelStyle: TextStyle(color: selectedRole == 'ambos' ? Colors.white : null),
+                        onSelected: (val) => setModalState(() => selectedRole = 'ambos'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: codeCtrl,
+                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                          decoration: InputDecoration(
+                            labelText: 'Código / Alias (ej. OP-01)',
+                            filled: true,
+                            fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  height: 44,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (nameCtrl.text.trim().isEmpty) return;
-                      final updated = Seller(
-                        id: seller?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                        name: nameCtrl.text.trim(),
-                        code: codeCtrl.text.trim().isEmpty ? 'VEND' : codeCtrl.text.trim(),
-                        commissionPercent: double.tryParse(comCtrl.text) ?? 5.0,
-                      );
-                      setState(() {
-                        if (seller != null) {
-                          final idx = _sellers.indexWhere((s) => s.id == seller.id);
-                          if (idx >= 0) _sellers[idx] = updated;
-                        } else {
-                          _sellers.add(updated);
-                        }
-                      });
-                      await StorageService.instance.save('sellers', _sellers.map((s) => s.toJson()).toList());
-                      if (ctx.mounted) Navigator.pop(ctx);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: Text(seller == null ? 'Registrar Vendedor' : 'Actualizar Vendedor'),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: comCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                          decoration: InputDecoration(
+                            labelText: 'Comisión Ventas %',
+                            filled: true,
+                            fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (nameCtrl.text.trim().isEmpty) return;
+                        final updated = Seller(
+                          id: seller?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                          name: nameCtrl.text.trim(),
+                          code: codeCtrl.text.trim().isEmpty ? 'OP' : codeCtrl.text.trim(),
+                          commissionPercent: double.tryParse(comCtrl.text) ?? 5.0,
+                          role: selectedRole,
+                        );
+                        setState(() {
+                          if (seller != null) {
+                            final idx = _sellers.indexWhere((s) => s.id == seller.id);
+                            if (idx >= 0) _sellers[idx] = updated;
+                          } else {
+                            _sellers.add(updated);
+                          }
+                        });
+                        await StorageService.instance.save('sellers', _sellers.map((s) => s.toJson()).toList());
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6366F1),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: Text(seller == null ? 'Guardar Integrante' : 'Actualizar Integrante'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
-
   Widget _buildSwitchRow({
     required String title,
     required String subtitle,
