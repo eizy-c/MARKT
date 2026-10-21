@@ -280,3 +280,94 @@ class ProjectItem {
     date: DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
   );
 }
+
+class ReceivablePayment {
+  final String id;
+  final double amountUsd;
+  final String method;
+  final DateTime date;
+  final String note;
+
+  ReceivablePayment({
+    required this.id,
+    required this.amountUsd,
+    required this.method,
+    required this.date,
+    this.note = '',
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'amountUsd': amountUsd,
+    'method': method,
+    'date': date.toIso8601String(),
+    'note': note,
+  };
+
+  factory ReceivablePayment.fromJson(Map<String, dynamic> json) => ReceivablePayment(
+    id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    amountUsd: (json['amountUsd'] as num?)?.toDouble() ?? 0.0,
+    method: json['method'] ?? 'pago_movil',
+    date: DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
+    note: json['note'] ?? '',
+  );
+}
+
+class ReceivableAccount {
+  final String id;
+  final String clientName;
+  final String clientPhone;
+  final String concept;
+  final double totalUsd;
+  final List<ReceivablePayment> payments;
+  final DateTime dueDate;
+  final DateTime createdAt;
+
+  ReceivableAccount({
+    required this.id,
+    required this.clientName,
+    required this.clientPhone,
+    required this.concept,
+    required this.totalUsd,
+    this.payments = const [],
+    required this.dueDate,
+    required this.createdAt,
+  });
+
+  double get totalPaidUsd => payments.fold(0.0, (acc, p) => acc + p.amountUsd);
+  double get remainingBalanceUsd => (totalUsd - totalPaidUsd).clamp(0.0, double.infinity);
+  bool get isPaid => remainingBalanceUsd <= 0.01;
+  bool get isOverdue => !isPaid && DateTime.now().isAfter(dueDate);
+
+  String get status {
+    if (isPaid) return 'saldada';
+    if (isOverdue) return 'vencida';
+    return 'al_dia';
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'clientName': clientName,
+    'clientPhone': clientPhone,
+    'concept': concept,
+    'totalUsd': totalUsd,
+    'payments': payments.map((p) => p.toJson()).toList(),
+    'dueDate': dueDate.toIso8601String(),
+    'createdAt': createdAt.toIso8601String(),
+  };
+
+  factory ReceivableAccount.fromJson(Map<String, dynamic> json) => ReceivableAccount(
+    id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    clientName: json['clientName'] ?? '',
+    clientPhone: json['clientPhone'] ?? '',
+    concept: json['concept'] ?? 'Venta a crédito',
+    totalUsd: (json['totalUsd'] as num?)?.toDouble() ?? 0.0,
+    payments: (json['payments'] as List?)
+            ?.map((p) => ReceivablePayment.fromJson(Map<String, dynamic>.from(p)))
+            .toList() ??
+        [],
+    dueDate: DateTime.tryParse(json['dueDate']?.toString() ?? '') ??
+        DateTime.now().add(const Duration(days: 15)),
+    createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+  );
+}
