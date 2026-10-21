@@ -36,42 +36,10 @@ class _ReceivablesScreenState extends State<ReceivablesScreen> {
           _loading = false;
         });
       } else {
-        // Cuentas iniciales de demostración
-        final demo = [
-          ReceivableAccount(
-            id: '1',
-            clientName: 'Distribuidora Los Llanos C.A.',
-            clientPhone: '+584145803945',
-            concept: 'Factura FES-0038 Material Acrílico',
-            totalUsd: 150.0,
-            payments: [
-              ReceivablePayment(
-                id: 'p1',
-                amountUsd: 50.0,
-                method: 'pago_movil',
-                date: DateTime.now().subtract(const Duration(days: 3)),
-                note: 'Anticipo 30%',
-              ),
-            ],
-            dueDate: DateTime.now().add(const Duration(days: 7)),
-            createdAt: DateTime.now().subtract(const Duration(days: 5)),
-          ),
-          ReceivableAccount(
-            id: '2',
-            clientName: 'Inversiones Gran Bazar',
-            clientPhone: '+584120001122',
-            concept: 'Factura FES-0029 Pendones y Vinil',
-            totalUsd: 85.0,
-            payments: [],
-            dueDate: DateTime.now().subtract(const Duration(days: 2)), // Vencida
-            createdAt: DateTime.now().subtract(const Duration(days: 16)),
-          ),
-        ];
         setState(() {
-          _accounts.addAll(demo);
+          _accounts.clear();
           _loading = false;
         });
-        await StorageService.instance.save('receivables', _accounts.map((a) => a.toJson()).toList());
       }
     } catch (e, stack) {
       DebugLogger.instance.error('Error al cargar cuentas por cobrar: $e', stack);

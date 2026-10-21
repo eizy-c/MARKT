@@ -74,4 +74,36 @@ class StorageService {
     }
     return backup;
   }
+
+  Future<bool> importBackup(Map<String, dynamic> backupData) async {
+    try {
+      final dir = await _getDirectory();
+      for (final entry in backupData.entries) {
+        final file = File('${dir.path}/${entry.key}.json');
+        await file.writeAsString(jsonEncode(entry.value), flush: true);
+      }
+      return true;
+    } catch (e, stack) {
+      DebugLogger.instance.error('Error importando backup: $e', stack);
+      return false;
+    }
+  }
+
+  Future<bool> clearAllData() async {
+    try {
+      final dir = await _getDirectory();
+      if (await dir.exists()) {
+        final files = dir.listSync().whereType<File>();
+        for (final f in files) {
+          if (f.path.endsWith('.json')) {
+            await f.delete();
+          }
+        }
+      }
+      return true;
+    } catch (e, stack) {
+      DebugLogger.instance.error('Error limpiando datos: $e', stack);
+      return false;
+    }
+  }
 }

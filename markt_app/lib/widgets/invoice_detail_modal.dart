@@ -1,4 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/app_models.dart';
 
 class InvoiceDetailModal extends StatelessWidget {
@@ -333,37 +340,76 @@ class InvoiceDetailModal extends StatelessWidget {
               ),
 
               const SizedBox(height: 20),
-              Row(
+              const SizedBox(height: 18),
+              // Botones de Acción de Comprobante (Imprimir PDF, Compartir PDF y Enviar a WhatsApp)
+              Column(
                 children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back),
-                      label: const Text('Cerrar'),
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                  Row(
+                    children: [
+                      // Botón WhatsApp Directo
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _sendToWhatsApp(context),
+                          icon: const Icon(Icons.chat, size: 18),
+                          label: const Text('Enviar WhatsApp'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF25D366),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+
+                      // Botón Imprimir / PDF
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _printOrSavePdf(context),
+                          icon: const Icon(Icons.picture_as_pdf, size: 18),
+                          label: const Text('Descargar PDF'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0284C7),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Comprobante enviado / listo para imprimir')),
-                        );
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.print),
-                      label: const Text('Imprimir Ticket'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF10B981),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                  const SizedBox(height: 8),
+
+                  Row(
+                    children: [
+                      // Botón Compartir Archivo
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _sharePdfFile(context),
+                          icon: const Icon(Icons.share, size: 18),
+                          label: const Text('Compartir Archivo'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF6366F1),
+                            side: const BorderSide(color: Color(0xFF6366F1)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+
+                      // Botón Cerrar
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('Cerrar'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -372,6 +418,198 @@ class InvoiceDetailModal extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<pw.Document> _buildPdfDocument() async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.roll80,
+        margin: const pw.EdgeInsets.all(12),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              pw.Text(
+                invoice.business.name.toUpperCase(),
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 13),
+                textAlign: pw.TextAlign.center,
+              ),
+              pw.Text('RIF: ${invoice.business.rif}', style: const pw.TextStyle(fontSize: 8)),
+              pw.Text('Telf: ${invoice.business.phone}', style: const pw.TextStyle(fontSize: 8)),
+              pw.Text(invoice.business.address, style: const pw.TextStyle(fontSize: 7), textAlign: pw.TextAlign.center),
+              pw.Divider(thickness: 0.5),
+              pw.Text(
+                _getVoucherTitle(invoice.voucherType),
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('FOLIO: ${invoice.folio}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)),
+                  pw.Text(
+                    '${invoice.date.day.toString().padLeft(2, '0')}/${invoice.date.month.toString().padLeft(2, '0')}/${invoice.date.year}',
+                    style: const pw.TextStyle(fontSize: 8),
+                  ),
+                ],
+              ),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Vendedor: ${invoice.seller.name}', style: const pw.TextStyle(fontSize: 8)),
+                  pw.Text('Tasa: Bs. ${invoice.rateBcv.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 8)),
+                ],
+              ),
+              pw.Divider(thickness: 0.5),
+              pw.Align(
+                alignment: pw.Alignment.centerLeft,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('CLIENTE: ${invoice.client.fullName}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)),
+                    pw.Text('CI/RIF: ${invoice.client.docId.isNotEmpty ? invoice.client.docId : "N/A"}', style: const pw.TextStyle(fontSize: 8)),
+                    if (invoice.client.phone.isNotEmpty)
+                      pw.Text('Telf: ${invoice.client.phone}', style: const pw.TextStyle(fontSize: 8)),
+                  ],
+                ),
+              ),
+              pw.Divider(thickness: 0.5),
+              ...invoice.items.map((item) => pw.Padding(
+                    padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                    child: pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Expanded(
+                          child: pw.Text('${item.quantity}x ${item.product.name}', style: const pw.TextStyle(fontSize: 8)),
+                        ),
+                        pw.Text('\$${item.totalUsd.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)),
+                      ],
+                    ),
+                  )),
+              pw.Divider(thickness: 0.5),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('TOTAL USD:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9)),
+                  pw.Text('\$${invoice.totalUsd.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                ],
+              ),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('TOTAL BS.:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9)),
+                  pw.Text('Bs. ${invoice.totalBs.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                ],
+              ),
+              if (invoice.paymentMethod.isNotEmpty) ...[
+                pw.SizedBox(height: 4),
+                pw.Text('Pago: ${invoice.paymentMethod}', style: const pw.TextStyle(fontSize: 8)),
+              ],
+              pw.SizedBox(height: 10),
+              pw.Text(invoice.business.warrantyNote, textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 6)),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf;
+  }
+
+  Future<void> _printOrSavePdf(BuildContext context) async {
+    try {
+      final pdf = await _buildPdfDocument();
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => pdf.save(),
+        name: 'Ticket_${invoice.folio}.pdf',
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al procesar PDF: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _sharePdfFile(BuildContext context) async {
+    try {
+      final pdf = await _buildPdfDocument();
+      final bytes = await pdf.save();
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/Ticket_${invoice.folio}.pdf');
+      await file.writeAsBytes(bytes, flush: true);
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          subject: 'Comprobante ${invoice.folio}',
+          text: 'Comprobante ${invoice.folio} de ${invoice.business.name}',
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al compartir comprobante: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendToWhatsApp(BuildContext context) async {
+    final clientPhone = invoice.client.phone.replaceAll(RegExp(r'[^0-9]'), '');
+    String phoneParam = clientPhone;
+    if (phoneParam.startsWith('0')) {
+      phoneParam = '58${phoneParam.substring(1)}';
+    } else if (!phoneParam.startsWith('58') && phoneParam.length == 10) {
+      phoneParam = '58$phoneParam';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('*${invoice.business.name.toUpperCase()}*');
+    buffer.writeln('RIF: ${invoice.business.rif}');
+    buffer.writeln('--------------------------------');
+    buffer.writeln('*${_getVoucherTitle(invoice.voucherType)}*');
+    buffer.writeln('Folio: *${invoice.folio}*');
+    buffer.writeln('Fecha: ${invoice.date.day.toString().padLeft(2, '0')}/${invoice.date.month.toString().padLeft(2, '0')}/${invoice.date.year}');
+    buffer.writeln('Cliente: ${invoice.client.fullName}');
+    if (invoice.client.docId.isNotEmpty) {
+      buffer.writeln('CI/RIF: ${invoice.client.docId}');
+    }
+    buffer.writeln('Vendedor: ${invoice.seller.name}');
+    buffer.writeln('Tasa BCV: Bs. ${invoice.rateBcv.toStringAsFixed(2)}');
+    buffer.writeln('--------------------------------');
+    buffer.writeln('*DETALLE DE PRODUCTOS:*');
+    for (final item in invoice.items) {
+      buffer.writeln('• ${item.quantity}x ${item.product.name} = \$${item.totalUsd.toStringAsFixed(2)}');
+    }
+    buffer.writeln('--------------------------------');
+    buffer.writeln('*TOTAL A PAGAR:*');
+    buffer.writeln('USD: *\$${invoice.totalUsd.toStringAsFixed(2)}*');
+    buffer.writeln('Bs.: *Bs. ${invoice.totalBs.toStringAsFixed(2)}*');
+    if (invoice.paymentMethod.isNotEmpty) {
+      buffer.writeln('Forma de Pago: ${invoice.paymentMethod}');
+    }
+    buffer.writeln('--------------------------------');
+    buffer.writeln(invoice.business.warrantyNote);
+
+    final encodedText = Uri.encodeComponent(buffer.toString());
+    final urlStr = phoneParam.isNotEmpty
+        ? 'https://wa.me/$phoneParam?text=$encodedText'
+        : 'https://wa.me/?text=$encodedText';
+
+    final uri = Uri.parse(urlStr);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir WhatsApp.')),
+        );
+      }
+    }
   }
 
   String _getVoucherTitle(String type) {

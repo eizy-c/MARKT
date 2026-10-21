@@ -60,6 +60,7 @@ class _PosScreenState extends State<PosScreen> {
   final TextEditingController _installationCostCtrl = TextEditingController(text: '30.00');
 
   bool _hasDelivery = false;
+  String _deliveryType = 'con_costo'; // 'con_costo', 'cobro_a_destino', 'gratis'
   final TextEditingController _deliveryCostCtrl = TextEditingController(text: '10.00');
 
   bool _hasGraphicDesign = false;
@@ -97,8 +98,24 @@ class _PosScreenState extends State<PosScreen> {
   Future<void> _initPosData() async {
     await _loadProducts();
     await _loadClients();
+    await _loadSellers();
     await _loadBankAccounts();
     await _loadBusinessProfile();
+  }
+
+  Future<void> _loadSellers() async {
+    try {
+      final raw = await StorageService.instance.load('sellers');
+      if (raw != null && raw is List && raw.isNotEmpty) {
+        setState(() {
+          _sellers.clear();
+          for (final s in raw) {
+            _sellers.add(Seller.fromJson(Map<String, dynamic>.from(s)));
+          }
+          _selectedSeller = _sellers.first;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadBusinessProfile() async {
@@ -165,20 +182,14 @@ class _PosScreenState extends State<PosScreen> {
           }
           if (_clients.isNotEmpty) {
             _selectedClient = _clients.first;
+          } else {
+            _selectedClient = null;
           }
         });
       } else {
-        final defaultClient = Client(
-          id: '1',
-          docId: 'V-28425010',
-          firstName: 'Cliente',
-          lastName: 'Mostrador',
-          phone: '0414-5803945',
-          address: 'Barquisimeto',
-        );
         setState(() {
-          _clients.add(defaultClient);
-          _selectedClient = defaultClient;
+          _clients.clear();
+          _selectedClient = null;
         });
       }
     } catch (_) {}
@@ -196,14 +207,8 @@ class _PosScreenState extends State<PosScreen> {
           _loading = false;
         });
       } else {
-        final defaults = [
-          Product(id: '1', name: 'Acrílico 3mm Cristal', category: 'Materiales', priceUsd: 15.0, stock: 25),
-          Product(id: '2', name: 'Corte Láser CNC (Hora)', category: 'Servicios', priceUsd: 25.0, stock: 99),
-          Product(id: '3', name: 'Letras Corpóreas LED', category: 'Publicidad', priceUsd: 45.0, stock: 10),
-          Product(id: '4', name: 'Vinil Adhesivo Mate', category: 'Materiales', priceUsd: 8.5, stock: 50),
-        ];
         setState(() {
-          _products.addAll(defaults);
+          _products.clear();
           _loading = false;
         });
       }
@@ -360,7 +365,11 @@ class _PosScreenState extends State<PosScreen> {
     double extra = 0.0;
     if (_hasLighting) extra += double.tryParse(_lightingCostCtrl.text) ?? 0.0;
     if (_hasInstallation) extra += double.tryParse(_installationCostCtrl.text) ?? 0.0;
-    if (_hasDelivery) extra += double.tryParse(_deliveryCostCtrl.text) ?? 0.0;
+    if (_hasDelivery) {
+      if (_deliveryType == 'con_costo') {
+        extra += double.tryParse(_deliveryCostCtrl.text) ?? 0.0;
+      }
+    }
     if (_hasGraphicDesign) extra += double.tryParse(_graphicDesignCostCtrl.text) ?? 0.0;
     return extra;
   }
@@ -873,6 +882,44 @@ class _PosScreenState extends State<PosScreen> {
                         setState(() => _hasDelivery = val);
                       },
                     ),
+                    if (_hasDelivery) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12, top: 4, bottom: 6),
+                        child: Row(
+                          children: [
+                            ChoiceChip(
+                              label: const Text('Con Costo', style: TextStyle(fontSize: 10)),
+                              selected: _deliveryType == 'con_costo',
+                              selectedColor: const Color(0xFF6366F1),
+                              onSelected: (_) {
+                                setModalState(() => _deliveryType = 'con_costo');
+                                setState(() => _deliveryType = 'con_costo');
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            ChoiceChip(
+                              label: const Text('Cobro a Destino', style: TextStyle(fontSize: 10)),
+                              selected: _deliveryType == 'cobro_a_destino',
+                              selectedColor: const Color(0xFFF59E0B),
+                              onSelected: (_) {
+                                setModalState(() => _deliveryType = 'cobro_a_destino');
+                                setState(() => _deliveryType = 'cobro_a_destino');
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            ChoiceChip(
+                              label: const Text('Envío Gratis', style: TextStyle(fontSize: 10)),
+                              selected: _deliveryType == 'gratis',
+                              selectedColor: const Color(0xFF10B981),
+                              onSelected: (_) {
+                                setModalState(() => _deliveryType = 'gratis');
+                                setState(() => _deliveryType = 'gratis');
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
 
                     // Diseño Gráfico / Vectorizado CNC
@@ -1195,9 +1242,19 @@ class _PosScreenState extends State<PosScreen> {
           ));
         }
         if (_hasDelivery) {
-          final cost = double.tryParse(_deliveryCostCtrl.text) ?? 0.0;
+          double cost = 0.0;
+          String label = 'Servicio: Envío / Delivery / Flete';
+          if (_deliveryType == 'con_costo') {
+            cost = double.tryParse(_deliveryCostCtrl.text) ?? 0.0;
+          } else if (_deliveryType == 'cobro_a_destino') {
+            cost = 0.0;
+            label = 'Servicio: Envío (Cobro a Destino por Agencia)';
+          } else if (_deliveryType == 'gratis') {
+            cost = 0.0;
+            label = 'Servicio: Envío Gratis (Cortesía)';
+          }
           invoiceItems.add(CartItem(
-            product: Product(id: 'extra-deliv', name: 'Servicio: Envío / Delivery / Flete', category: 'Servicios', priceUsd: cost),
+            product: Product(id: 'extra-deliv', name: label, category: 'Servicios', priceUsd: cost),
             quantity: 1,
           ));
         }

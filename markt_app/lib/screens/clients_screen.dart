@@ -32,26 +32,8 @@ class _ClientsScreenState extends State<ClientsScreen> {
           _loading = false;
         });
       } else {
-        final defaults = [
-          Client(
-            id: '1',
-            docId: 'V-24190824',
-            firstName: 'Roberto',
-            lastName: 'Gómez',
-            phone: '0414-5551234',
-            address: 'Urb. El Parral, Valencia',
-          ),
-          Client(
-            id: '2',
-            docId: 'J-40918290-1',
-            firstName: 'Inversiones',
-            lastName: 'París C.A.',
-            phone: '0424-9876543',
-            address: 'Av. Las Delicias, Maracay',
-          ),
-        ];
         setState(() {
-          _clients.addAll(defaults);
+          _clients.clear();
           _loading = false;
         });
       }

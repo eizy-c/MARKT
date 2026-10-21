@@ -47,26 +47,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           _loading = false;
         });
       } else {
-        final defaults = [
-          ProjectItem(
-            id: '1',
-            title: 'Aviso Luminoso Neón Flex - Café París',
-            clientName: 'Inversiones París C.A.',
-            totalUsd: 180.0,
-            status: 'in_progress',
-            date: DateTime.now(),
-          ),
-          ProjectItem(
-            id: '2',
-            title: 'Corte CNC Acrílico 5mm Trofeos',
-            clientName: 'Colegio de Médicos',
-            totalUsd: 95.0,
-            status: 'completed',
-            date: DateTime.now().subtract(const Duration(days: 2)),
-          ),
-        ];
         setState(() {
-          _projects.addAll(defaults);
+          _projects.clear();
           _loading = false;
         });
       }
