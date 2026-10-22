@@ -1,3 +1,4 @@
+import '../widgets/recipe_config_modal.dart';
 import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../services/debug_logger.dart';
@@ -22,7 +23,7 @@ class _PosScreenState extends State<PosScreen> {
   ];
 
   // Tipo de comprobante: 'factura' | 'cotizacion' | 'egreso' | 'abono'
-  String _voucherType = 'factura';
+  String _voucherType = 'cotizacion';
 
   // Selección de Tasa: 'USD' | 'EUR'
   String _rateCurrency = 'USD';
@@ -1183,6 +1184,193 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   // Facturar / Procesar Comprobante
+  void _showQuickCustomQuoteModal() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final nameCtrl = TextEditingController(text: 'Aviso Acrílico Personalizado');
+    final dimCtrl = TextEditingController(text: '50x50 cm');
+    final priceCtrl = TextEditingController(text: '45.00');
+    List<RecipeItem> customRecipe = [];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.architecture, color: Color(0xFF38BDF8), size: 22),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Cotizar Trabajo a Medida',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: nameCtrl,
+                    style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                    decoration: InputDecoration(
+                      labelText: 'Descripción / Título del Trabajo *',
+                      filled: true,
+                      fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: dimCtrl,
+                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                          decoration: InputDecoration(
+                            labelText: 'Medidas (ej. 60x40 cm)',
+                            filled: true,
+                            fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: priceCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold),
+                          decoration: InputDecoration(
+                            labelText: r'Precio Cotizado ($ USD) *',
+                            filled: true,
+                            fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Configurar Receta de Insumos (BOM)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Receta de Insumos & Láminas (BOM):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF6366F1))),
+                            Text(
+                              customRecipe.isEmpty
+                                  ? 'Sin consumibles calculados'
+                                  : '${customRecipe.length} ítems • Costo: \${customRecipe.fold(0.0, (a, b) => a + b.totalCostUsd).toStringAsFixed(2)}',
+                              style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
+                            ),
+                          ],
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: ctx,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => RecipeConfigModal(
+                                title: nameCtrl.text.trim().isEmpty ? 'Trabajo Personalizado' : nameCtrl.text.trim(),
+                                initialRecipe: customRecipe,
+                                availableProducts: _products,
+                                onSave: (updated, totalCost, [retailVal]) {
+                                  setModalState(() {
+                                    customRecipe = updated;
+                                    if (retailVal != null && retailVal > 0) {
+                                      priceCtrl.text = retailVal.toStringAsFixed(2);
+                                    }
+                                  });
+                                },
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.architecture, size: 14),
+                          label: Text(customRecipe.isEmpty ? 'Configurar' : 'Editar', style: const TextStyle(fontSize: 11)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF6366F1),
+                            side: const BorderSide(color: Color(0xFF6366F1)),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            minimumSize: Size.zero,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (nameCtrl.text.trim().isEmpty) return;
+                        final price = double.tryParse(priceCtrl.text) ?? 0.0;
+                        final customProd = Product(
+                          id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+                          name: '${nameCtrl.text.trim()} (${dimCtrl.text.trim()})',
+                          category: 'Trabajos a Medida',
+                          priceUsd: price,
+                          type: 'producto',
+                          recipe: customRecipe,
+                        );
+                        _addToCart(customProd, qty: 1);
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('"${customProd.name}" agregado a la cotización.'),
+                            backgroundColor: const Color(0xFF38BDF8),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF38BDF8),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Agregar a la Cotización', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _processVoucher() async {
     // 1. Validaciones para Pago Móvil
     final isPagoMovil = _selectedPaymentMethod.toLowerCase().contains('móvil') || _selectedPaymentMethod.toLowerCase().contains('movil');
@@ -1654,9 +1842,11 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   List<Product> get _filteredProducts {
-    if (_productSearchQuery.isEmpty) return _products;
+    // Excluir insumos de venta directa (los insumos son para recetas BOM en taller)
+    final baseList = _products.where((p) => p.type != 'insumo').toList();
+    if (_productSearchQuery.isEmpty) return baseList;
     final q = _productSearchQuery.toLowerCase();
-    return _products.where((p) => p.name.toLowerCase().contains(q) || p.category.toLowerCase().contains(q) || (p.code ?? '').toLowerCase().contains(q)).toList();
+    return baseList.where((p) => p.name.toLowerCase().contains(q) || p.category.toLowerCase().contains(q) || (p.code ?? '').toLowerCase().contains(q)).toList();
   }
 
   @override
@@ -1677,13 +1867,13 @@ class _PosScreenState extends State<PosScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildVoucherChip('factura', 'Venta', const Color(0xFF10B981)),
-                const SizedBox(width: 6),
                 _buildVoucherChip('cotizacion', 'Cotización', const Color(0xFF38BDF8)),
                 const SizedBox(width: 6),
-                _buildVoucherChip('egreso', 'Egreso', const Color(0xFFEF4444)),
+                _buildVoucherChip('factura', 'Venta Directa', const Color(0xFF10B981)),
                 const SizedBox(width: 6),
                 _buildVoucherChip('abono', 'Abono', const Color(0xFFF59E0B)),
+                const SizedBox(width: 6),
+                _buildVoucherChip('egreso', 'Egreso', const Color(0xFFEF4444)),
               ],
             ),
           ),
@@ -1815,6 +2005,42 @@ class _PosScreenState extends State<PosScreen> {
 
         // 3. Vista Central: O Productos (Venta/Cotización) O Formulario Rápido (Egreso/Abono)
         if (_voucherType == 'factura' || _voucherType == 'cotizacion') ...[
+          if (_voucherType == 'cotizacion') ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.request_quote_outlined, color: Color(0xFF38BDF8), size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Presupuesto para Taller',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: _showQuickCustomQuoteModal,
+                    icon: const Icon(Icons.add, size: 14),
+                    label: const Text('+ Cotizar Trabajo a Medida', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF38BDF8),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      minimumSize: Size.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           // Buscador rápido tipo Valery
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

@@ -133,7 +133,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<String> _titles = [
     'Panel Principal',
-    'Terminal POS (Ventas)',
+    'Cotizador & Terminal',
     'Libro de Caja',
     'Cuentas por Cobrar',
     'Analítica Financiera',

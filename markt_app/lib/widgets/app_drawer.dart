@@ -78,7 +78,7 @@ class AppDrawer extends StatelessWidget {
                   index: 1,
                   icon: Icons.point_of_sale_outlined,
                   activeIcon: Icons.point_of_sale,
-                  title: 'Terminal POS (Ventas)',
+                  title: 'Cotizaciones & Ventas',
                 ),
                 _buildDrawerItem(
                   context,

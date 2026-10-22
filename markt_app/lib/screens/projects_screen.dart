@@ -94,12 +94,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     {'id': '4_sitio', 'name': '4. En Sitio', 'icon': Icons.engineering_outlined},
     {'id': '5_finalizado', 'name': '5. Entregado', 'icon': Icons.verified_outlined},
     {'id': 'catalogo', 'name': 'Catalogo / Fotos', 'icon': Icons.photo_library_outlined},
+    {'id': 'cancelado', 'name': 'Cancelados', 'icon': Icons.cancel_outlined},
   ];
 
   List<ProjectItem> get _filteredProjects {
-    if (_selectedStage == 'all') return _projects;
+    if (_selectedStage == 'all') return _projects.where((p) => p.status != 'cancelado').toList();
     if (_selectedStage == 'catalogo') {
-      return _projects.where((p) => p.photos.isNotEmpty || p.status == '5_finalizado').toList();
+      return _projects.where((p) => (p.photos.isNotEmpty || p.status == '5_finalizado') && p.status != 'cancelado').toList();
     }
     return _projects.where((p) => p.status == _selectedStage).toList();
   }
@@ -1085,6 +1086,43 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           ],
                         ),
                         _buildProjectPhotosPreview(currentP, isDark),
+                        if (currentP.status != 'cancelado') ...[
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _confirmCancelProject(currentP);
+                              },
+                              icon: const Icon(Icons.cancel_outlined, size: 16),
+                              label: const Text('Cancelar / Anular este Pedido'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFEF4444),
+                                side: const BorderSide(color: Color(0xFFEF4444)),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                            ),
+                          ),
+                        ] else ...[
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _reactivateProject(currentP);
+                              },
+                              icon: const Icon(Icons.replay, size: 16),
+                              label: const Text('Reactivar Pedido'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF10B981),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -1277,6 +1315,160 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       });
       await StorageService.instance.save('proyectos', _projects.map((item) => item.toJson()).toList());
       DebugLogger.instance.info('Proyecto ${p.title} avanzado a etapa $nextStage');
+    }
+  }
+
+  void _confirmCancelProject(ProjectItem p) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444), size: 24),
+            SizedBox(width: 8),
+            Text('Cancelar Pedido', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '¿Deseas cancelar el pedido "${p.title}" del cliente ${p.clientName}?',
+              style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 14),
+            ),
+            if (p.totalPaidUsd > 0) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Color(0xFFEF4444), size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Tiene \${p.totalPaidUsd.toStringAsFixed(2)} USD en abonos registrados.',
+                        style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Text(
+              'Puedes marcarlo como Cancelado (se archivará en la pestaña Cancelados) o eliminarlo definitivamente.',
+              style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Volver'),
+          ),
+          OutlinedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              _deleteProjectPermanently(p);
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFEF4444),
+              side: const BorderSide(color: Color(0xFFEF4444)),
+            ),
+            child: const Text('Eliminar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final idx = _projects.indexWhere((x) => x.id == p.id);
+              if (idx != -1) {
+                setState(() {
+                  _projects[idx] = p.copyWith(status: 'cancelado');
+                });
+                await StorageService.instance.save('proyectos', _projects.map((x) => x.toJson()).toList());
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Pedido "${p.title}" marcado como Cancelado.'),
+                      backgroundColor: const Color(0xFFEF4444),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Marcar Cancelado'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _reactivateProject(ProjectItem p) async {
+    final idx = _projects.indexWhere((x) => x.id == p.id);
+    if (idx != -1) {
+      setState(() {
+        _projects[idx] = p.copyWith(status: '1_aprobacion');
+      });
+      await StorageService.instance.save('proyectos', _projects.map((x) => x.toJson()).toList());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Pedido "${p.title}" reactivado en etapa Aprobación.'),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _deleteProjectPermanently(ProjectItem p) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Eliminar definitivamente?'),
+        content: Text('Esta acción borrará el proyecto "${p.title}" permanentemente de la base de datos.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444), foregroundColor: Colors.white),
+            child: const Text('Sí, Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      final idx = _projects.indexWhere((x) => x.id == p.id);
+      if (idx != -1) {
+        setState(() {
+          _projects.removeAt(idx);
+        });
+        await StorageService.instance.save('proyectos', _projects.map((x) => x.toJson()).toList());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Pedido "${p.title}" eliminado definitivamente.'),
+              backgroundColor: const Color(0xFF64748B),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -2202,9 +2394,68 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                       _buildDeliveryBadge(p, isDark),
                                     ],
                                   ),
-                                  Text(
-                                    '\$${p.totalUsd.toStringAsFixed(2)}',
-                                    style: const TextStyle(color: Color(0xFF10B981), fontSize: 16, fontWeight: FontWeight.bold),
+                                  Row(
+                                    children:
+                                      [
+                                        Text(
+                                          '\${p.totalUsd.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            color: p.status == 'cancelado' ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            decoration: p.status == 'cancelado' ? TextDecoration.lineThrough : null,
+                                          ),
+                                        ),
+                                        PopupMenuButton<String>(
+                                          icon: Icon(Icons.more_vert, size: 18, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          onSelected: (val) {
+                                            if (val == 'cancel') {
+                                              _confirmCancelProject(p);
+                                            } else if (val == 'reactivate') {
+                                              _reactivateProject(p);
+                                            } else if (val == 'delete') {
+                                              _deleteProjectPermanently(p);
+                                            }
+                                          },
+                                          itemBuilder: (ctx) => [
+                                            if (p.status != 'cancelado')
+                                              const PopupMenuItem(
+                                                value: 'cancel',
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.cancel_outlined, color: Color(0xFFEF4444), size: 16),
+                                                    SizedBox(width: 8),
+                                                    Text('Cancelar Pedido', style: TextStyle(color: Color(0xFFEF4444), fontSize: 13)),
+                                                  ],
+                                                ),
+                                              ),
+                                            if (p.status == 'cancelado') ...[
+                                              const PopupMenuItem(
+                                                value: 'reactivate',
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.replay, color: Color(0xFF10B981), size: 16),
+                                                    SizedBox(width: 8),
+                                                    Text('Reactivar Pedido', style: TextStyle(color: Color(0xFF10B981), fontSize: 13)),
+                                                  ],
+                                                ),
+                                              ),
+                                              const PopupMenuItem(
+                                                value: 'delete',
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.delete_forever, color: Color(0xFFEF4444), size: 16),
+                                                    SizedBox(width: 8),
+                                                    Text('Eliminar Definitivamente', style: TextStyle(color: Color(0xFFEF4444), fontSize: 13)),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ],
                                   ),
                                 ],
                               ),
@@ -2458,7 +2709,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  if (p.status == '1_aprobacion' || p.status == '2_anticipo') ...[
+                                  if (p.status == 'cancelado') ...[
+                                    TextButton.icon(
+                                      onPressed: () => _reactivateProject(p),
+                                      icon: const Icon(Icons.replay, size: 14, color: Color(0xFF10B981)),
+                                      label: const Text('Reactivar Pedido', style: TextStyle(fontSize: 11, color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
+                                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+                                    ),
+                                  ] else if (p.status == '1_aprobacion' || p.status == '2_anticipo') ...[
                                     Row(
                                       children: [
                                         IconButton(
@@ -2532,6 +2790,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         return '5. Entregado';
       case 'catalogo':
         return 'Catalogo';
+      case 'cancelado':
+        return 'Cancelado';
       default:
         return status;
     }
