@@ -77,11 +77,13 @@ class _PosScreenState extends State<PosScreen> {
   void initState() {
     super.initState();
     _selectedSeller = _sellers.first;
+    StorageService.instance.dataUpdateNotifier.addListener(_onStorageUpdate);
     _initPosData();
   }
 
   @override
   void dispose() {
+    StorageService.instance.dataUpdateNotifier.removeListener(_onStorageUpdate);
     _searchProductCtrl.dispose();
     _quickConceptCtrl.dispose();
     _quickAmountCtrl.dispose();
@@ -91,6 +93,12 @@ class _PosScreenState extends State<PosScreen> {
     _deliveryCostCtrl.dispose();
     _graphicDesignCostCtrl.dispose();
     super.dispose();
+  }
+
+  void _onStorageUpdate() {
+    if (mounted) {
+      _initPosData();
+    }
   }
 
   Future<void> _initPosData() async {
@@ -1369,8 +1377,10 @@ class _PosScreenState extends State<PosScreen> {
       await _recordCashMovement(cashMovement);
     }
 
-    // 2. Creación y Enlace Automático con Módulo de Proyectos (Taller)
-    if (_voucherType == 'factura' || _voucherType == 'cotizacion') {
+    // 2. Creación y Enlace con Módulo de Proyectos (Taller)
+    // REGLA: SOLO las cotizaciones crean proyectos de taller.
+    // Las facturas de mostrador (venta directa de material, lámina, stickers o servicio) son despachos inmediatos y NO van a taller.
+    if (_voucherType == 'cotizacion') {
       try {
         final firstItemTitle = invoiceItems.isNotEmpty ? invoiceItems.first.product.name : 'Trabajo $folioStr';
         final rawProj = await StorageService.instance.load('proyectos');
@@ -1381,12 +1391,85 @@ class _PosScreenState extends State<PosScreen> {
           }
         }
 
-        // Estado inicial según el tipo de comprobante:
-        // - Factura o Cotización con inicial: Pasa directo a "3_taller" (Armado)
-        // - Cotización sin inicial: Pasa a "1_aprobacion" (Esperando Aprobación / Anticipo)
-        final String projStatus = (_voucherType == 'factura' || (_voucherType == 'cotizacion' && _registerInitialNow))
-            ? '3_taller'
-            : '1_aprobacion';
+        // Estado inicial de la cotización:
+        // - Si el cliente entregó la inicial en el acto: pasa a "3_taller" (Armado)
+        // - Si es cotización regular sin anticipo aún: pasa a "1_aprobacion" (Esperando Aprobación / Anticipo)
+        final String projStatus = _registerInitialNow ? '3_taller' : '1_aprobacion';
+
+        // 1. Ensamblar la receta completa del proyecto heredada de los productos cotizados
+        final List<RecipeItem> projectRecipe = [];
+        for (final cartItem in invoiceItems) {
+          final prod = cartItem.product;
+          if (prod.recipe.isNotEmpty) {
+            for (final r in prod.recipe) {
+              projectRecipe.add(r.copyWith(
+                id: '${r.id}_${DateTime.now().microsecondsSinceEpoch}',
+                quantity: r.quantity * cartItem.quantity,
+              ));
+            }
+          } else {
+            projectRecipe.add(RecipeItem(
+              id: 'item_${DateTime.now().microsecondsSinceEpoch}',
+              inventoryProductId: prod.id,
+              name: prod.name,
+              type: prod.type == 'servicio' ? 'servicio' : 'material',
+              quantity: cartItem.quantity.toDouble(),
+              unit: prod.unit,
+              unitCostUsd: prod.costUsd > 0 ? prod.costUsd : prod.priceUsd * 0.5,
+              unitSalePriceUsd: prod.priceUsd,
+            ));
+          }
+        }
+
+        // 2. Inyectar servicios adicionales cotizados en la receta
+        if (_hasLighting) {
+          final lCost = double.tryParse(_lightingCostCtrl.text) ?? 25.0;
+          projectRecipe.add(RecipeItem(
+            id: 'light_${DateTime.now().millisecondsSinceEpoch}',
+            name: 'Luces / Neón / LED Adicional',
+            type: 'material',
+            quantity: 1,
+            unit: 'global',
+            unitCostUsd: lCost,
+            unitSalePriceUsd: lCost,
+          ));
+        }
+        if (_hasInstallation) {
+          final iCost = double.tryParse(_installationCostCtrl.text) ?? 30.0;
+          projectRecipe.add(RecipeItem(
+            id: 'inst_${DateTime.now().millisecondsSinceEpoch}',
+            name: 'Instalación en Sitio',
+            type: 'instalacion',
+            quantity: 1,
+            unit: 'servicio',
+            unitCostUsd: iCost,
+            unitSalePriceUsd: iCost,
+          ));
+        }
+        if (_hasDelivery) {
+          final dCost = double.tryParse(_deliveryCostCtrl.text) ?? 10.0;
+          projectRecipe.add(RecipeItem(
+            id: 'del_${DateTime.now().millisecondsSinceEpoch}',
+            name: 'Flete / Delivery',
+            type: 'consumible',
+            quantity: 1,
+            unit: 'viaje',
+            unitCostUsd: dCost,
+            unitSalePriceUsd: dCost,
+          ));
+        }
+        if (_hasGraphicDesign) {
+          final gdCost = double.tryParse(_graphicDesignCostCtrl.text) ?? 15.0;
+          projectRecipe.add(RecipeItem(
+            id: 'design_${DateTime.now().millisecondsSinceEpoch}',
+            name: 'Diseño Gráfico / Vectorizado',
+            type: 'consumible',
+            quantity: 1,
+            unit: 'diseño',
+            unitCostUsd: gdCost,
+            unitSalePriceUsd: gdCost,
+          ));
+        }
 
         final newProject = ProjectItem(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -1396,12 +1479,28 @@ class _PosScreenState extends State<PosScreen> {
           totalUsd: totalUsd,
           status: projStatus,
           date: DateTime.now(),
+          recipe: projectRecipe,
+          deliveryDate: DateTime.now().add(Duration(days: _validityDays)),
+          initialPaidUsd: _registerInitialNow ? downPaymentAmtUsd : 0.0,
+          initialPaymentMethod: _registerInitialNow ? _selectedPaymentMethod : null,
+          initialPaymentReference: _registerInitialNow ? (_paymentReference.isEmpty ? 'Inicial al emitir $folioStr' : _paymentReference) : null,
+          payments: _registerInitialNow
+              ? [
+                  ReceivablePayment(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    amountUsd: downPaymentAmtUsd,
+                    method: _selectedPaymentMethod,
+                    date: DateTime.now(),
+                    note: 'Anticipo ${_requiredDownPaymentPercent.toStringAsFixed(0)}% cobrado al emitir $folioStr (Ref: ${_paymentReference.isEmpty ? "N/A" : _paymentReference})',
+                  ),
+                ]
+              : const [],
         );
         projList.insert(0, newProject.toJson());
         await StorageService.instance.save('proyectos', projList);
-        DebugLogger.instance.info('Proyecto creado y enlazado: ${newProject.title} en etapa $projStatus');
+        DebugLogger.instance.info('Proyecto creado desde cotización: ${newProject.title} en etapa $projStatus');
       } catch (e) {
-        DebugLogger.instance.error('Error al crear proyecto desde POS: $e');
+        DebugLogger.instance.error('Error al crear proyecto desde cotización POS: $e');
       }
     }
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import '../services/bcv_service.dart';
 import 'package:flutter/material.dart';
 import '../models/app_models.dart';
@@ -17,21 +19,58 @@ class _ProductsScreenState extends State<ProductsScreen> {
   final List<ProductCategory> _categories = [];
   bool _loading = true;
   String _selectedTab = 'todos'; // 'todos', 'producto', 'servicio', 'material'
+  String _selectedCategoryFilter = 'todas';
 
   @override
   void initState() {
     super.initState();
+    StorageService.instance.dataUpdateNotifier.addListener(_onStorageUpdate);
     _loadAll();
+  }
+
+  @override
+  void dispose() {
+    StorageService.instance.dataUpdateNotifier.removeListener(_onStorageUpdate);
+    super.dispose();
+  }
+
+  void _onStorageUpdate() {
+    if (mounted) {
+      _loadAll();
+    }
   }
 
   Future<void> _loadAll() async {
     try {
       final rawCats = await StorageService.instance.load('categories');
-      if (rawCats != null && rawCats is List) {
+      if (rawCats != null && rawCats is List && rawCats.isNotEmpty) {
         _categories.clear();
         for (final item in rawCats) {
           _categories.add(ProductCategory.fromJson(Map<String, dynamic>.from(item)));
         }
+      }
+
+      // Categorías estándar para taller de publicidad solicitadas por el cliente
+      final standardCategories = [
+        ProductCategory(id: 'cat_avisos', name: 'Avisos', type: 'producto'),
+        ProductCategory(id: 'cat_corporeos', name: 'Corpóreos', type: 'producto'),
+        ProductCategory(id: 'cat_medallas', name: 'Medallas', type: 'producto'),
+        ProductCategory(id: 'cat_habladores', name: 'Habladores', type: 'producto'),
+        ProductCategory(id: 'cat_neon', name: 'Avisos Neón', type: 'producto'),
+        ProductCategory(id: 'cat_espejos', name: 'Cuadros de Espejos', type: 'producto'),
+        ProductCategory(id: 'cat_materiales', name: 'Materiales e Insumos', type: 'material'),
+        ProductCategory(id: 'cat_servicios', name: 'Servicios e Instalación', type: 'servicio'),
+      ];
+
+      bool addedAny = false;
+      for (final std in standardCategories) {
+        if (!_categories.any((c) => c.name.toLowerCase() == std.name.toLowerCase())) {
+          _categories.add(std);
+          addedAny = true;
+        }
+      }
+      if (addedAny) {
+        await _saveCategories();
       }
 
       final raw = await StorageService.instance.load('products');
@@ -366,6 +405,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final initialMargin = (cVal > 0 && pVal > 0) ? (((pVal - cVal) / cVal) * 100.0).toStringAsFixed(0) : '50';
     final marginCtrl = TextEditingController(text: initialMargin);
     double suggestedRetailFromRecipe = existingProduct?.recipeTotalSalePriceUsd ?? 0.0;
+    String? photoPath = existingProduct?.imagePath;
+
+    // Variables para la Calculadora de Compra en Lote / Presentación para Materiales
+    bool showBulkCalc = false;
+    String bulkPreset = 'lamina_1';
+    final bulkCostCtrl = TextEditingController();
+    final bulkWidthCtrl = TextEditingController(text: '122');
+    final bulkHeightCtrl = TextEditingController(text: '244');
+    final bulkQtyCtrl = TextEditingController(text: '2.977');
+    String bulkMargin = '50';
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -411,6 +460,87 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Foto del Producto / Catalogo
+                  InkWell(
+                    onTap: () async {
+                      try {
+                        final files = await FilePicker.pickFiles(type: FileType.image);
+                        if (files.isNotEmpty && files.first.path != null) {
+                          final saved = await StorageService.instance.saveProjectPhoto(files.first.path!);
+                          setModalState(() {
+                            photoPath = saved?.path ?? files.first.path;
+                          });
+                        }
+                      } catch (e) {
+                        DebugLogger.instance.error('Error al seleccionar foto de producto: $e');
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      height: 84,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: photoPath != null ? const Color(0xFF6366F1) : (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+                          width: photoPath != null ? 1.5 : 1,
+                        ),
+                      ),
+                      child: photoPath != null && File(photoPath!).existsSync()
+                          ? Stack(
+                              children: [
+                                Center(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(11),
+                                    child: Image.file(
+                                      File(photoPath!),
+                                      height: 80,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setModalState(() {
+                                        photoPath = null;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.add_a_photo_outlined, color: Color(0xFF6366F1), size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Añadir Foto del Producto (Para Catálogo)',
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
                   ),
                   const SizedBox(height: 12),
 
@@ -530,6 +660,304 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
+
+                  // Si es Material / Insumo: Calculadora de Compra en Lote / Presentación Comercial
+                  if (itemType == 'material') ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.calculate_outlined, color: Color(0xFF10B981), size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Calculadora de Compra por Lote / Presentación',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF10B981)),
+                                  ),
+                                ],
+                              ),
+                              TextButton.icon(
+                                onPressed: () => setModalState(() => showBulkCalc = !showBulkCalc),
+                                icon: Icon(showBulkCalc ? Icons.expand_less : Icons.expand_more, size: 16),
+                                label: Text(showBulkCalc ? 'Ocultar' : 'Calcular Costo', style: const TextStyle(fontSize: 11)),
+                                style: TextButton.styleFrom(foregroundColor: const Color(0xFF10B981), visualDensity: VisualDensity.compact),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            'Calcula el costo por metro, m² o pieza al comprar en rollos, láminas enteras o cajas.',
+                            style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
+                          ),
+                          if (showBulkCalc) ...[
+                            const SizedBox(height: 10),
+                            const Text('Presentación comercial adquirida:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                            const SizedBox(height: 6),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _buildBulkPresetChip('lamina_1', '1 Completa (122x244cm)', bulkPreset, (p) {
+                                    setModalState(() {
+                                      bulkPreset = p;
+                                      bulkWidthCtrl.text = '122';
+                                      bulkHeightCtrl.text = '244';
+                                      bulkQtyCtrl.text = '2.977';
+                                      unit = 'm2';
+                                    });
+                                  }),
+                                  const SizedBox(width: 6),
+                                  _buildBulkPresetChip('lamina_media', '1/2 Lámina (122x122cm)', bulkPreset, (p) {
+                                    setModalState(() {
+                                      bulkPreset = p;
+                                      bulkWidthCtrl.text = '122';
+                                      bulkHeightCtrl.text = '122';
+                                      bulkQtyCtrl.text = '1.488';
+                                      unit = 'm2';
+                                    });
+                                  }),
+                                  const SizedBox(width: 6),
+                                  _buildBulkPresetChip('lamina_cuarto', '1/4 Lámina (60x122cm)', bulkPreset, (p) {
+                                    setModalState(() {
+                                      bulkPreset = p;
+                                      bulkWidthCtrl.text = '60';
+                                      bulkHeightCtrl.text = '122';
+                                      bulkQtyCtrl.text = '0.732';
+                                      unit = 'm2';
+                                    });
+                                  }),
+                                  const SizedBox(width: 6),
+                                  _buildBulkPresetChip('lamina_octavo', '1/8 Lámina (60x60cm)', bulkPreset, (p) {
+                                    setModalState(() {
+                                      bulkPreset = p;
+                                      bulkWidthCtrl.text = '60';
+                                      bulkHeightCtrl.text = '60';
+                                      bulkQtyCtrl.text = '0.360';
+                                      unit = 'm2';
+                                    });
+                                  }),
+                                  const SizedBox(width: 6),
+                                  _buildBulkPresetChip('rollo_led', 'Rollo LED (5 mts)', bulkPreset, (p) {
+                                    setModalState(() {
+                                      bulkPreset = p;
+                                      bulkQtyCtrl.text = '5.0';
+                                      unit = 'mts';
+                                    });
+                                  }),
+                                  const SizedBox(width: 6),
+                                  _buildBulkPresetChip('rollo_vinil', 'Rollo Vinil (50 mts)', bulkPreset, (p) {
+                                    setModalState(() {
+                                      bulkPreset = p;
+                                      bulkQtyCtrl.text = '50.0';
+                                      unit = 'mts';
+                                    });
+                                  }),
+                                  const SizedBox(width: 6),
+                                  _buildBulkPresetChip('paquete_100', 'Caja / Paquete (100 unid)', bulkPreset, (p) {
+                                    setModalState(() {
+                                      bulkPreset = p;
+                                      bulkQtyCtrl.text = '100';
+                                      unit = 'unid';
+                                    });
+                                  }),
+                                  const SizedBox(width: 6),
+                                  _buildBulkPresetChip('personalizado', 'Personalizado', bulkPreset, (p) {
+                                    setModalState(() {
+                                      bulkPreset = p;
+                                    });
+                                  }),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Entradas de la calculadora
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: TextField(
+                                    controller: bulkCostCtrl,
+                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                    onChanged: (_) => setModalState(() {}),
+                                    style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13, fontWeight: FontWeight.bold),
+                                    decoration: InputDecoration(
+                                      labelText: 'Total Pagado (\$ USD) *',
+                                      hintText: 'Ej. 80.00',
+                                      filled: true,
+                                      fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                if (bulkPreset.startsWith('lamina_')) ...[
+                                  Expanded(
+                                    flex: 2,
+                                    child: TextField(
+                                      controller: bulkWidthCtrl,
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      onChanged: (_) {
+                                        final w = double.tryParse(bulkWidthCtrl.text) ?? 0.0;
+                                        final h = double.tryParse(bulkHeightCtrl.text) ?? 0.0;
+                                        if (w > 0 && h > 0) {
+                                          bulkQtyCtrl.text = ((w * h) / 10000.0).toStringAsFixed(3);
+                                        }
+                                        setModalState(() {});
+                                      },
+                                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13),
+                                      decoration: InputDecoration(
+                                        labelText: 'Ancho cm',
+                                        filled: true,
+                                        fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    flex: 2,
+                                    child: TextField(
+                                      controller: bulkHeightCtrl,
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      onChanged: (_) {
+                                        final w = double.tryParse(bulkWidthCtrl.text) ?? 0.0;
+                                        final h = double.tryParse(bulkHeightCtrl.text) ?? 0.0;
+                                        if (w > 0 && h > 0) {
+                                          bulkQtyCtrl.text = ((w * h) / 10000.0).toStringAsFixed(3);
+                                        }
+                                        setModalState(() {});
+                                      },
+                                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13),
+                                      decoration: InputDecoration(
+                                        labelText: 'Alto cm',
+                                        filled: true,
+                                        fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                      ),
+                                    ),
+                                  ),
+                                ] else ...[
+                                  Expanded(
+                                    flex: 2,
+                                    child: TextField(
+                                      controller: bulkQtyCtrl,
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      onChanged: (_) => setModalState(() {}),
+                                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13),
+                                      decoration: InputDecoration(
+                                        labelText: 'Rendimiento ($unit)',
+                                        filled: true,
+                                        fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Margen sugerido de venta al detal
+                            Row(
+                              children: [
+                                const Text('Margen Venta Detal:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                const SizedBox(width: 6),
+                                ...['30', '40', '50', '70', '100'].map((m) {
+                                  final isSel = bulkMargin == m;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: InkWell(
+                                      onTap: () => setModalState(() => bulkMargin = m),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: isSel ? const Color(0xFF10B981) : (isDark ? const Color(0xFF1E293B) : Colors.white),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: isSel ? const Color(0xFF10B981) : const Color(0xFFCBD5E1)),
+                                        ),
+                                        child: Text(
+                                          '+$m%',
+                                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isSel ? Colors.white : (isDark ? Colors.white : const Color(0xFF0F172A))),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Tarjeta de Resultado en Vivo
+                            Builder(builder: (_) {
+                              final totalP = double.tryParse(bulkCostCtrl.text) ?? 0.0;
+                              final q = double.tryParse(bulkQtyCtrl.text) ?? 1.0;
+                              final unitC = (totalP > 0 && q > 0) ? (totalP / q) : 0.0;
+                              final mVal = double.tryParse(bulkMargin) ?? 50.0;
+                              final unitSp = unitC * (1.0 + (mVal / 100.0));
+
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFF10B981)),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Costo Unitario: \$${unitC.toStringAsFixed(2)} / $unit', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF10B981))),
+                                        Text('Venta Detal: \$${unitSp.toStringAsFixed(2)} / $unit (+$bulkMargin%)', style: const TextStyle(fontSize: 10, color: Color(0xFF6366F1), fontWeight: FontWeight.w600)),
+                                      ],
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        if (unitC <= 0) return;
+                                        setModalState(() {
+                                          costCtrl.text = unitC.toStringAsFixed(2);
+                                          priceCtrl.text = unitSp.toStringAsFixed(2);
+                                          marginCtrl.text = bulkMargin;
+                                          if (stockCtrl.text.isEmpty || stockCtrl.text == '0' || stockCtrl.text == '10') {
+                                            stockCtrl.text = q.round().toString();
+                                          }
+                                          showBulkCalc = false;
+                                        });
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF10B981),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        minimumSize: Size.zero,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                      ),
+                                      child: const Text('Aplicar a Insumo', style: TextStyle(fontSize: 11)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
                   // Si es Producto terminado: Receta / Bill of Materials (BOM)
                   if (itemType == 'producto') ...[
@@ -722,29 +1150,30 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         ),
                         const SizedBox(width: 10),
                       ],
-                      Expanded(
-                        child: TextField(
-                          controller: priceCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          onChanged: (val) {
-                            final p = double.tryParse(val) ?? 0.0;
-                            final c = double.tryParse(costCtrl.text) ?? 0.0;
-                            if (c > 0 && p > 0) {
-                              final calculatedM = ((p - c) / c) * 100.0;
-                              marginCtrl.text = calculatedM.toStringAsFixed(0);
-                            }
-                            setModalState(() {});
-                          },
-                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold),
-                          decoration: InputDecoration(
-                            labelText: itemType == 'material' ? 'Precio Venta (\$ opcional)' : 'Precio Venta Sugerido (\$ USD) *',
-                            labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-                            filled: true,
-                            fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      if (itemType != 'material')
+                        Expanded(
+                          child: TextField(
+                            controller: priceCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            onChanged: (val) {
+                              final p = double.tryParse(val) ?? 0.0;
+                              final c = double.tryParse(costCtrl.text) ?? 0.0;
+                              if (c > 0 && p > 0) {
+                                final calculatedM = ((p - c) / c) * 100.0;
+                                marginCtrl.text = calculatedM.toStringAsFixed(0);
+                              }
+                              setModalState(() {});
+                            },
+                            style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              labelText: 'Precio Venta Sugerido (\$ USD) *',
+                              labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -793,7 +1222,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                     ),
                   const SizedBox(height: 10),
-// Stock Actual y Mínimo (Crucial para Materiales y Productos)
+
+                  // Stock Actual y Mínimo (Crucial para Materiales y Productos)
                   if (itemType != 'servicio') ...[
                     Row(
                       children: [
@@ -843,11 +1273,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           category: selectedCat.trim().isEmpty ? 'General' : selectedCat.trim(),
                           type: itemType,
                           unit: unit,
-                          priceUsd: double.tryParse(priceCtrl.text) ?? 0.0,
+                          priceUsd: itemType == 'material' ? 0.0 : (double.tryParse(priceCtrl.text) ?? 0.0),
                           costUsd: double.tryParse(costCtrl.text) ?? 0.0,
                           stock: itemType == 'servicio' ? 999999 : (int.tryParse(stockCtrl.text) ?? 0),
                           minStock: itemType == 'servicio' ? 0 : (int.tryParse(minStockCtrl.text) ?? 2),
                           recipe: currentRecipe,
+                          imagePath: photoPath,
                         );
 
                         setState(() {
@@ -912,6 +1343,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
+  Widget _buildBulkPresetChip(String id, String label, String currentPreset, Function(String) onSelect) {
+    final isSel = currentPreset == id;
+    return ChoiceChip(
+      label: Text(label, style: TextStyle(fontSize: 10, color: isSel ? Colors.white : null, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
+      selected: isSel,
+      selectedColor: const Color(0xFF10B981),
+      visualDensity: VisualDensity.compact,
+      onSelected: (_) => onSelect(id),
+    );
+  }
+
   Widget _buildFilterTab(String key, String label, int count) {
     final isSelected = _selectedTab == key;
     return GestureDetector(
@@ -936,8 +1378,30 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   List<Product> get _displayedProducts {
-    if (_selectedTab == 'todos') return _products;
-    return _products.where((p) => p.type == _selectedTab).toList();
+    var list = _products;
+    if (_selectedTab != 'todos') {
+      list = list.where((p) => p.type == _selectedTab).toList();
+    }
+    if (_selectedCategoryFilter != 'todas') {
+      list = list.where((p) => p.category.toLowerCase() == _selectedCategoryFilter.toLowerCase()).toList();
+    }
+    return list;
+  }
+
+  Widget _buildCategoryFilterChip(String key, String label) {
+    final isSelected = _selectedCategoryFilter.toLowerCase() == key.toLowerCase();
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: FilterChip(
+        selected: isSelected,
+        label: Text(label, style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : null)),
+        selectedColor: const Color(0xFF6366F1),
+        checkmarkColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        onSelected: (_) => setState(() => _selectedCategoryFilter = key),
+      ),
+    );
   }
 
   @override
@@ -1002,7 +1466,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
         ),
 
-        // Filtro por Tipo de Ítem: Todos, Productos, Servicios, Materiales
+        // Filtro por Tipo de Ítem: Todos, Productos, Materiales, Servicios
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1018,7 +1482,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
+
+        // Filtro por Categorías de Publicidad (Avisos, Corpóreos, Medallas, etc.)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              _buildCategoryFilterChip('todas', 'Todas'),
+              ..._categories.map((c) => _buildCategoryFilterChip(c.name, c.name)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
 
         // Lista de Ítems
         Expanded(
@@ -1049,11 +1526,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           typeIcon = Icons.build_circle;
                         }
 
+                        final hasValidPhoto = p.imagePath != null && File(p.imagePath!).existsSync();
+
                         return InkWell(
                           onTap: () => _showAddProductDialog(p),
                           borderRadius: BorderRadius.circular(14),
                           child: Container(
-                            padding: const EdgeInsets.all(14),
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: isDark ? const Color(0xFF0F172A) : Colors.white,
                               borderRadius: BorderRadius.circular(14),
@@ -1065,19 +1544,32 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             ),
                             child: Row(
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: (isLowStock ? const Color(0xFFEF4444) : typeColor).withValues(alpha: 0.15),
+                                // Foto miniatura o ícono de tipo
+                                if (hasValidPhoto)
+                                  ClipRRect(
                                     borderRadius: BorderRadius.circular(10),
+                                    child: Image.file(
+                                      File(p.imagePath!),
+                                      width: 48,
+                                      height: 48,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                else
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: (isLowStock ? const Color(0xFFEF4444) : typeColor).withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      isLowStock ? Icons.warning_amber_rounded : typeIcon,
+                                      color: isLowStock ? const Color(0xFFEF4444) : typeColor,
+                                      size: 22,
+                                    ),
                                   ),
-                                  child: Icon(
-                                    isLowStock ? Icons.warning_amber_rounded : typeIcon,
-                                    color: isLowStock ? const Color(0xFFEF4444) : typeColor,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1155,7 +1647,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    if (p.priceUsd > 0)
+                                    if (p.type != 'material' && p.priceUsd > 0)
                                       Text(
                                         '\$${p.priceUsd.toStringAsFixed(2)}',
                                         style: const TextStyle(color: Color(0xFF10B981), fontSize: 16, fontWeight: FontWeight.bold),
@@ -1164,8 +1656,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                       Text(
                                         'Costo: \$${p.costUsd.toStringAsFixed(2)}',
                                         style: TextStyle(
-                                          color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
-                                          fontSize: 10,
+                                          color: p.type == 'material' ? const Color(0xFF38BDF8) : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                                          fontSize: p.type == 'material' ? 14 : 10,
+                                          fontWeight: p.type == 'material' ? FontWeight.bold : FontWeight.normal,
                                         ),
                                       ),
                                   ],

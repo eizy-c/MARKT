@@ -17,7 +17,20 @@ class _ClientsScreenState extends State<ClientsScreen> {
   @override
   void initState() {
     super.initState();
+    StorageService.instance.dataUpdateNotifier.addListener(_onStorageUpdate);
     _loadClients();
+  }
+
+  @override
+  void dispose() {
+    StorageService.instance.dataUpdateNotifier.removeListener(_onStorageUpdate);
+    super.dispose();
+  }
+
+  void _onStorageUpdate() {
+    if (mounted) {
+      _loadClients();
+    }
   }
 
   Future<void> _loadClients() async {

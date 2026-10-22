@@ -128,6 +128,7 @@ class Product {
   final int minStock;
   final String? code;
   final List<RecipeItem> recipe; // Receta / Consumibles predeterminados
+  final String? imagePath; // Foto del producto o trabajo
 
   Product({
     required this.id,
@@ -141,6 +142,7 @@ class Product {
     this.minStock = 2,
     this.code,
     this.recipe = const [],
+    this.imagePath,
   });
 
   double get recipeTotalSalePriceUsd => recipe.isEmpty ? priceUsd : recipe.fold(0.0, (acc, item) => acc + item.totalSalePriceUsd);
@@ -171,6 +173,7 @@ class Product {
     int? minStock,
     String? code,
     List<RecipeItem>? recipe,
+    String? imagePath,
   }) {
     return Product(
       id: id ?? this.id,
@@ -184,6 +187,7 @@ class Product {
       minStock: minStock ?? this.minStock,
       code: code ?? this.code,
       recipe: recipe ?? this.recipe,
+      imagePath: imagePath ?? this.imagePath,
     );
   }
 
@@ -199,6 +203,7 @@ class Product {
     'minStock': minStock,
     'code': code,
     'recipe': recipe.map((r) => r.toJson()).toList(),
+    'imagePath': imagePath,
   };
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
@@ -213,6 +218,7 @@ class Product {
     minStock: (json['minStock'] as num?)?.toInt() ?? 2,
     code: json['code']?.toString(),
     recipe: (json['recipe'] as List?)?.map((r) => RecipeItem.fromJson(Map<String, dynamic>.from(r))).toList() ?? [],
+    imagePath: json['imagePath']?.toString(),
   );
 }
 
@@ -663,6 +669,12 @@ class ProjectItem {
   final String? assignedWorkerName;
   final double assemblyFeeUsd;
   final bool assemblyPaid;
+  final DateTime? deliveryDate;
+  final List<String> photos;
+  final double initialPaidUsd;
+  final String? initialPaymentMethod;
+  final String? initialPaymentReference;
+  final List<ReceivablePayment> payments;
 
   ProjectItem({
     required this.id,
@@ -678,17 +690,41 @@ class ProjectItem {
     this.assignedWorkerName,
     this.assemblyFeeUsd = 0.0,
     this.assemblyPaid = false,
+    this.deliveryDate,
+    this.photos = const [],
+    this.initialPaidUsd = 0.0,
+    this.initialPaymentMethod,
+    this.initialPaymentReference,
+    this.payments = const [],
   });
 
   double get totalCostUsd => recipe.fold(0.0, (acc, item) => acc + item.totalCostUsd);
   double get netProfitUsd => totalUsd - totalCostUsd;
   double get profitMarginPercent => totalUsd > 0 ? (netProfitUsd / totalUsd) * 100 : 0.0;
 
+  double get totalPaidUsd => initialPaidUsd + payments.fold(0.0, (acc, p) => acc + p.amountUsd);
+  double get balanceDueUsd => (totalUsd - totalPaidUsd).clamp(0.0, double.infinity);
+  bool get isFullyPaid => balanceDueUsd <= 0.01;
+
   bool get isAssemblyReady => (status == '5_finalizado' || status == 'Listo' || status == 'Procesado' || status == 'Entregado');
 
   double get effectiveAssemblyFeeUsd {
     if (assemblyFeeUsd > 0) return assemblyFeeUsd;
     return recipe.where((it) => it.type == 'mano_obra').fold(0.0, (acc, it) => acc + it.totalCostUsd);
+  }
+
+  int? get daysUntilDelivery {
+    if (deliveryDate == null) return null;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(deliveryDate!.year, deliveryDate!.month, deliveryDate!.day);
+    return target.difference(today).inDays;
+  }
+
+  bool get isDeliveryOverdue {
+    final d = daysUntilDelivery;
+    if (d == null) return false;
+    return d < 0 && status != '5_finalizado';
   }
 
   ProjectItem copyWith({
@@ -705,6 +741,12 @@ class ProjectItem {
     String? assignedWorkerName,
     double? assemblyFeeUsd,
     bool? assemblyPaid,
+    DateTime? deliveryDate,
+    List<String>? photos,
+    double? initialPaidUsd,
+    String? initialPaymentMethod,
+    String? initialPaymentReference,
+    List<ReceivablePayment>? payments,
   }) {
     return ProjectItem(
       id: id ?? this.id,
@@ -720,6 +762,12 @@ class ProjectItem {
       assignedWorkerName: assignedWorkerName ?? this.assignedWorkerName,
       assemblyFeeUsd: assemblyFeeUsd ?? this.assemblyFeeUsd,
       assemblyPaid: assemblyPaid ?? this.assemblyPaid,
+      deliveryDate: deliveryDate ?? this.deliveryDate,
+      photos: photos ?? this.photos,
+      initialPaidUsd: initialPaidUsd ?? this.initialPaidUsd,
+      initialPaymentMethod: initialPaymentMethod ?? this.initialPaymentMethod,
+      initialPaymentReference: initialPaymentReference ?? this.initialPaymentReference,
+      payments: payments ?? this.payments,
     );
   }
 
@@ -737,6 +785,12 @@ class ProjectItem {
     'assignedWorkerName': assignedWorkerName,
     'assemblyFeeUsd': assemblyFeeUsd,
     'assemblyPaid': assemblyPaid,
+    'deliveryDate': deliveryDate?.toIso8601String(),
+    'photos': photos,
+    'initialPaidUsd': initialPaidUsd,
+    'initialPaymentMethod': initialPaymentMethod,
+    'initialPaymentReference': initialPaymentReference,
+    'payments': payments.map((p) => p.toJson()).toList(),
   };
 
   factory ProjectItem.fromJson(Map<String, dynamic> json) => ProjectItem(
@@ -753,6 +807,12 @@ class ProjectItem {
     assignedWorkerName: json['assignedWorkerName']?.toString(),
     assemblyFeeUsd: (json['assemblyFeeUsd'] as num?)?.toDouble() ?? 0.0,
     assemblyPaid: json['assemblyPaid'] ?? false,
+    deliveryDate: json['deliveryDate'] != null ? DateTime.tryParse(json['deliveryDate'].toString()) : null,
+    photos: (json['photos'] as List?)?.map((p) => p.toString()).toList() ?? const [],
+    initialPaidUsd: (json['initialPaidUsd'] as num?)?.toDouble() ?? 0.0,
+    initialPaymentMethod: json['initialPaymentMethod']?.toString(),
+    initialPaymentReference: json['initialPaymentReference']?.toString(),
+    payments: (json['payments'] as List?)?.map((p) => ReceivablePayment.fromJson(Map<String, dynamic>.from(p))).toList() ?? const [],
   );
 }
 

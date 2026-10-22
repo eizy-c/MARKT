@@ -18,7 +18,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _selectedProjectFilter = 'Todos';
 
   double _salesTotalUsd = 0.0;
-  double _cogsTotalUsd = 0.0;
   double _cashBalanceUsd = 0.0;
   double _receivablesPendingUsd = 0.0;
   int _receivablesCount = 0;
@@ -29,7 +28,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    StorageService.instance.dataUpdateNotifier.addListener(_onStorageUpdate);
     _loadDashboardData();
+  }
+
+  @override
+  void dispose() {
+    StorageService.instance.dataUpdateNotifier.removeListener(_onStorageUpdate);
+    super.dispose();
+  }
+
+  void _onStorageUpdate() {
+    if (mounted) {
+      _loadDashboardData();
+    }
   }
 
   Future<void> _loadDashboardData() async {
@@ -37,12 +49,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // 1. Facturas
       final rawInvoices = await StorageService.instance.load('invoices');
       double sales = 0.0;
-      double cogs = 0.0;
       if (rawInvoices != null && rawInvoices is List) {
         for (final item in rawInvoices) {
           final inv = Invoice.fromJson(Map<String, dynamic>.from(item));
           sales += inv.totalUsd;
-          cogs += inv.totalCostUsd;
         }
       }
 
@@ -85,7 +95,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       setState(() {
         _salesTotalUsd = sales;
-        _cogsTotalUsd = cogs;
         _cashBalanceUsd = cashBal;
         _receivablesPendingUsd = recPending;
         _receivablesCount = recCount;
@@ -96,9 +105,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() => _loading = false);
     }
   }
-
-  double get _netProfitUsd => _salesTotalUsd - _cogsTotalUsd;
-  double get _marginPercent => _salesTotalUsd > 0 ? (_netProfitUsd / _salesTotalUsd) * 100 : 0.0;
 
   List<ProjectItem> get _filteredProjects {
     if (_selectedProjectFilter == 'Todos') return _projects;
@@ -211,49 +217,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _buildSmartAlertBanner(isDark),
             const SizedBox(height: 12),
 
-            // Bento Grid de 4 Cards (Ventas, Utilidad Neta, Por Cobrar, Saldo en Caja)
+            // Bento Grid de 4 Cards (Por Cobrar, Proyectos en Espera, Saldo en Caja, Ventas)
             Row(
               children: [
-                // 1. Ventas
-                Expanded(
-                  child: _buildKpiCard(
-                    title: 'Ventas',
-                    amount: '\$${_salesTotalUsd.toStringAsFixed(2)}',
-                    subtext: '${(_salesTotalUsd * rate).toStringAsFixed(2)} Bs.',
-                    icon: Icons.payments_outlined,
-                    iconColor: const Color(0xFF10B981),
-                    iconBg: const Color(0xFF10B981).withValues(alpha: 0.12),
-                    cardBg: cardBg,
-                    cardBorder: cardBorder,
-                    primaryText: primaryText,
-                    secondaryText: secondaryText,
-                    onTap: () => widget.onNavigate(1), // POS
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // 2. Utilidad Neta
-                Expanded(
-                  child: _buildKpiCard(
-                    title: 'Utilidad Neta',
-                    amount: '\$${_netProfitUsd.toStringAsFixed(2)}',
-                    subtext: 'Margen: ${_marginPercent.toStringAsFixed(0)}%',
-                    amountColor: const Color(0xFF2563EB),
-                    icon: Icons.verified_outlined,
-                    iconColor: const Color(0xFF2563EB),
-                    iconBg: const Color(0xFF2563EB).withValues(alpha: 0.12),
-                    cardBg: cardBg,
-                    cardBorder: cardBorder,
-                    primaryText: primaryText,
-                    secondaryText: secondaryText,
-                    onTap: () => widget.onNavigate(4), // Analítica
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                // 3. Por Cobrar
+                // 1. Por Cobrar
                 Expanded(
                   child: _buildKpiCard(
                     title: 'Por Cobrar',
@@ -272,20 +239,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // 4. Saldo en Caja
+                // 2. Proyectos en Espera
+                Expanded(
+                  child: _buildKpiCard(
+                    title: 'Proyectos en Espera',
+                    amount: '${_projects.where((p) => p.status == '1_aprobacion' || p.status == '2_anticipo').length}',
+                    subtext: 'Presupuestos por aprobar / anticipo',
+                    amountColor: const Color(0xFF38BDF8),
+                    icon: Icons.hourglass_top_outlined,
+                    iconColor: const Color(0xFF38BDF8),
+                    iconBg: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                    cardBg: cardBg,
+                    cardBorder: cardBorder,
+                    primaryText: primaryText,
+                    secondaryText: secondaryText,
+                    onTap: () => widget.onNavigate(5), // Proyectos
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                // 3. Saldo en Caja
                 Expanded(
                   child: _buildKpiCard(
                     title: 'Saldo en Caja',
                     amount: '\$${_cashBalanceUsd.toStringAsFixed(2)}',
                     subtext: '${(_cashBalanceUsd * rate).toStringAsFixed(2)} Bs.',
                     icon: Icons.account_balance_wallet_outlined,
-                    iconColor: const Color(0xFF64748B),
-                    iconBg: const Color(0xFF64748B).withValues(alpha: 0.12),
+                    iconColor: const Color(0xFF10B981),
+                    iconBg: const Color(0xFF10B981).withValues(alpha: 0.12),
                     cardBg: cardBg,
                     cardBorder: cardBorder,
                     primaryText: primaryText,
                     secondaryText: secondaryText,
                     onTap: () => widget.onNavigate(2), // Libro de Caja
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // 4. Ventas
+                Expanded(
+                  child: _buildKpiCard(
+                    title: 'Ventas',
+                    amount: '\$${_salesTotalUsd.toStringAsFixed(2)}',
+                    subtext: '${(_salesTotalUsd * rate).toStringAsFixed(2)} Bs.',
+                    icon: Icons.payments_outlined,
+                    iconColor: const Color(0xFF6366F1),
+                    iconBg: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                    cardBg: cardBg,
+                    cardBorder: cardBorder,
+                    primaryText: primaryText,
+                    secondaryText: secondaryText,
+                    onTap: () => widget.onNavigate(1), // POS
                   ),
                 ),
               ],
@@ -542,7 +548,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final readyProjectsCount = _projects.where((p) => p.status == '5_finalizado' || p.status == 'completed').length;
     final pendingDownPaymentCount = _projects.where((p) => p.status == '2_anticipo').length;
 
-    final hasAlerts = _receivablesCount > 0 || waitingProjectsCount > 0 || readyProjectsCount > 0 || pendingDownPaymentCount > 0;
+    final hasAlerts = waitingProjectsCount > 0 || readyProjectsCount > 0 || pendingDownPaymentCount > 0;
     if (!hasAlerts) return const SizedBox.shrink();
 
     return Container(
@@ -580,13 +586,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (_receivablesCount > 0)
-                _buildAlertPill(
-                  label: '$_receivablesCount deudas pendientes',
-                  icon: Icons.money_off,
-                  color: const Color(0xFFEF4444),
-                  onTap: () => widget.onNavigate(3), // Por Cobrar
-                ),
               if (pendingDownPaymentCount > 0)
                 _buildAlertPill(
                   label: '$pendingDownPaymentCount por cobrar inicial',

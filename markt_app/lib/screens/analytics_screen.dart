@@ -24,7 +24,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   void initState() {
     super.initState();
+    StorageService.instance.dataUpdateNotifier.addListener(_onStorageUpdate);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    StorageService.instance.dataUpdateNotifier.removeListener(_onStorageUpdate);
+    super.dispose();
+  }
+
+  void _onStorageUpdate() {
+    if (mounted) {
+      _loadData();
+    }
   }
 
   Future<void> _loadData() async {

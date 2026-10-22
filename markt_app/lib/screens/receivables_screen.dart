@@ -21,7 +21,20 @@ class _ReceivablesScreenState extends State<ReceivablesScreen> {
   @override
   void initState() {
     super.initState();
+    StorageService.instance.dataUpdateNotifier.addListener(_onStorageUpdate);
     _loadAccounts();
+  }
+
+  @override
+  void dispose() {
+    StorageService.instance.dataUpdateNotifier.removeListener(_onStorageUpdate);
+    super.dispose();
+  }
+
+  void _onStorageUpdate() {
+    if (mounted) {
+      _loadAccounts();
+    }
   }
 
   Future<void> _loadAccounts() async {

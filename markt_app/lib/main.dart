@@ -181,6 +181,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       setState(() {
         _currentIndex = index;
       });
+      // Sincronización en vivo: forzar actualización inmediata de datos al cambiar de pantalla
+      StorageService.instance.notifyDataChanged();
       DebugLogger.instance.info('Navegando a: ${_titles[index]}');
     }
   }

@@ -17,7 +17,20 @@ class _CashScreenState extends State<CashScreen> {
   @override
   void initState() {
     super.initState();
+    StorageService.instance.dataUpdateNotifier.addListener(_onStorageUpdate);
     _loadCashMovements();
+  }
+
+  @override
+  void dispose() {
+    StorageService.instance.dataUpdateNotifier.removeListener(_onStorageUpdate);
+    super.dispose();
+  }
+
+  void _onStorageUpdate() {
+    if (mounted) {
+      _loadCashMovements();
+    }
   }
 
   Future<void> _loadCashMovements() async {

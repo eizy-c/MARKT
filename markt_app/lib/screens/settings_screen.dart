@@ -52,9 +52,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bcvEurCtrl = TextEditingController(text: rates.eur.toStringAsFixed(2));
 
     BcvService.instance.ratesNotifier.addListener(_onRatesUpdated);
+    StorageService.instance.dataUpdateNotifier.addListener(_onStorageUpdated);
     _loadSavedBusinessProfile();
     _loadBankAccounts();
     _loadSellers();
+  }
+
+  void _onStorageUpdated() {
+    if (mounted) {
+      _loadSavedBusinessProfile();
+      _loadBankAccounts();
+      _loadSellers();
+    }
   }
 
   Future<void> _loadSellers() async {
@@ -118,6 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     BcvService.instance.ratesNotifier.removeListener(_onRatesUpdated);
+    StorageService.instance.dataUpdateNotifier.removeListener(_onStorageUpdated);
     bcvUsdCtrl.dispose();
     bcvEurCtrl.dispose();
     businessNameCtrl.dispose();
@@ -1709,27 +1719,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _confirmClearAllData() {
+  Future<void> _confirmClearAllData() async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasData = await StorageService.instance.hasAnyData();
+
+    if (!hasData) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('La aplicacion ya se encuentra completamente limpia en 0.'),
+          backgroundColor: Color(0xFF6366F1),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444)),
-            SizedBox(width: 8),
-            Text('¿Limpiar Toda la App?'),
+            Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444), size: 28),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Alerta: Formatear Aplicacion',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
         ),
-        content: const Text(
-          'Esta accion eliminara todos los productos de prueba, clientes de muestra, facturas y registros de caja.\n\nLa app quedara limpia en blanco lista para tu operacion real.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Se detectaron registros activos en la base de datos local (productos, presupuestos, facturas, proyectos, fotos o caja).',
+              style: TextStyle(fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.shield_outlined, color: Color(0xFFEF4444), size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Te recomendamos exportar un respaldo de seguridad antes de restablecer todo a 0.',
+                      style: TextStyle(color: Color(0xFFEF4444), fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancelar'),
+          ),
+          OutlinedButton.icon(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _exportBackupToFile();
+            },
+            icon: const Icon(Icons.download_for_offline, size: 16),
+            label: const Text('Respaldar Primero'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF2563EB),
+              side: const BorderSide(color: Color(0xFF2563EB)),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1748,7 +1818,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Datos de prueba eliminados. La app esta limpia en 0.'),
+                      content: Text('Aplicacion formateada con exito. Todos los datos y cache estan en 0.'),
                       backgroundColor: Color(0xFF10B981),
                     ),
                   );
@@ -1763,7 +1833,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               backgroundColor: const Color(0xFFEF4444),
               foregroundColor: Colors.white,
             ),
-            child: const Text('Si, Limpiar Todo'),
+            child: const Text('Eliminar Completo (Reset 0)'),
           ),
         ],
       ),
