@@ -698,7 +698,17 @@ class ProjectItem {
     this.payments = const [],
   });
 
-  double get totalCostUsd => recipe.fold(0.0, (acc, item) => acc + item.totalCostUsd);
+  double get totalCostUsd {
+    // 1. Costo de insumos, consumibles y servicios de la receta (excluyendo mano_obra para evitar redundancia o doble conteo)
+    final materialsCost = recipe
+        .where((it) => it.type != 'mano_obra')
+        .fold(0.0, (acc, item) => acc + item.totalCostUsd);
+
+    // 2. Costo de armado: toma el campo asignado o la mano de obra de la receta
+    final laborCost = effectiveAssemblyFeeUsd;
+
+    return materialsCost + laborCost;
+  }
   double get netProfitUsd => totalUsd - totalCostUsd;
   double get profitMarginPercent => totalUsd > 0 ? (netProfitUsd / totalUsd) * 100 : 0.0;
 

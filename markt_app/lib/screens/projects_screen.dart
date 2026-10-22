@@ -512,10 +512,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
   }
 
-  void _showAssignWorkerModal(ProjectItem p) {
+  void _showAssignWorkerModal(ProjectItem p, {VoidCallback? onSaved}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     String? selectedWorkerId = p.assignedWorkerId;
     String? selectedWorkerName = p.assignedWorkerName;
+    final feeCtrl = TextEditingController(
+      text: p.effectiveAssemblyFeeUsd > 0 ? p.effectiveAssemblyFeeUsd.toStringAsFixed(2) : '',
+    );
 
     showModalBottomSheet(
       context: context,
@@ -598,21 +601,62 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: feeCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13, fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
+                      labelText: r'Monto Mano de Obra Armado ($ USD)',
+                      hintText: '0.00',
+                      prefixIcon: const Icon(Icons.attach_money, size: 16),
+                      helperText: 'Costo que se incluye en la fabricación y se pagará al armador al finalizar.',
+                      helperStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 10),
+                      filled: true,
+                      fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     height: 44,
                     child: ElevatedButton(
                       onPressed: () async {
+                        final newFee = double.tryParse(feeCtrl.text.trim()) ?? 0.0;
+                        List<RecipeItem> updatedRecipe = List.from(p.recipe);
+                        final laborIdx = updatedRecipe.indexWhere((it) => it.type == 'mano_obra');
+                        if (laborIdx != -1) {
+                          if (newFee > 0) {
+                            updatedRecipe[laborIdx] = updatedRecipe[laborIdx].copyWith(unitCostUsd: newFee, unitSalePriceUsd: newFee);
+                          } else {
+                            updatedRecipe.removeAt(laborIdx);
+                          }
+                        } else if (newFee > 0) {
+                          updatedRecipe.add(RecipeItem(
+                            id: 'labor_armado_${DateTime.now().millisecondsSinceEpoch}',
+                            name: 'Mano de Obra Armado (Técnico)',
+                            type: 'mano_obra',
+                            quantity: 1,
+                            unit: 'global',
+                            unitCostUsd: newFee,
+                            unitSalePriceUsd: newFee,
+                          ));
+                        }
+
                         final idx = _projects.indexWhere((it) => it.id == p.id);
                         if (idx != -1) {
                           setState(() {
                             _projects[idx] = p.copyWith(
                               assignedWorkerId: selectedWorkerId,
                               assignedWorkerName: selectedWorkerName,
+                              assemblyFeeUsd: newFee,
+                              recipe: updatedRecipe,
                             );
                           });
                           await StorageService.instance.save('proyectos', _projects.map((x) => x.toJson()).toList());
+                          onSaved?.call();
                         }
                         if (ctx.mounted) Navigator.pop(ctx);
                       },
@@ -622,6 +666,269 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: const Text('Guardar Asignación'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEditProjectModal(ProjectItem p, {VoidCallback? onSaved}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleCtrl = TextEditingController(text: p.title);
+    final clientCtrl = TextEditingController(text: p.clientName);
+    final phoneCtrl = TextEditingController(text: p.clientPhone);
+    final dimCtrl = TextEditingController(text: p.dimensions);
+    final totalCtrl = TextEditingController(text: p.totalUsd.toStringAsFixed(2));
+    final feeCtrl = TextEditingController(
+      text: p.effectiveAssemblyFeeUsd > 0 ? p.effectiveAssemblyFeeUsd.toStringAsFixed(2) : '',
+    );
+    String? selectedWorkerId = p.assignedWorkerId;
+    String? selectedWorkerName = p.assignedWorkerName;
+    DateTime? selectedDeliveryDate = p.deliveryDate;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.edit_note, color: Color(0xFF6366F1), size: 24),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Editar Datos del Proyecto',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: titleCtrl,
+                    style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Título / Descripción del Trabajo *',
+                      filled: true,
+                      fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: clientCtrl,
+                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13),
+                          decoration: InputDecoration(
+                            labelText: 'Nombre Cliente *',
+                            filled: true,
+                            fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: phoneCtrl,
+                          keyboardType: TextInputType.phone,
+                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13),
+                          decoration: InputDecoration(
+                            labelText: 'WhatsApp / Teléfono',
+                            filled: true,
+                            fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: dimCtrl,
+                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13),
+                          decoration: InputDecoration(
+                            labelText: 'Medidas (ej. 100x50 cm)',
+                            filled: true,
+                            fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: totalCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13, fontWeight: FontWeight.bold),
+                          decoration: InputDecoration(
+                            labelText: r'Precio Cotizado ($ USD) *',
+                            filled: true,
+                            fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Asignación de Armador y Mano de Obra
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Taller: Técnico Armador & Mano de Obra',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFFF59E0B)),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String?>(
+                              value: selectedWorkerId,
+                              isExpanded: true,
+                              hint: const Text('Seleccionar Armador...', style: TextStyle(fontSize: 12)),
+                              dropdownColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                              items: [
+                                const DropdownMenuItem<String?>(value: null, child: Text('Sin Asignar', style: TextStyle(fontSize: 12))),
+                                ..._sellers.map((s) => DropdownMenuItem<String?>(value: s.id, child: Text('${s.name} [${s.role}]', style: const TextStyle(fontSize: 12)))),
+                              ],
+                              onChanged: (val) {
+                                setModalState(() {
+                                  selectedWorkerId = val;
+                                  selectedWorkerName = val == null ? null : _sellers.firstWhere((s) => s.id == val).name;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: feeCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13, fontWeight: FontWeight.bold),
+                          decoration: InputDecoration(
+                            labelText: r'Monto Mano de Obra Armado ($ USD)',
+                            hintText: '0.00',
+                            prefixIcon: const Icon(Icons.attach_money, size: 16),
+                            filled: true,
+                            fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (titleCtrl.text.trim().isEmpty) return;
+                        final newTotal = double.tryParse(totalCtrl.text.trim()) ?? p.totalUsd;
+                        final newFee = double.tryParse(feeCtrl.text.trim()) ?? 0.0;
+
+                        // Sincronizar mano de obra en receta para evitar redundancias
+                        List<RecipeItem> updatedRecipe = List.from(p.recipe);
+                        final laborIdx = updatedRecipe.indexWhere((it) => it.type == 'mano_obra');
+                        if (laborIdx != -1) {
+                          if (newFee > 0) {
+                            updatedRecipe[laborIdx] = updatedRecipe[laborIdx].copyWith(unitCostUsd: newFee, unitSalePriceUsd: newFee);
+                          } else {
+                            updatedRecipe.removeAt(laborIdx);
+                          }
+                        } else if (newFee > 0) {
+                          updatedRecipe.add(RecipeItem(
+                            id: 'labor_armado_${DateTime.now().millisecondsSinceEpoch}',
+                            name: 'Mano de Obra Armado (Técnico)',
+                            type: 'mano_obra',
+                            quantity: 1,
+                            unit: 'global',
+                            unitCostUsd: newFee,
+                            unitSalePriceUsd: newFee,
+                          ));
+                        }
+
+                        final idx = _projects.indexWhere((it) => it.id == p.id);
+                        if (idx != -1) {
+                          setState(() {
+                            _projects[idx] = p.copyWith(
+                              title: titleCtrl.text.trim(),
+                              clientName: clientCtrl.text.trim().isEmpty ? 'Cliente General' : clientCtrl.text.trim(),
+                              clientPhone: phoneCtrl.text.trim(),
+                              dimensions: dimCtrl.text.trim(),
+                              totalUsd: newTotal,
+                              assignedWorkerId: selectedWorkerId,
+                              assignedWorkerName: selectedWorkerName,
+                              assemblyFeeUsd: newFee,
+                              recipe: updatedRecipe,
+                              deliveryDate: selectedDeliveryDate,
+                            );
+                          });
+                          await StorageService.instance.save('proyectos', _projects.map((x) => x.toJson()).toList());
+                          onSaved?.call();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Proyecto "${titleCtrl.text.trim()}" actualizado con éxito.'),
+                                backgroundColor: const Color(0xFF10B981),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        }
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6366F1),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Guardar Cambios del Proyecto', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -686,9 +993,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           ),
                       ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(ctx),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, size: 20, color: Color(0xFF6366F1)),
+                          tooltip: 'Editar Datos del Proyecto',
+                          onPressed: () => _showEditProjectModal(currentP, onSaved: () => setDetailsState(() {})),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -969,11 +1285,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                     title: currentP.title,
                                     initialRecipe: currentP.recipe,
                                     availableProducts: _products,
-                                    onSave: (updated, totalCost) async {
+                                    initialAssemblyFee: currentP.effectiveAssemblyFeeUsd,
+                                    onSave: (updated, totalCost, [retailVal]) async {
                                       final pIdx = _projects.indexWhere((it) => it.id == currentP.id);
                                       if (pIdx != -1) {
+                                        final laborCost = (updated as List<RecipeItem>)
+                                            .where((it) => it.type == 'mano_obra')
+                                            .fold(0.0, (acc, it) => acc + it.totalCostUsd);
                                         setState(() {
-                                          _projects[pIdx] = currentP.copyWith(recipe: updated);
+                                          _projects[pIdx] = currentP.copyWith(
+                                            recipe: updated,
+                                            assemblyFeeUsd: laborCost > 0 ? laborCost : currentP.assemblyFeeUsd,
+                                          );
                                         });
                                         await StorageService.instance.save('proyectos', _projects.map((x) => x.toJson()).toList());
                                         setDetailsState(() {});
@@ -1034,7 +1357,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             ),
                             TextButton.icon(
                               onPressed: () {
-                                _showAssignWorkerModal(currentP);
+                                _showAssignWorkerModal(currentP, onSaved: () => setDetailsState(() {}));
                               },
                               icon: const Icon(Icons.person_add, size: 14),
                               label: Text(currentP.assignedWorkerName == null ? 'Asignar' : 'Cambiar', style: const TextStyle(fontSize: 12)),
@@ -2411,7 +2734,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                           padding: EdgeInsets.zero,
                                           constraints: const BoxConstraints(),
                                           onSelected: (val) {
-                                            if (val == 'cancel') {
+                                            if (val == 'edit') {
+                                              _showEditProjectModal(p);
+                                            } else if (val == 'cancel') {
                                               _confirmCancelProject(p);
                                             } else if (val == 'reactivate') {
                                               _reactivateProject(p);
@@ -2420,6 +2745,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                             }
                                           },
                                           itemBuilder: (ctx) => [
+                                            const PopupMenuItem(
+                                              value: 'edit',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.edit, color: Color(0xFF6366F1), size: 16),
+                                                  SizedBox(width: 8),
+                                                  Text('Editar Proyecto', style: TextStyle(color: Color(0xFF6366F1), fontSize: 13)),
+                                                ],
+                                              ),
+                                            ),
                                             if (p.status != 'cancelado')
                                               const PopupMenuItem(
                                                 value: 'cancel',
@@ -2493,11 +2828,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                         title: p.title,
                                         initialRecipe: p.recipe,
                                         availableProducts: _products,
-                                        onSave: (updated, totalCost) async {
+                                        initialAssemblyFee: p.effectiveAssemblyFeeUsd,
+                                        onSave: (updated, totalCost, [retailVal]) async {
                                           final idx = _projects.indexWhere((item) => item.id == p.id);
                                           if (idx != -1) {
+                                            final laborCost = (updated as List<RecipeItem>)
+                                                .where((it) => it.type == 'mano_obra')
+                                                .fold(0.0, (acc, it) => acc + it.totalCostUsd);
                                             setState(() {
-                                              _projects[idx] = p.copyWith(recipe: updated);
+                                              _projects[idx] = p.copyWith(
+                                                recipe: updated,
+                                                assemblyFeeUsd: laborCost > 0 ? laborCost : p.assemblyFeeUsd,
+                                              );
                                             });
                                             await StorageService.instance.save('proyectos', _projects.map((x) => x.toJson()).toList());
                                           }
@@ -2540,11 +2882,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                         title: p.title,
                                         initialRecipe: const [],
                                         availableProducts: _products,
-                                        onSave: (updated, totalCost) async {
+                                        initialAssemblyFee: p.effectiveAssemblyFeeUsd,
+                                        onSave: (updated, totalCost, [retailVal]) async {
                                           final idx = _projects.indexWhere((item) => item.id == p.id);
                                           if (idx != -1) {
+                                            final laborCost = (updated as List<RecipeItem>)
+                                                .where((it) => it.type == 'mano_obra')
+                                                .fold(0.0, (acc, it) => acc + it.totalCostUsd);
                                             setState(() {
-                                              _projects[idx] = p.copyWith(recipe: updated);
+                                              _projects[idx] = p.copyWith(
+                                                recipe: updated,
+                                                assemblyFeeUsd: laborCost > 0 ? laborCost : p.assemblyFeeUsd,
+                                              );
                                             });
                                             await StorageService.instance.save('proyectos', _projects.map((x) => x.toJson()).toList());
                                           }

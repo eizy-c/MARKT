@@ -7,6 +7,7 @@ class RecipeConfigModal extends StatefulWidget {
   final List<RecipeItem> initialRecipe;
   final List<Product> availableProducts;
   final Function onSave;
+  final double? initialAssemblyFee;
 
   const RecipeConfigModal({
     super.key,
@@ -14,6 +15,7 @@ class RecipeConfigModal extends StatefulWidget {
     required this.initialRecipe,
     required this.availableProducts,
     required this.onSave,
+    this.initialAssemblyFee,
   });
 
   @override
@@ -30,6 +32,21 @@ class _RecipeConfigModalState extends State<RecipeConfigModal> {
   void initState() {
     super.initState();
     _items = List.from(widget.initialRecipe);
+    // Sincronizar monto de armado externo para que no aparezca en $0 ni redunde
+    if (widget.initialAssemblyFee != null && widget.initialAssemblyFee! > 0) {
+      final hasLabor = _items.any((it) => it.type == 'mano_obra');
+      if (!hasLabor) {
+        _items.add(RecipeItem(
+          id: 'labor_armado_${DateTime.now().millisecondsSinceEpoch}',
+          name: 'Mano de Obra Armado (Técnico)',
+          type: 'mano_obra',
+          quantity: 1,
+          unit: 'global',
+          unitCostUsd: widget.initialAssemblyFee!,
+          unitSalePriceUsd: widget.initialAssemblyFee!,
+        ));
+      }
+    }
     _marginCtrl = TextEditingController(text: '50');
   }
 

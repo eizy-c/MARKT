@@ -1659,6 +1659,10 @@ class _PosScreenState extends State<PosScreen> {
           ));
         }
 
+        final laborCostInRecipe = projectRecipe
+            .where((it) => it.type == 'mano_obra')
+            .fold(0.0, (acc, it) => acc + it.totalCostUsd);
+
         final newProject = ProjectItem(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           title: '$firstItemTitle ($folioStr)',
@@ -1668,6 +1672,7 @@ class _PosScreenState extends State<PosScreen> {
           status: projStatus,
           date: DateTime.now(),
           recipe: projectRecipe,
+          assemblyFeeUsd: laborCostInRecipe,
           deliveryDate: DateTime.now().add(Duration(days: _validityDays)),
           initialPaidUsd: _registerInitialNow ? downPaymentAmtUsd : 0.0,
           initialPaymentMethod: _registerInitialNow ? _selectedPaymentMethod : null,
