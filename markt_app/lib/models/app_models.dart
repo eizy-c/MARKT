@@ -60,6 +60,36 @@ class RecipeItem {
     heightCm: (json['heightCm'] as num?)?.toDouble(),
     wastePercent: (json['wastePercent'] as num?)?.toDouble(),
   );
+
+  RecipeItem copyWith({
+    String? id,
+    String? inventoryProductId,
+    String? name,
+    String? type,
+    double? quantity,
+    String? unit,
+    double? unitCostUsd,
+    double? unitSalePriceUsd,
+    bool? deductInventory,
+    double? widthCm,
+    double? heightCm,
+    double? wastePercent,
+  }) {
+    return RecipeItem(
+      id: id ?? this.id,
+      inventoryProductId: inventoryProductId ?? this.inventoryProductId,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
+      unitCostUsd: unitCostUsd ?? this.unitCostUsd,
+      unitSalePriceUsd: unitSalePriceUsd ?? this.unitSalePriceUsd,
+      deductInventory: deductInventory ?? this.deductInventory,
+      widthCm: widthCm ?? this.widthCm,
+      heightCm: heightCm ?? this.heightCm,
+      wastePercent: wastePercent ?? this.wastePercent,
+    );
+  }
 }
 
 class ProductCategory {

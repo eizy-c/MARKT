@@ -56,6 +56,59 @@ class _ProductsScreenState extends State<ProductsScreen> {
     await StorageService.instance.save('products', _products.map((item) => item.toJson()).toList());
   }
 
+  /// Si se modifica el costo o precio de un material/insumo,
+  /// actualiza automáticamente el costo y precio de los productos que lo usan en su receta.
+  void _propagateMaterialPriceChanges(Product updatedMaterial) {
+    bool hasPropagated = false;
+    for (int i = 0; i < _products.length; i++) {
+      final prod = _products[i];
+      if (prod.recipe.isEmpty) continue;
+
+      bool recipeModified = false;
+      final newRecipe = prod.recipe.map((rItem) {
+        if (rItem.inventoryProductId == updatedMaterial.id) {
+          recipeModified = true;
+          final unitCost = updatedMaterial.costUsd > 0 ? updatedMaterial.costUsd : updatedMaterial.priceUsd;
+          return rItem.copyWith(
+            unitCostUsd: unitCost,
+          );
+        }
+        return rItem;
+      }).toList();
+
+      if (recipeModified) {
+        final newRecipeCost = newRecipe.fold<double>(0.0, (acc, item) => acc + (item.totalCostUsd));
+        // Mantener el margen porcentual que tenía el producto
+        double newPrice = prod.priceUsd;
+        if (prod.costUsd > 0 && prod.priceUsd > prod.costUsd) {
+          final marginPercent = ((prod.priceUsd - prod.costUsd) / prod.costUsd);
+          newPrice = double.parse((newRecipeCost * (1.0 + marginPercent)).toStringAsFixed(2));
+        } else if (newRecipeCost > newPrice) {
+          // Si el nuevo costo supera el precio de venta, aplicar al menos 30% de margen
+          newPrice = double.parse((newRecipeCost * 1.30).toStringAsFixed(2));
+        }
+
+        _products[i] = prod.copyWith(
+          costUsd: double.parse(newRecipeCost.toStringAsFixed(2)),
+          priceUsd: newPrice,
+          recipe: newRecipe,
+        );
+        hasPropagated = true;
+        DebugLogger.instance.info('Precio recalculado por insumo para: ${prod.name} -> Costo: \$$newRecipeCost, Venta: \$$newPrice');
+      }
+    }
+
+    if (hasPropagated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Se actualizaron automáticamente los productos y recetas que usan este insumo.'),
+          backgroundColor: Color(0xFF6366F1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   void _showCategoryManagementModal() {
     final nameCtrl = TextEditingController();
     String newCatType = 'producto';
@@ -803,6 +856,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             if (idx != -1) _products[idx] = p;
                           } else {
                             _products.insert(0, p);
+                          }
+                          // Si es un material o insumo, actualizar los productos que lo usan en su receta
+                          if (p.type == 'material') {
+                            _propagateMaterialPriceChanges(p);
                           }
                         });
                         await _saveProducts();

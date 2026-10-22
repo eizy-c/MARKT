@@ -1456,9 +1456,9 @@ class _PosScreenState extends State<PosScreen> {
               }
             }
 
-            // 2. Descontar también el producto en sí si tiene stock inventariable
+            // 2. Descontar también el producto en sí si tiene stock inventariable (no es servicio)
             final pIdx = allProducts.indexWhere((p) => p.id == item.product.id);
-            if (pIdx != -1) {
+            if (pIdx != -1 && allProducts[pIdx].type != 'servicio') {
               allProducts[pIdx] = allProducts[pIdx].copyWith(
                 stock: (allProducts[pIdx].stock - item.quantity).clamp(0, 999999),
               );
@@ -1800,7 +1800,9 @@ class _PosScreenState extends State<PosScreen> {
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          '${p.category} • Stock: ${p.stock} unids.',
+                                          p.type == 'servicio'
+                                              ? '${p.category} • Servicio Activo'
+                                              : '${p.category} • Stock: ${p.stock} ${p.unit}',
                                           style: TextStyle(
                                             color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                             fontSize: 11,
