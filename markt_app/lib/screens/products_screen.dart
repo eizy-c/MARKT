@@ -857,8 +857,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           } else {
                             _products.insert(0, p);
                           }
-                          // Si es un material o insumo, actualizar los productos que lo usan en su receta
-                          if (p.type == 'material') {
+                          // Si es un material, insumo o servicio, actualizar los productos que lo usan en su receta
+                          if (p.type == 'material' || p.type == 'servicio') {
                             _propagateMaterialPriceChanges(p);
                           }
                         });

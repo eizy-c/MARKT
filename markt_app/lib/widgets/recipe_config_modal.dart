@@ -174,8 +174,10 @@ class _RecipeConfigModalState extends State<RecipeConfigModal> {
                               selectedProduct = val;
                               if (val != null) {
                                 nameCtrl.text = val.name;
-                                costCtrl.text = (val.costUsd > 0 ? val.costUsd : val.priceUsd).toStringAsFixed(2);
-                                salePriceCtrl.text = val.priceUsd > 0 ? val.priceUsd.toStringAsFixed(2) : (val.costUsd * 1.5).toStringAsFixed(2);
+                                // Toma estrictamente el costo real de adquisición del insumo
+                                final realCost = val.costUsd > 0 ? val.costUsd : val.priceUsd;
+                                costCtrl.text = realCost.toStringAsFixed(2);
+                                salePriceCtrl.text = val.priceUsd > 0 ? val.priceUsd.toStringAsFixed(2) : (realCost * 1.5).toStringAsFixed(2);
                                 if (val.unit.isNotEmpty) {
                                   unit = val.unit;
                                 }

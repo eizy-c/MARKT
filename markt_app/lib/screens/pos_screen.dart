@@ -1367,11 +1367,12 @@ class _PosScreenState extends State<PosScreen> {
         date: DateTime.now(),
       );
       await _recordCashMovement(cashMovement);
+    }
 
-      final firstItemTitle = invoiceItems.isNotEmpty ? invoiceItems.first.product.name : 'Proyecto $folioStr';
-
-      // 2. Crear Proyecto directamente en etapa "3_taller" (Armado en Taller)
+    // 2. Creación y Enlace Automático con Módulo de Proyectos (Taller)
+    if (_voucherType == 'factura' || _voucherType == 'cotizacion') {
       try {
+        final firstItemTitle = invoiceItems.isNotEmpty ? invoiceItems.first.product.name : 'Trabajo $folioStr';
         final rawProj = await StorageService.instance.load('proyectos');
         final List<Map<String, dynamic>> projList = [];
         if (rawProj != null && rawProj is List) {
@@ -1379,25 +1380,37 @@ class _PosScreenState extends State<PosScreen> {
             projList.add(Map<String, dynamic>.from(item));
           }
         }
+
+        // Estado inicial según el tipo de comprobante:
+        // - Factura o Cotización con inicial: Pasa directo a "3_taller" (Armado)
+        // - Cotización sin inicial: Pasa a "1_aprobacion" (Esperando Aprobación / Anticipo)
+        final String projStatus = (_voucherType == 'factura' || (_voucherType == 'cotizacion' && _registerInitialNow))
+            ? '3_taller'
+            : '1_aprobacion';
+
         final newProject = ProjectItem(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           title: '$firstItemTitle ($folioStr)',
           clientName: _selectedClient?.fullName ?? 'Cliente Ocasional',
           clientPhone: _selectedClient?.phone ?? '',
           totalUsd: totalUsd,
-          status: '3_taller', // Pasa directo a Taller porque ya pagó inicial
+          status: projStatus,
           date: DateTime.now(),
         );
         projList.insert(0, newProject.toJson());
         await StorageService.instance.save('proyectos', projList);
+        DebugLogger.instance.info('Proyecto creado y enlazado: ${newProject.title} en etapa $projStatus');
       } catch (e) {
-        DebugLogger.instance.error('Error al crear proyecto desde cotización: $e');
+        DebugLogger.instance.error('Error al crear proyecto desde POS: $e');
       }
+    }
 
-      // 3. Crear Cuenta por Cobrar por el Saldo Restante
+    // 3. Crear Cuenta por Cobrar si es Cotización con saldo restante pendiente
+    if (_voucherType == 'cotizacion' && _registerInitialNow) {
       final remainingBalance = totalUsd - downPaymentAmtUsd;
       if (remainingBalance > 0.01) {
         try {
+          final firstItemTitle = invoiceItems.isNotEmpty ? invoiceItems.first.product.name : 'Trabajo $folioStr';
           final rawRec = await StorageService.instance.load('receivables');
           final List<Map<String, dynamic>> recList = [];
           if (rawRec != null && rawRec is List) {
